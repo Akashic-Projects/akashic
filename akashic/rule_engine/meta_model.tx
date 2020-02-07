@@ -1,0 +1,137 @@
+
+RuleChoice: RulesGroup | RuleAlone ;
+
+RulesGroup:
+    '{'
+        RULES_GROUP_NAME_KW     ':'         group_name=STRING       ','
+        RULES_KW                ':'     '[' rules*=Rule[','] ']'
+    '}'
+;
+
+RULES_GROUP_NAME_KW:    /\"group-name\"/ ;
+RULES_KW:               /\"rules\"/ ;
+
+
+Rule:
+    '{'
+        RULE_NAME_KW        ':'     rule_name=STRING    ','
+        (RULE_SALIENCE_KW   ':'     salience=INT        ',')?
+        rhs=RHS                                         ','
+        lhs=LHS
+    '}'
+;
+
+RULE_NAME_KW:       /\"rule-name\"/ ;
+RULE_SALIENCE_KW:   /\"salience\"/ ;
+
+RuleAlone:
+    '{'
+        RULE_NAME_KW        ':'     rule_name=STRING            ','
+        RULE_GROUP_NAME_KW  ':'     rule_group_name=STRING      ','
+        (RULE_SALIENCE_KW   ':'     salience=INT                ',')?
+        rhs=RHS                                                 ','
+        lhs=LHS
+    '}'
+;
+
+RULE_GROUP_NAME_KW: /\"rule-group-name\"/ ;
+
+
+RHS:
+    WHEN_KW ':' '['
+        statements *= RHSStatement[',']
+    ']'
+;
+
+WHEN_KW:    /\"when\"/ ;
+
+
+RHSStatement: 
+    '{' func=FUNCTION_NAME_KW ':' '"' (not_operator=NOT)? '(' expr=LogicExpression ')' '"' '}'
+;
+
+FUNCTION_NAME_KW:
+    ASSERT_KW | VARIABLE | LOG_KW
+;
+
+ASSERT_KW:                  /\"assert\"/ ;
+LOG_KW:                     /\"log\"/ ;
+VARIABLE:           '"' var=/\?[^\d\W]\w*\b/ '"' ;
+
+
+PLUS_MINUS:     '+'     | '-'  ;
+MUL_DIV:        '*'     | '/'  ;
+SQR:            '^' ;
+CMP:            '=='    | '!=' | '<' | '>' | '<=' | '>=' ;
+LOGIC:          'and'   | 'or' ;
+NOT:            'not' ;
+
+LogicExpression:
+    operands=CompExpression (operator=LOGIC operands=CompExpression)*
+;
+
+CompExpression:
+    operands=PlusMinusExpr (operator=CMP operands=PlusMinusExpr)*
+;
+
+PlusMinusExpr:
+    operands=MulDivExpr (operator=PLUS_MINUS operands=MulDivExpr)*
+;
+
+MulDivExpr:
+    operands=SqrExpr (operator=MUL_DIV operands=SqrExpr)*
+;
+
+SqrExpr:
+    operands=Factor (operator=SQR operands=Factor)*
+;
+
+Factor:
+    value=NUMBER | value=STRING_C | value=DataLocator | value=VARIABLE | (lpar=LPAR? expr=LogicExpression rpar=RPAR?)
+;
+
+LPAR:   '(' ;
+RPAR:   ')' ;
+STRING_C: "'" val=/.*/ "'" ;
+
+DataLocator: (lpar=LPAR? link_expr=LINK_EXPRESSION rpar=RPAR?) ('.' attributes=ID)* ;
+LINK_EXPRESSION: links=ID ('~' links=ID)* ;
+
+
+LHS:
+    THEN_KW ':' '['
+        statements*=LHSStatement[',']
+    ']'
+;
+
+THEN_KW:    /\"then\"/ ;
+
+
+LHSStatement:
+    stat=CreateStatement | stat=UpdateStatement | stat=ReadStatement | stat=DeleteStatement
+;
+
+CreateStatement:
+    '{' CREATE_KW ':' template_name=STRING '}'
+;
+CREATE_KW:  /\"create\"/ ;
+
+ReadStatement:
+    '{' READ_KW ':' template_name=STRING '}'
+;
+READ_KW:    /\"read\"/ ;
+
+UpdateStatement:
+    '{' UPDATE_KW ':' template_name=STRING '}'
+;
+UPDATE_KW:  /\"update\"/ ;
+
+DeleteStatement:
+    '{' DELETE_KW ':' template_name=STRING  '}' 
+;
+DELETE_KW:  /\"delete\"/ ;
+
+
+Comment:
+  /\/\/.*$/
+;

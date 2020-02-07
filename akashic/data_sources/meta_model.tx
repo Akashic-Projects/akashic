@@ -1,0 +1,92 @@
+DataSourceChoice: model=DataSourcesGroup | model=DataSourceAlone ;
+
+DataSourcesGroup:
+    '{'
+        DS_GROUP_NAME_KW     ':'         group_name=STRING                    ','
+        DATA_SOURCE_KW       ':'     '[' data_sources*=DataSource ']'
+    '}'
+;
+
+DS_GROUP_NAME_KW:    /\"group-name\"/ ;
+DATA_SOURCE_KW:      /\"data-sources\"/ ;
+
+
+// JSON to Template mapping
+DataSource:
+    '{'
+        DATA_SOURCE_NAME_KW             ':'     data_source_name=STRING                             ','
+        TEMPLATE_NAME_KW                ':' '"' template_name=ID '"'                                ','
+
+        CREATE_PROVIDER_KW              ':'     create_provider_api=STRING                          ','
+        READ_ONE_PROVIDER_KW            ':'     read_one_provider_api=STRING                        ','
+        READ_MULTIPLE_PROVIDER_KW       ':'     read_multiple_provider_api=STRING                   ','
+        UPDATE_PROVIDER_KW              ':'     update_provider_api=STRING                          ','
+        DELETE_PROVIDER_KW              ':'     delete_provider_api=STRING                          ','
+
+        NATIVE_ID_SLOT_NAME_KW          ':'     native_id_slot_name=STRING                          ','
+        FOREIGN_ID_SLOT_MAPPINGS_KW     ':' '[' foreign_id_slot_defs*=ForeignIdSlotDef[','] ']'     ','
+        REGULAR_SLOT_MAPPINGS_KW        ':' '[' regular_slot_defs*=SlotDef[',']             ']' 
+    '}'
+;
+
+DATA_SOURCE_NAME_KW:            /\"data-source-name\"/ ;
+TEMPLATE_NAME_KW:               /\"template-name\"/ ;
+CREATE_PROVIDER_KW:             /\"create-provider-api\"/ ;
+READ_ONE_PROVIDER_KW:           /\"read-one-provider-api\"/ ;
+READ_MULTIPLE_PROVIDER_KW:      /\"read-multiple-provider-api\"/ ;
+UPDATE_PROVIDER_KW:             /\"update-provider-api\"/ ;
+DELETE_PROVIDER_KW:             /\"delete-provider-api\"/ ;
+
+NATIVE_ID_SLOT_NAME_KW:         /\"native-id-slot-name\"/ ;
+FOREIGN_ID_SLOT_MAPPINGS_KW:    /\"foreign-id-slot-mappings\"/ ;
+REGULAR_SLOT_MAPPINGS_KW:       /\"regular-slot-mappings\"/ ;
+
+DataSourceAlone:
+    '{'
+        DATA_SOURCE_NAME_KW             ':'     data_source_name=STRING                             ','
+        DATA_SOURCE_GROUP_NAME_KW       ':'     data_source_group_name=STRING                       ','
+        TEMPLATE_NAME_KW                ':' '"' template_name=ID '"'                                ','
+
+        CREATE_PROVIDER_KW              ':'     create_provider_api=STRING                          ','
+        READ_ONE_PROVIDER_KW            ':'     read_one_provider_api=STRING                        ','
+        READ_MULTIPLE_PROVIDER_KW       ':'     read_multiple_provider_api=STRING                   ','
+        UPDATE_PROVIDER_KW              ':'     update_provider_api=STRING                          ','
+        DELETE_PROVIDER_KW              ':'     delete_provider_api=STRING                          ','
+
+        NATIVE_ID_SLOT_NAME_KW          ':'     native_id_slot_name=STRING                          ','
+        FOREIGN_ID_SLOT_MAPPINGS_KW     ':' '[' foreign_id_slot_defs*=ForeignIdSlotDef[','] ']'     ','
+        REGULAR_SLOT_MAPPINGS_KW        ':' '[' regular_slot_defs*=SlotDef[',']             ']' 
+    '}'
+;
+
+DATA_SOURCE_GROUP_NAME_KW: /\"data-source-group-name\"/ ;
+
+ForeignIdSlotDef:
+    '{' 
+        NATIVE_ID_SLOT_NAME_KW      ':' '"' foreign_id_slot_name=ID  '"'    ','
+        FOREIGN_ID_SLOT_NAME_KW     ':' '"' native_id_slot_name=ID   '"'    ','
+        JSON_OBJECT_PATH_KW         ':'     json_object_path=STRING         ','
+        SLOT_TYPE_KW                ':' '"' slot_type=SLOT_TYPE      '"'
+    '}'
+;
+
+NATIVE_ID_SLOT_NAME_KW:     /\"native-id-slot-name\"/ ;
+FOREIGN_ID_SLOT_NAME_KW:    /\"foreign-id-slot-name\"/ ;
+JSON_OBJECT_PATH_KW:        /\"json-object-path\"/ ;
+SLOT_TYPE_KW:               /\"slot-type\"/ ;
+SLOT_TYPE:                  'NUMBER' | 'STRING' | 'BOOL';
+
+SlotDef:
+    '{' 
+        NATIVE_SLOT_NAME_KW     ':'     '"' native_slot_name=ID         '"'    ','
+        JSON_OBJECT_PATH_KW     ':'         json_object_path=STRING            ','
+        SLOT_TYPE_KW            ':'     '"' slot_type=SLOT_TYPE         '"'
+    '}'
+;
+
+NATIVE_SLOT_NAME_KW:        /\"native-slot-name\"/ ;
+
+
+Comment:
+  /\/\/.*$/
+;
