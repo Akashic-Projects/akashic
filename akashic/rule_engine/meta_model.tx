@@ -3,8 +3,8 @@ RuleChoice: RulesGroup | RuleAlone ;
 
 RulesGroup:
     '{'
-        RULES_GROUP_NAME_KW     ':'         group_name=STRING       ','
-        RULES_KW                ':'     '[' rules*=Rule[','] ']'
+        ((RULES_GROUP_NAME_KW     ':'         group_name=STRING     )
+        (RULES_KW                 ':'     '[' rules*=Rule[','] ']'  ))#[',']
     '}'
 ;
 
@@ -14,10 +14,10 @@ RULES_KW:               /\"rules\"/ ;
 
 Rule:
     '{'
-        RULE_NAME_KW        ':'     rule_name=STRING    ','
-        (RULE_SALIENCE_KW   ':'     salience=INT        ',')?
-        rhs=RHS                                         ','
-        lhs=LHS
+        ((RULE_NAME_KW        ':'     rule_name=STRING  )
+        (RULE_SALIENCE_KW     ':'     salience=INT      )?
+        (rhs=RHS                                        )
+        (lhs=LHS                                        ))#[',']
     '}'
 ;
 
@@ -26,11 +26,11 @@ RULE_SALIENCE_KW:   /\"salience\"/ ;
 
 RuleAlone:
     '{'
-        RULE_NAME_KW        ':'     rule_name=STRING            ','
-        RULE_GROUP_NAME_KW  ':'     rule_group_name=STRING      ','
-        (RULE_SALIENCE_KW   ':'     salience=INT                ',')?
-        rhs=RHS                                                 ','
-        lhs=LHS
+        ((RULE_NAME_KW        ':'     rule_name=STRING          )
+        (RULE_GROUP_NAME_KW   ':'     rule_group_name=STRING    )
+        (RULE_SALIENCE_KW     ':'     salience=INT              )?
+        (rhs=RHS                                                )
+        (lhs=LHS                                                ))#[',']
     '}'
 ;
 
