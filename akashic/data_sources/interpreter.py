@@ -23,6 +23,7 @@ class DataSourceDefinitionInterpreter(object):
     class DataSourceDef(object):
         def __init__(self):
             self.data_source_name = None
+            # self.data_source_definition_hashcode = None -> generated value
             self.template_name = None
             self.create_provider_api = None
             self.read_one_provider_api = None

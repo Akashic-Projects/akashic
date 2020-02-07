@@ -1,0 +1,80 @@
+{
+    "group-name": "Student service group",
+    "data-sources": [
+        {
+            "data-source-name": "Courses data source",
+            "template-id": "courses-dada-source",
+            "apis": [
+                {
+                    "operation": "create",
+                    "method": "POST",
+                    "url-map": "http://localhost:80/api/users/${user_id}/courses",
+                    "template-refs":[
+                        {
+                            "template-id": "user-dada-source",
+                            "uri": "user_id"
+                        }
+                    ]
+                },
+                {
+                    "operation": "read-one",
+                    "method": "GET",
+                    "url-map": "http://localhost:80/api/users/${user_id}/courses/${id}",
+                    "template-refs":[
+                        {
+                            "template-id": "user-dada-source",
+                            "uri": "user_id"
+                        }
+                    ],
+                    "indexing-url": "id"
+                },
+                {
+                    "operation": "read-multiple",
+                    "method": "GET",
+                    "url-base": "http://localhost:80/api/users/${user_id}/courses?pageIndex=${pageIndex}&pageRowCount=${pageRowCount}&searchFields=${searchFields}&searchStrings=${searchStrings}&sortField=${sortField}&sortOrder=${sortOrder}",
+                    "template-refs":[
+                        {
+                            "template-id": "user-dada-source",
+                            "uri": "user_id"
+                        }
+                    ],
+                    "page-to-get-uri": "pageIndex",
+                    "rows-per-page-uri": "pageRowCount",
+
+                    "search-fields-uri": "searchFields",
+                    "search-fields-delimiter": ",",
+
+                    "search-strings-uri": "searchStrings",
+                    "search-strings-delimiter": ",",
+
+                    "sort-field-uri": "sortField",
+                    "sort-order-uri": "sortOrder"
+                },
+                {
+                    "operation": "update",
+                    "method": "PUT",
+                    "url-map": "http://localhost:80/api/users/${user_id}/courses/${id}",
+                    "template-refs":[
+                        {
+                            "template-id": "user-dada-source",
+                            "uri": "user_id"
+                        }
+                    ],
+                    "indexing-url": "id"
+                },
+                {
+                    "operation": "delete",
+                    "method": "DELETE",
+                    "url-map": "http://localhost:80/api/users/${user_id}/courses/${id}",
+                    "template-refs":[
+                        {
+                            "template-id": "user-dada-source",
+                            "uri": "user_id"
+                        }
+                    ],
+                    "indexing-url": "id"
+                }
+            ]
+        }
+    ]
+}
