@@ -1,91 +1,183 @@
 
-DataSourceChoice: model=DataSourcesGroup | model=DataSourceAlone ;
-
-DataSourcesGroup:
+DataSourceDefinitionGroup:
     '{'
-        ((DS_GROUP_NAME_KW     ':'         group_name=STRING             )
-        (DATA_SOURCE_KW        ':'     '[' data_sources*=DataSource ']'  ))#[',']
+        ((DS_GROUP_NAME_KW     ':'      dsd_group_name       = STRING                    )
+        (DATA_SOURCE_DEFS_KW   ':'  '[' data_source_defs    *= DataSourceDefinition ']'  ))#[',']
     '}'
 ;
+DS_GROUP_NAME_KW:        /\"data-source-group-name\"/ ;
+DATA_SOURCE_DEFS_KW:     /\"data-source-definitions\"/ ;
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
-DS_GROUP_NAME_KW:    /\"group-name\"/ ;
-DATA_SOURCE_KW:      /\"data-sources\"/ ;
 
-
-// JSON to Template mapping
-DataSource:
+DataSourceDefinition:
     '{'
-        ((DATA_SOURCE_NAME_KW          ':'     data_source_name=STRING                           )
-        (TEMPLATE_NAME_KW              ':' '"' template_name=ID '"'                              )
-
-        (CREATE_PROVIDER_KW            ':'     create_provider_api=STRING                        )
-        (READ_ONE_PROVIDER_KW          ':'     read_one_provider_api=STRING                      )
-        (READ_MULTIPLE_PROVIDER_KW     ':'     read_multiple_provider_api=STRING                 )
-        (UPDATE_PROVIDER_KW            ':'     update_provider_api=STRING                        )
-        (DELETE_PROVIDER_KW            ':'     delete_provider_api=STRING                        )
-
-        (NATIVE_ID_SLOT_NAME_KW        ':'     native_id_slot_name=STRING                        )
-        (FOREIGN_ID_SLOT_MAPPINGS_KW   ':' '[' foreign_id_slot_defs*=ForeignIdSlotDef[','] ']'   )
-        (REGULAR_SLOT_MAPPINGS_KW      ':' '[' regular_slot_defs*=SlotDef[',']             ']'   ))#[',']
+        ((DSD_NAME_KW           ':'      data_source_def_name    = STRING            )
+        (MODEL_NAME_KW          ':' '"'  model_name              = ID            '"' )
+        (MODEL_DESCRIPTION_KW   ':'      model_description       = STRING            )
+        (AuthenticationHeader                                                        )?
+        (ADDITIONAL_HEADERS_KW  ':' '['  additional_headers *= AdditionalHeader  ']' )?
+        (FIELDS_KW              ':' '['  fields             *= Field             ']' )
+        (APIS_KW                ':' '['  apis               *= Api               ']' ))#[',']
     '}'
 ;
+DSD_NAME_KW:                    /\"data-source-definition-name\"/ ;
+MODEL_NAME_KW:                  /\"model-name\"/ ;
+MODEL_DESCRIPTION_KW:           /\"model-description\"/ ;
+FIELDS_KW:                      /\"fields\"/ ;
+APIS_KW:                        /\"apis\"/ ;
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
-DATA_SOURCE_NAME_KW:            /\"data-source-name\"/ ;
-TEMPLATE_NAME_KW:               /\"template-name\"/ ;
-CREATE_PROVIDER_KW:             /\"create-provider-api\"/ ;
-READ_ONE_PROVIDER_KW:           /\"read-one-provider-api\"/ ;
-READ_MULTIPLE_PROVIDER_KW:      /\"read-multiple-provider-api\"/ ;
-UPDATE_PROVIDER_KW:             /\"update-provider-api\"/ ;
-DELETE_PROVIDER_KW:             /\"delete-provider-api\"/ ;
 
-NATIVE_ID_SLOT_NAME_KW:         /\"native-id-slot-name\"/ ;
-FOREIGN_ID_SLOT_MAPPINGS_KW:    /\"foreign-id-slot-mappings\"/ ;
-REGULAR_SLOT_MAPPINGS_KW:       /\"regular-slot-mappings\"/ ;
-
-DataSourceAlone:
-    '{'
-        ((DATA_SOURCE_NAME_KW          ':'     data_source_name=STRING                          )
-        (DATA_SOURCE_GROUP_NAME_KW     ':'     data_source_group_name=STRING                    )
-        (TEMPLATE_NAME_KW              ':' '"' template_name=ID '"'                             )
-
-        (CREATE_PROVIDER_KW            ':'     create_provider_api=STRING                       )
-        (READ_ONE_PROVIDER_KW          ':'     read_one_provider_api=STRING                     )
-        (READ_MULTIPLE_PROVIDER_KW     ':'     read_multiple_provider_api=STRING                )
-        (UPDATE_PROVIDER_KW            ':'     update_provider_api=STRING                       )
-        (DELETE_PROVIDER_KW            ':'     delete_provider_api=STRING                       ) 
-
-        (NATIVE_ID_SLOT_NAME_KW        ':'     native_id_slot_name=STRING                       )
-        (FOREIGN_ID_SLOT_MAPPINGS_KW   ':' '[' foreign_id_slot_defs*=ForeignIdSlotDef[','] ']'  )
-        (REGULAR_SLOT_MAPPINGS_KW      ':' '[' regular_slot_defs*=SlotDef[',']             ']'  ))#[',']
-    '}'
-;
-
-DATA_SOURCE_GROUP_NAME_KW: /\"data-source-group-name\"/ ;
-
-ForeignIdSlotDef:
+AuthenticationHeader:   AUTHENTICATION_HEADER_KW ':' 
     '{' 
-        ((NATIVE_ID_SLOT_NAME_KW    ':' '"' foreign_id_slot_name=ID  '"'    )
-        (FOREIGN_ID_SLOT_NAME_KW    ':' '"' native_id_slot_name=ID   '"'    )
-        (JSON_OBJECT_PATH_KW        ':'     json_object_path=STRING         )
-        (SLOT_TYPE_KW               ':' '"' slot_type=SLOT_TYPE      '"'    ))#[',']
+        ((AUTH_HEADER_NAME_KW   ':'  '"'   auth_header_name  = ID  '"'  )
+        (TOKEN_PREFIX_KW        ':'  '"'   token_prefix      = ID  '"'  )
+        (TOKEN_KW               ':'        token             = STRING   ))#[',']
+    '}' 
+;
+AUTHENTICATION_HEADER_KW:   /\"authentication-header\"/ ;
+AUTH_HEADER_NAME_KW:        /\"auth-header-name\"/ ;
+TOKEN_PREFIX_KW:            /\"token-prefix\"/ ;
+TOKEN_KW:                   /\"token\"/ ;
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+AdditionalHeader:
+    '{'
+        ((HEADER_NAME_KW    ':'  '"'  header_name  = ID     '"'  )
+        (HEADER_VALUE_KW    ':'       header_value = STRING      ))#[',']
+    '}'
+;
+ADDITIONAL_HEADERS_KW:  /\"additional-headers\"/ ;
+HEADER_NAME_KW:         /\"header-name\"/ ;
+HEADER_VALUE_KW:        /\"header-value\"/ ;
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+Field: PrimaryKeyField | ForeignKeyField | DataField ;
+PrimaryKeyField:
+    '{'
+        ((FIELD_NAME_KW     ':' '"' field_name          = ID       '"'  )
+        (TYPE_KW            ':' '"' type                = Type     '"'  )
+        (USE_AS_KW          ':'     /\"primary-key\"/                   )
+        (JSON_PATH_KW       ':'     json_path           = STRING        ))#[',']
+    '}'
+;
+ForeignKeyField:
+    '{'
+        ((FIELD_NAME_KW             ':' '"' field_name              = STRING    '"' )
+        (TYPE_KW                    ':' '"' type                    = Type      '"' )
+        (USE_AS_KW                  ':'     /\"foreign-key\"/                       )
+        (REF_FOREIGN_MODEL_NAME_KW  ':' '"' ref_foreign_model_name  = ID        '"' )
+        (REF_FOREIGN_FIELD_NAME_KW  ':' '"' ref_foreign_field_name  = ID        '"' )
+        (JSON_PATH_KW               ':'     json_path               = STRING        ))#[',']
+    '}'
+;
+DataField:
+   '{'
+        ((FIELD_NAME_KW     ':' '"' field_name          = ID       '"'  )
+        (TYPE_KW            ':' '"' type                = Type     '"'  )
+        (USE_AS_KW          ':'     /\"data\"/                          )
+        (JSON_PATH_KW       ':'     json_path           = STRING        ))#[',']
+    '}'
+;
+FIELD_NAME_KW:              /\"field-name\"/ ;
+TYPE_KW:                    /\"type\"/ ;
+USE_AS_KW:                  /\"use-as\"/ ;
+JSON_PATH_KW:               /\"json_path\"/ ;
+REF_FOREIGN_MODEL_NAME_KW:  /\"referenced-foreign-model-name\"/ ;
+REF_FOREIGN_FIELD_NAME_KW:  /\"referenced-foreign-field-name\"/ ;
+Type:                         'NUMBER' | 'STRING' | 'BOOLEAN' ;
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+Api: CreateApi | ReadOneApi | ReadMultipleApi | UpdateApi | DeleteApi ;
+
+CreateApi:
+    '{'
+        ((OPERATION_KW          ':'       /\"create\"/                                     )
+        (METHOD_KW              ':'  '"'  method              = Method  '"'                )
+        (URL_MAP_KW             ':'       url_map             = STRING                     )
+        (REF_FOREIGN_MODELS_KW  ':'  '['  ref_foreign_models *= ReferencedForeignModel ']' )?)#[',']
+    '}'
+;
+ReadOneApi:
+    '{'
+        ((OPERATION_KW              ':'       /\"read-one\"/                                   )
+        (METHOD_KW                  ':'  '"'  method              = Method  '"'                )
+        (URL_MAP_KW                 ':'       url_map             = STRING                     )
+        (REF_FOREIGN_MODELS_KW      ':'  '['  ref_foreign_models *= ReferencedForeignModel ']' )?
+        (DATA_INDEXING_UP_KW        ':'  '"'  data_indexing_up    = ID      '"'                ))#[',']
+    '}'
+;
+ReadMultipleApi:
+    '{'
+        ((OPERATION_KW             ':'       /\"read-multiple\"/                              )
+        (METHOD_KW                 ':'  '"'  method              = Method  '"'                )
+        (URL_MAP_KW                ':'       url_map             = STRING                     )
+        (REF_FOREIGN_MODELS_KW     ':'  '['  ref_foreign_models *= ReferencedForeignModel ']' )?
+        (PAGE_INDEX_UP_KW          ':'  '"'  page_index_up       = ID      '"'                )
+        (PAGE_ROW_COUNT_UP_KW      ':'  '"'  page_row_count_up   = ID      '"'                )
+        (SEARCH_FIELDS_UP_KW       ':'  '"'  search_fields_up    = ID      '"'                )
+        (SEARCH_FIELDS_UD_KW       ':'  '"'  search_fields_ud    = ID      '"'                )  
+        (SEARCH_STRINGS_UP_KW      ':'  '"'  search_strings_up   = ID      '"'                )
+        (SEARCH_STRINGS_UD_KW      ':'  '"'  search_strings_ud   = ID      '"'                )
+        (SORT_FIELD_UP_KW          ':'  '"'  sort_field_up       = ID      '"'                )
+        (SORT_ORDER_UP_KW          ':'  '"'  sort_order_up       = ID      '"'                ))#[',']
+    '}'
+;
+UpdateApi:
+    '{'
+        ((OPERATION_KW              ':'       /\"update\"/                                     )
+        (METHOD_KW                  ':'  '"'  method              = Method  '"'                )
+        (URL_MAP_KW                 ':'       url_map             = STRING                     )
+        (REF_FOREIGN_MODELS_KW      ':'  '['  ref_foreign_models *= ReferencedForeignModel ']' )?
+        (DATA_INDEXING_UP_KW        ':'  '"'  data_indexing_up    = ID      '"'                ))#[',']
+    '}'
+;
+DeleteApi:
+    '{'
+        ((OPERATION_KW              ':'       /\"delete\"/                                     )
+        (METHOD_KW                  ':'  '"'  method              = Method  '"'                )
+        (URL_MAP_KW                 ':'       url_map             = STRING                     )
+        (REF_FOREIGN_MODELS_KW      ':'  '['  ref_foreign_models *= ReferencedForeignModel ']' )?
+        (DATA_INDEXING_UP_KW        ':'  '"'  data_indexing_up    = ID      '"'                ))#[',']
     '}'
 ;
 
-NATIVE_ID_SLOT_NAME_KW:     /\"native-id-slot-name\"/ ;
-FOREIGN_ID_SLOT_NAME_KW:    /\"foreign-id-slot-name\"/ ;
-JSON_OBJECT_PATH_KW:        /\"json-object-path\"/ ;
-SLOT_TYPE_KW:               /\"slot-type\"/ ;
-SLOT_TYPE:                  'NUMBER' | 'STRING' | 'BOOL';
+OPERATION_KW:               /\"operation\"/ ;
+METHOD_KW:                  /\"method\"/ ;
+URL_MAP_KW:                 /\"url-map\"/ ;
+REF_FOREIGN_MODELS_KW:      /\"referenced-foreign-models\"/ ;
 
-SlotDef:
-    '{' 
-        ((NATIVE_SLOT_NAME_KW    ':'  '"' native_slot_name=ID      '"'  )
-        (JSON_OBJECT_PATH_KW     ':'      json_object_path=STRING       )
-        (SLOT_TYPE_KW            ':'  '"' slot_type=SLOT_TYPE      '"'  ))#[',']
+DATA_INDEXING_UP_KW:        /\"data-indexing-url-placement\"/ ;
+
+PAGE_INDEX_UP_KW:           /\"page-index-url-palcement\"/ ;
+PAGE_ROW_COUNT_UP_KW:       /\"page-row-count-url-palcement\"/ ;
+
+SEARCH_FIELDS_UP_KW:        /\"search-fields-url-palcement\"/ ;
+SEARCH_FIELDS_UD_KW:        /\"search-fields-url-delimiter\"/ ;
+
+SEARCH_STRINGS_UP_KW:       /\"search-strings-url-palcement\"/ ;
+SEARCH_STRINGS_UD_KW:       /\"search-strings-url-delimiter\"/ ;
+
+SORT_FIELD_UP_KW:           /\"sort-field-url-palcement\"/ ;
+SORT_ORDER_UP_KW:           /\"sort-order-url-palcement\"/ ;
+
+Method: 'GET' | 'POST' | 'PUT' | 'DELETE' ;
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+ReferencedForeignModel:
+    '{'
+        (MODEL_NAME_KW       ':'  '"'  model_name     = ID     '"' )
+        (FIELD_NAME_KW       ':'  '"'  field_name     = ID     '"' )
+        (URL_PLACEMENT_KW    ':'  '"'  url_placement  = ID     '"' )
     '}'
 ;
-
-NATIVE_SLOT_NAME_KW:        /\"native-slot-name\"/ ;
+URL_PLACEMENT_KW:   /\"url-placement\"/ ;
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 Comment:

@@ -9,8 +9,9 @@ class DataSourceDefinitionInterpreter(object):
 
     class ForeignIdSlotDef(object):
         def __init__(self):
-            self.foreign_id_slot_name = None
             self.native_id_slot_name = None
+            self.foreign_template_id = None
+            self.foreign_id_slot_name = None
             self.json_object_path = None
             self.slot_type = None
 
@@ -24,7 +25,7 @@ class DataSourceDefinitionInterpreter(object):
         def __init__(self):
             self.data_source_name = None
             # self.data_source_definition_hashcode = None -> generated value
-            self.template_name = None
+            self.template_id = None
             self.create_provider_api = None
             self.read_one_provider_api = None
             self.read_multiple_provider_api = None
@@ -63,7 +64,7 @@ class DataSourceDefinitionInterpreter(object):
     def assamble_data_source(g):
         ds = DataSourceDef()
         ds.data_source_name = g.data_source_name
-        ds.template_name = g.template_name
+        ds.template_id = g.template_id
 
         ds.create_provider_api = g.create_provider_api
         ds.read_one_provider_api = g.read_one_provider_api
@@ -75,22 +76,30 @@ class DataSourceDefinitionInterpreter(object):
         ds.foreign_id_slot_defs = {}
         ds.regular_slot_defs = {}
 
+
         for s in g.foreign_id_slot_defs:
             fisd = ForeignIdSlotDef()
-            fisd.foreign_id_slot_name = s.foreign_id_slot_name
             fisd.native_id_slot_name = s.native_id_slot_name
+            fisd.foreign_template_id = s.foreign_template_id
+            fisd.foreign_id_slot_name = s.foreign_id_slot_name
+           
             fisd.json_object_path = s.json_object_path
             fisd.slot_type = s.slot_type
+
             ds.foreign_id_slot_defs[fisd.native_id_slot_name] = fisd
+
 
         for s in g.regular_slot_defs:
             rsd = RegularSlotDef()
             rsd.native_slot_name = s.native_slot_name
+
             rsd.json_object_path = s.json_object_path
             rsd.slot_type = s.slot_type
+
             ds.regular_slot_defs[rsd.native_slot_name] = rsd
     
         return ds
+
 
 
     def interpret_and_add_data_source_group(self, data_source_group_def):

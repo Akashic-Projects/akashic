@@ -1,18 +1,65 @@
 {
-    "group-name": "Student service group",
-    "data-sources": [
+    "data-source-group-name": "Student service group",
+    "data-source-definitions": [
         {
-            "data-source-name": "Courses data source",
-            "template-id": "courses-dada-source",
+            "data-source-definition-name": "UserCourses data source",
+            "model-name": "UserCourse",
+            "model-description": "Holds data concearning individual student and course he is attending",
+
+            "authentication-header": {
+                "auth-header-name": "Authentication",
+                "token-prefix": "bearer",
+                "token": "4tfrwf-34wfwfwrfw4fw4ffw4fe"
+            },
+
+            "additional-headers": [
+                {
+                    "header-name": "Content-Type",
+                    "header-value": "application/json"
+                }
+            ],
+
+            "fields": [
+                {
+                    "field-name": "id",
+                    "type": "NUMBER",
+                    "use-as": "primary-key",
+                    "json_path": "$.data.id"
+                },
+                {
+                    "field-name": "user_id",
+                    "type": "NUMBER",
+                    "use-as": "foreign-key",
+                    "referenced-foreign-model-name": "User",
+                    "referenced-foreign-field-name": "id",
+                    "json_path": "$.data.user_id"
+                },
+                {
+                    "field-name": "course_id",
+                    "type": "NUMBER",
+                    "use-as": "foreign-key",
+                    "referenced-foreign-model-name": "Course",
+                    "referenced-foreign-field-name": "id",
+                    "json_path": "$.data.course_id"
+                },
+                {
+                    "field-name": "rating",
+                    "type": "NUMBER",
+                    "use-as": "data",
+                    "json_path": "$.data.rating"
+                }
+            ],
+
             "apis": [
                 {
                     "operation": "create",
                     "method": "POST",
                     "url-map": "http://localhost:80/api/users/${user_id}/courses",
-                    "template-refs":[
+                    "referenced-foreign-models": [
                         {
-                            "template-id": "user-dada-source",
-                            "uri": "user_id"
+                            "model-name": "User",
+                            "field-name": "id",
+                            "url-palcement": "user_id"
                         }
                     ]
                 },
@@ -20,59 +67,63 @@
                     "operation": "read-one",
                     "method": "GET",
                     "url-map": "http://localhost:80/api/users/${user_id}/courses/${id}",
-                    "template-refs":[
+                    "referenced-foreign-models": [
                         {
-                            "template-id": "user-dada-source",
-                            "uri": "user_id"
+                            "model-name": "User",
+                            "field-name": "id",
+                            "url-placement": "user_id"
                         }
                     ],
-                    "indexing-url": "id"
+                    "data-indexing-url-placement": "id"
                 },
                 {
                     "operation": "read-multiple",
                     "method": "GET",
                     "url-base": "http://localhost:80/api/users/${user_id}/courses?pageIndex=${pageIndex}&pageRowCount=${pageRowCount}&searchFields=${searchFields}&searchStrings=${searchStrings}&sortField=${sortField}&sortOrder=${sortOrder}",
-                    "template-refs":[
+                    "referenced-foreign-models": [
                         {
-                            "template-id": "user-dada-source",
-                            "uri": "user_id"
+                            "model-name": "User",
+                            "field-name": "id",
+                            "url-palcement": "user_id"
                         }
                     ],
-                    "page-to-get-uri": "pageIndex",
-                    "rows-per-page-uri": "pageRowCount",
+                    "page-index-url-palcement": "pageIndex",
+                    "page-row-count-url-palcement": "pageRowCount",
 
-                    "search-fields-uri": "searchFields",
-                    "search-fields-delimiter": ",",
+                    "search-fields-url-palcement": "searchFields",
+                    "search-fields-url-delimiter": ",",
 
-                    "search-strings-uri": "searchStrings",
-                    "search-strings-delimiter": ",",
+                    "search-strings-url-palcement": "searchStrings",
+                    "search-strings-url-delimiter": ",",
 
-                    "sort-field-uri": "sortField",
-                    "sort-order-uri": "sortOrder"
+                    "sort-field-url-palcement": "sortField",
+                    "sort-order-url-palcement": "sortOrder"
                 },
                 {
                     "operation": "update",
                     "method": "PUT",
                     "url-map": "http://localhost:80/api/users/${user_id}/courses/${id}",
-                    "template-refs":[
+                    "referenced-foreign-models": [
                         {
-                            "template-id": "user-dada-source",
-                            "uri": "user_id"
+                            "model-name": "User",
+                            "field-name": "id",
+                            "url-palcement": "user_id"
                         }
                     ],
-                    "indexing-url": "id"
+                    "data-indexing-url-placement": "id"
                 },
                 {
                     "operation": "delete",
                     "method": "DELETE",
                     "url-map": "http://localhost:80/api/users/${user_id}/courses/${id}",
-                    "template-refs":[
+                    "referenced-foreign-models": [
                         {
-                            "template-id": "user-dada-source",
-                            "uri": "user_id"
+                            "model-name": "User",
+                            "field-name": "id",
+                            "url-palcement": "user_id"
                         }
                     ],
-                    "indexing-url": "id"
+                    "data-indexing-url-placement": "id"
                 }
             ]
         }
