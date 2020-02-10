@@ -1,27 +1,18 @@
 
-DataSourceDefinitionGroup:
-    '{'
-        ((DS_GROUP_NAME_KW     ':'      dsd_group_name       = STRING                    )
-        (DATA_SOURCE_DEFS_KW   ':'  '[' data_source_defs    *= DataSourceDefinition ']'  ))#[',']
-    '}'
-;
-DS_GROUP_NAME_KW:        /\"data-source-group-name\"/ ;
-DATA_SOURCE_DEFS_KW:     /\"data-source-definitions\"/ ;
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
 DataSourceDefinition:
     '{'
-        ((DSD_NAME_KW           ':'      data_source_def_name    = STRING            )
-        (MODEL_NAME_KW          ':' '"'  model_name              = ID            '"' )
-        (MODEL_DESCRIPTION_KW   ':'      model_description       = STRING            )
-        (AuthenticationHeader                                                        )?
-        (ADDITIONAL_HEADERS_KW  ':' '['  additional_headers *= AdditionalHeader  ']' )?
-        (FIELDS_KW              ':' '['  fields             *= Field             ']' )
-        (APIS_KW                ':' '['  apis               *= Api               ']' ))#[',']
+        ((DSD_NAME_KW               ':'      def_name            = STRING                     )
+        (DSD_GROUP_NAME_KW          ':' '"'  group_id            = ID            '"'          )
+        (MODEL_NAME_KW              ':' '"'  model_id            = ID            '"'          )
+        (MODEL_DESCRIPTION_KW       ':'      model_description   = STRING                     )
+        (AUTHENTICATION_HEADER_KW   ':'      auth_header         = AuthenticationHeader       )?
+        (ADDITIONAL_HEADERS_KW      ':' '['  additional_headers *= AdditionalHeader[',']  ']' )?
+        (FIELDS_KW                  ':' '['  fields             *= Field[',']             ']' )
+        (APIS_KW                    ':' '['  apis                = Apis                   ']' ))#[',']
     '}'
 ;
 DSD_NAME_KW:                    /\"data-source-definition-name\"/ ;
+DSD_GROUP_NAME_KW:              /\"data-source-definition-group-name\"/ ;
 MODEL_NAME_KW:                  /\"model-name\"/ ;
 MODEL_DESCRIPTION_KW:           /\"model-description\"/ ;
 FIELDS_KW:                      /\"fields\"/ ;
@@ -29,11 +20,11 @@ APIS_KW:                        /\"apis\"/ ;
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-AuthenticationHeader:   AUTHENTICATION_HEADER_KW ':' 
+AuthenticationHeader:
     '{' 
-        ((AUTH_HEADER_NAME_KW   ':'  '"'   auth_header_name  = ID  '"'  )
-        (TOKEN_PREFIX_KW        ':'  '"'   token_prefix      = ID  '"'  )
-        (TOKEN_KW               ':'        token             = STRING   ))#[',']
+        ((AUTH_HEADER_NAME_KW   ':'  auth_header_name  = STRING  )
+        (TOKEN_PREFIX_KW        ':'  token_prefix      = STRING  )
+        (TOKEN_KW               ':'  token             = STRING  ))#[',']
     '}' 
 ;
 AUTHENTICATION_HEADER_KW:   /\"authentication-header\"/ ;
@@ -45,8 +36,8 @@ TOKEN_KW:                   /\"token\"/ ;
 
 AdditionalHeader:
     '{'
-        ((HEADER_NAME_KW    ':'  '"'  header_name  = ID     '"'  )
-        (HEADER_VALUE_KW    ':'       header_value = STRING      ))#[',']
+        ((HEADER_NAME_KW    ':'  header_name  = STRING   )
+        (HEADER_VALUE_KW    ':'  header_value = STRING   ))#[',']
     '}'
 ;
 ADDITIONAL_HEADERS_KW:  /\"additional-headers\"/ ;
@@ -66,7 +57,7 @@ PrimaryKeyField:
 ;
 ForeignKeyField:
     '{'
-        ((FIELD_NAME_KW             ':' '"' field_name              = STRING    '"' )
+        ((FIELD_NAME_KW             ':' '"' field_name              = ID        '"' )
         (TYPE_KW                    ':' '"' type                    = Type      '"' )
         (USE_AS_KW                  ':'     /\"foreign-key\"/                       )
         (REF_FOREIGN_MODEL_NAME_KW  ':' '"' ref_foreign_model_name  = ID        '"' )
@@ -75,7 +66,7 @@ ForeignKeyField:
     '}'
 ;
 DataField:
-   '{'
+    '{'
         ((FIELD_NAME_KW     ':' '"' field_name          = ID       '"'  )
         (TYPE_KW            ':' '"' type                = Type     '"'  )
         (USE_AS_KW          ':'     /\"data\"/                          )
@@ -85,64 +76,70 @@ DataField:
 FIELD_NAME_KW:              /\"field-name\"/ ;
 TYPE_KW:                    /\"type\"/ ;
 USE_AS_KW:                  /\"use-as\"/ ;
-JSON_PATH_KW:               /\"json_path\"/ ;
+JSON_PATH_KW:               /\"json-path\"/ ;
 REF_FOREIGN_MODEL_NAME_KW:  /\"referenced-foreign-model-name\"/ ;
 REF_FOREIGN_FIELD_NAME_KW:  /\"referenced-foreign-field-name\"/ ;
 Type:                         'NUMBER' | 'STRING' | 'BOOLEAN' ;
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-Api: CreateApi | ReadOneApi | ReadMultipleApi | UpdateApi | DeleteApi ;
+Apis: (
+    create          = CreateApi? 
+    readOne         = ReadOneApi? 
+    readMultiple    = ReadMultipleApi? 
+    update          = UpdateApi? 
+    delete          = DeleteApi?
+)#[','] ;
 
 CreateApi:
     '{'
-        ((OPERATION_KW          ':'       /\"create\"/                                     )
-        (METHOD_KW              ':'  '"'  method              = Method  '"'                )
-        (URL_MAP_KW             ':'       url_map             = STRING                     )
-        (REF_FOREIGN_MODELS_KW  ':'  '['  ref_foreign_models *= ReferencedForeignModel ']' )?)#[',']
+        ((OPERATION_KW          ':'       /\"create\"/                                          )
+        (METHOD_KW              ':'  '"'  method              = Method  '"'                     )
+        (URL_MAP_KW             ':'       url_map             = STRING                          )
+        (REF_FOREIGN_MODELS_KW  ':'  '['  ref_foreign_models *= ReferencedForeignModel[','] ']' )?)#[',']
     '}'
 ;
 ReadOneApi:
     '{'
-        ((OPERATION_KW              ':'       /\"read-one\"/                                   )
-        (METHOD_KW                  ':'  '"'  method              = Method  '"'                )
-        (URL_MAP_KW                 ':'       url_map             = STRING                     )
-        (REF_FOREIGN_MODELS_KW      ':'  '['  ref_foreign_models *= ReferencedForeignModel ']' )?
-        (DATA_INDEXING_UP_KW        ':'  '"'  data_indexing_up    = ID      '"'                ))#[',']
+        ((OPERATION_KW              ':'       /\"read-one\"/                                        )
+        (METHOD_KW                  ':'  '"'  method              = Method  '"'                     )
+        (URL_MAP_KW                 ':'       url_map             = STRING                          )
+        (REF_FOREIGN_MODELS_KW      ':'  '['  ref_foreign_models *= ReferencedForeignModel[','] ']' )?
+        (DATA_INDEXING_UP_KW        ':'  '"'  data_indexing_up    = ID      '"'                     ))#[',']
     '}'
 ;
 ReadMultipleApi:
     '{'
-        ((OPERATION_KW             ':'       /\"read-multiple\"/                              )
-        (METHOD_KW                 ':'  '"'  method              = Method  '"'                )
-        (URL_MAP_KW                ':'       url_map             = STRING                     )
-        (REF_FOREIGN_MODELS_KW     ':'  '['  ref_foreign_models *= ReferencedForeignModel ']' )?
-        (PAGE_INDEX_UP_KW          ':'  '"'  page_index_up       = ID      '"'                )
-        (PAGE_ROW_COUNT_UP_KW      ':'  '"'  page_row_count_up   = ID      '"'                )
-        (SEARCH_FIELDS_UP_KW       ':'  '"'  search_fields_up    = ID      '"'                )
-        (SEARCH_FIELDS_UD_KW       ':'  '"'  search_fields_ud    = ID      '"'                )  
-        (SEARCH_STRINGS_UP_KW      ':'  '"'  search_strings_up   = ID      '"'                )
-        (SEARCH_STRINGS_UD_KW      ':'  '"'  search_strings_ud   = ID      '"'                )
-        (SORT_FIELD_UP_KW          ':'  '"'  sort_field_up       = ID      '"'                )
-        (SORT_ORDER_UP_KW          ':'  '"'  sort_order_up       = ID      '"'                ))#[',']
+        ((OPERATION_KW             ':'       /\"read-multiple\"/                                    )
+        (METHOD_KW                 ':'  '"'  method              = Method  '"'                      )
+        (URL_MAP_KW                ':'       url_map             = STRING                           )
+        (REF_FOREIGN_MODELS_KW     ':'  '['  ref_foreign_models *= ReferencedForeignModel[','] ']'  )?
+        (PAGE_INDEX_UP_KW          ':'  '"'  page_index_url_placement       = ID        '"'         )
+        (PAGE_ROW_COUNT_UP_KW      ':'  '"'  page_row_count_url_placement   = ID        '"'         )
+        (SEARCH_FIELDS_UP_KW       ':'  '"'  search_fields_url_placement    = ID        '"'         )
+        (SEARCH_FIELDS_UD_KW       ':'       search_fields_url_delimiter    = STRING                )  
+        (SEARCH_STRINGS_UP_KW      ':'  '"'  search_strings_url_placement   = ID        '"'         )
+        (SEARCH_STRINGS_UD_KW      ':'       search_strings_url_delimiter   = STRING                )
+        (SORT_FIELD_UP_KW          ':'  '"'  sort_field_url_placement       = ID        '"'         )
+        (SORT_ORDER_UP_KW          ':'  '"'  sort_order_url_placement       = ID        '"'         ))#[',']
     '}'
 ;
 UpdateApi:
     '{'
-        ((OPERATION_KW              ':'       /\"update\"/                                     )
-        (METHOD_KW                  ':'  '"'  method              = Method  '"'                )
-        (URL_MAP_KW                 ':'       url_map             = STRING                     )
-        (REF_FOREIGN_MODELS_KW      ':'  '['  ref_foreign_models *= ReferencedForeignModel ']' )?
-        (DATA_INDEXING_UP_KW        ':'  '"'  data_indexing_up    = ID      '"'                ))#[',']
+        ((OPERATION_KW              ':'       /\"update\"/                                          )
+        (METHOD_KW                  ':'  '"'  method              = Method  '"'                     )
+        (URL_MAP_KW                 ':'       url_map             = STRING                          )
+        (REF_FOREIGN_MODELS_KW      ':'  '['  ref_foreign_models *= ReferencedForeignModel[','] ']' )?
+        (DATA_INDEXING_UP_KW        ':'  '"'  data_indexing_up    = ID      '"'                     ))#[',']
     '}'
 ;
 DeleteApi:
     '{'
-        ((OPERATION_KW              ':'       /\"delete\"/                                     )
-        (METHOD_KW                  ':'  '"'  method              = Method  '"'                )
-        (URL_MAP_KW                 ':'       url_map             = STRING                     )
-        (REF_FOREIGN_MODELS_KW      ':'  '['  ref_foreign_models *= ReferencedForeignModel ']' )?
-        (DATA_INDEXING_UP_KW        ':'  '"'  data_indexing_up    = ID      '"'                ))#[',']
+        ((OPERATION_KW              ':'       /\"delete\"/                                           )
+        (METHOD_KW                  ':'  '"'  method              = Method  '"'                      )
+        (URL_MAP_KW                 ':'       url_map             = STRING                           )
+        (REF_FOREIGN_MODELS_KW      ':'  '['  ref_foreign_models *= ReferencedForeignModel[','] ']'  )?
+        (DATA_INDEXING_UP_KW        ':'  '"'  data_indexing_up    = ID      '"'                      ))#[',']
     '}'
 ;
 
@@ -153,17 +150,17 @@ REF_FOREIGN_MODELS_KW:      /\"referenced-foreign-models\"/ ;
 
 DATA_INDEXING_UP_KW:        /\"data-indexing-url-placement\"/ ;
 
-PAGE_INDEX_UP_KW:           /\"page-index-url-palcement\"/ ;
-PAGE_ROW_COUNT_UP_KW:       /\"page-row-count-url-palcement\"/ ;
+PAGE_INDEX_UP_KW:           /\"page-index-url-placement\"/ ;
+PAGE_ROW_COUNT_UP_KW:       /\"page-row-count-url-placement\"/ ;
 
-SEARCH_FIELDS_UP_KW:        /\"search-fields-url-palcement\"/ ;
+SEARCH_FIELDS_UP_KW:        /\"search-fields-url-placement\"/ ;
 SEARCH_FIELDS_UD_KW:        /\"search-fields-url-delimiter\"/ ;
 
-SEARCH_STRINGS_UP_KW:       /\"search-strings-url-palcement\"/ ;
+SEARCH_STRINGS_UP_KW:       /\"search-strings-url-placement\"/ ;
 SEARCH_STRINGS_UD_KW:       /\"search-strings-url-delimiter\"/ ;
 
-SORT_FIELD_UP_KW:           /\"sort-field-url-palcement\"/ ;
-SORT_ORDER_UP_KW:           /\"sort-order-url-palcement\"/ ;
+SORT_FIELD_UP_KW:           /\"sort-field-url-placement\"/ ;
+SORT_ORDER_UP_KW:           /\"sort-order-url-placement\"/ ;
 
 Method: 'GET' | 'POST' | 'PUT' | 'DELETE' ;
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -171,9 +168,9 @@ Method: 'GET' | 'POST' | 'PUT' | 'DELETE' ;
 
 ReferencedForeignModel:
     '{'
-        (MODEL_NAME_KW       ':'  '"'  model_name     = ID     '"' )
+        ((MODEL_NAME_KW      ':'  '"'  model_name     = ID     '"' )
         (FIELD_NAME_KW       ':'  '"'  field_name     = ID     '"' )
-        (URL_PLACEMENT_KW    ':'  '"'  url_placement  = ID     '"' )
+        (URL_PLACEMENT_KW    ':'  '"'  url_placement  = ID     '"' ))#[',']
     '}'
 ;
 URL_PLACEMENT_KW:   /\"url-placement\"/ ;

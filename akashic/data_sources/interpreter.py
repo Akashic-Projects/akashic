@@ -3,135 +3,51 @@ from textx.export import metamodel_export, model_export
 
 from os.path import join, dirname
 
-from akashic.exceptions import SemanticMismatchError
+from textx.exceptions import TextXSyntaxError, TextXSemanticError
+
+from akashic.exceptions import SyntacticError, SemanticError
+
+import re
 
 class DataSourceDefinitionInterpreter(object):
 
-    class ForeignIdSlotDef(object):
-        def __init__(self):
-            self.native_id_slot_name = None
-            self.foreign_template_id = None
-            self.foreign_id_slot_name = None
-            self.json_object_path = None
-            self.slot_type = None
-
-    class RegularSlotDef(object):
-        def __init__(self):
-            self.native_slot_name = None
-            self.json_object_path = None
-            self.slot_type = None
-
-    class DataSourceDef(object):
-        def __init__(self):
-            self.data_source_name = None
-            # self.data_source_definition_hashcode = None -> generated value
-            self.template_id = None
-            self.create_provider_api = None
-            self.read_one_provider_api = None
-            self.read_multiple_provider_api = None
-            self.update_provider_api = None
-            self.delete_provider_api = None
-
-            self.native_id_slot_name = None
-            self.foreign_id_slot_defs = {}
-
-            self.regular_slot_defs = {}
-
-
-    class DSGroupDef(object):
-        def __init__(self):
-            self.group_name = None
-            self.data_sources = {}
-
     def __init__(self):
-        processors = {
-            'LogicExpression': self.logic_expression,
-            'CompExpression': self.comp_expression,
-            'PlusMinusExpr': self.plus_minus_expr,
-            'MulDivExpr': self.mul_div_expr,
-            'SqrExpr': self.sqr_expr,
-            'Factor': self.factor,
-            'DataLocator': self.data_locator,
-        }
-
         this_folder = dirname(__file__)
         self.meta_model = metamodel_from_file(join(this_folder, 'meta_model.tx'), debug=False)
-        self.meta_model.register_obj_processors(processors)
+        self.dsd = None
 
-        self.ds_groups = {}
+    def print_error_message(self, ttype, line, col, message):
+        print(f"Detected: {ttype} error at line {line} and column {col}. \nMessage: " + message)
 
-
-    def assamble_data_source(g):
-        ds = DataSourceDef()
-        ds.data_source_name = g.data_source_name
-        ds.template_id = g.template_id
-
-        ds.create_provider_api = g.create_provider_api
-        ds.read_one_provider_api = g.read_one_provider_api
-        ds.read_multiple_provider_api = g.read_multiple_provider_api
-        ds.update_provider_api = g.update_provider_apis
-        ds.delete_provider_api = g.delete_provider_api
-
-        ds.native_id_slot_name = g.native_id_slot_name
-        ds.foreign_id_slot_defs = {}
-        ds.regular_slot_defs = {}
-
-
-        for s in g.foreign_id_slot_defs:
-            fisd = ForeignIdSlotDef()
-            fisd.native_id_slot_name = s.native_id_slot_name
-            fisd.foreign_template_id = s.foreign_template_id
-            fisd.foreign_id_slot_name = s.foreign_id_slot_name
-           
-            fisd.json_object_path = s.json_object_path
-            fisd.slot_type = s.slot_type
-
-            ds.foreign_id_slot_defs[fisd.native_id_slot_name] = fisd
-
-
-        for s in g.regular_slot_defs:
-            rsd = RegularSlotDef()
-            rsd.native_slot_name = s.native_slot_name
-
-            rsd.json_object_path = s.json_object_path
-            rsd.slot_type = s.slot_type
-
-            ds.regular_slot_defs[rsd.native_slot_name] = rsd
+    def load(self, dsd_string):
+        try:
+            self.dsd = self.meta_model.model_from_str(dsd_string)
+            print(self.dsd.def_name)
+            return 1
+        except TextXSyntaxError as syntaxError:
+            self.print_error_message("Syntax", syntaxError.line, syntaxError.col, syntaxError.message)
+        except TextXSemanticError as semanticError:
+            self.print_error_message("Semantic", syntaxError.line, syntaxError.col, syntaxError.message)
     
-        return ds
-
-
-
-    def interpret_and_add_data_source_group(self, data_source_group_def):
-        data = self.meta_model.model_from_str(data_source_group_def)
-        
-        if data.model.__class__.__name__ != "DataSourcesGroup":
-            raise SemanticMismatchError
-
-        dsg = DSGroupDef()
-        dsg.group_name = data.model.group_name
-        dsg.data_sources = {}
-        
-        for g in data.model.data_sources:
-            ds = assamble_data_source(g)
-            dsg.data_sources[ds.data_source_name] = ds
-        self.ds_groups[dsg.group_name] = dsg
-
-
-    def interpret_and_add_data_source(self, data_sources_def):
-        data = self.meta_model.model_from_str(data_sources_def)
-
-        if data.model.__class__.__name__ != "DataSourceAlone":
-            raise SemanticMismatchError
-
-        ds = assamble_data_source(data.model)
-        target_group_name = data.model.data_source_group_name
-        
-        if target_group_name not in self.ds_groups:
-            dsg = DSGroupDef()
-            dsg.group_name = target_group_name
-            dsg.data_sources = {}
-            self.ds_groups[target_group_name] = dsg
-
-        self.ds_groups[target_group_name].data_sources[ds.data_source_name] = ds
     
+    def check_structure(self):
+        if self.dsd is not None:
+            create = self.dsd.apis.create
+            if create is not None:
+                if create.ref_foreign_models is not None:
+                    url_field_list = []
+                    for m in re.finditer(r"\{(((?!\{|\}).)*)\}", create.url_map):
+                        url_field_list.append(m.group(1))
+
+                    for ref in create.ref_foreign_models:
+                        if ref.url_placement in url_field_list:
+                            url_field_list.remove(ref.url_placement)
+                        else:
+                            raise SemanticError(f"Field ({ref.url_placement}) cannot be found in url-map setting.")
+                    
+                    if len(url_field_list) > 0:
+                        fields_left_string = ", ".join(url_field_list)
+                        raise SemanticError(f"Following fields ({fields_left_string}) inside of url-map setting ({create.url_map}) are not referenced in (referenced-foreign-models) setting.")
+        return 1
+
+

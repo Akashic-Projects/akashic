@@ -4,5 +4,11 @@ class VariableAlreadyDefinedError(Exception):
     pass
 
 
-class SemanticMismatchError(exception):
-    pass
+class SyntacticError(Exception):
+    def __init(self, message):
+        self.message = message
+
+
+class SemanticError(Exception):
+    def __init(self, message):
+        self.message = message

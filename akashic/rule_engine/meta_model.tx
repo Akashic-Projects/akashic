@@ -1,15 +1,4 @@
 
-RulesGroup:
-    '{'
-        ((RULES_GROUP_NAME_KW     ':'         group_name=STRING     )
-        (RULES_KW                 ':'     '[' rules*=Rule[','] ']'  ))#[',']
-    '}'
-;
-
-RULES_GROUP_NAME_KW:    /\"group-name\"/ ;
-RULES_KW:               /\"rules\"/ ;
-
-
 Rule:
     '{'
         ((RULE_NAME_KW        ':'     rule_name=STRING  )
