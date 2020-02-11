@@ -51,3 +51,34 @@ class DataSourceDefinitionInterpreter(object):
         return 1
 
 
+    def generate_url_dictionary(self):
+        pass
+
+    def generate_clips_template(self):
+        pass
+
+
+
+    def setup_data_aquisition_module(self, options):
+        pass
+
+    def setup_data_container(self, options):
+        pass
+
+    def instantiate_data_container(self, data_container_id):
+        pass
+
+    def create(self, data):
+        pass
+
+    def read_one(self, id):
+        pass
+    
+    def read_multiple(self, options):
+        pass
+
+    def update(self, data):
+        pass
+
+    def delete(self, data_id):
+        pass
