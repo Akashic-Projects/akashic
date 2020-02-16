@@ -17,8 +17,10 @@ class DataSourceDefinitionInterpreter(object):
         self.meta_model = metamodel_from_file(join(this_folder, 'meta_model.tx'), debug=False)
         self.dsd = None
 
+
     def print_error_message(self, ttype, line, col, message):
         print(f"Detected: {ttype} error at line {line} and column {col}. \nMessage: " + message)
+
 
     def load(self, dsd_string):
         try:
@@ -34,6 +36,7 @@ class DataSourceDefinitionInterpreter(object):
     def check_url_mappings(self):
         checker = Checker(self.dsd)
         checker.run()
+
 
     def fill_url_map(self, url_map, **kwargs):
         url_fields = []
