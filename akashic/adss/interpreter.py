@@ -1,13 +1,13 @@
 from os.path import join, dirname
+import re
 
 from textx import metamodel_from_file
 from textx.export import metamodel_export, model_export
 from textx.exceptions import TextXSyntaxError, TextXSemanticError
 
 from akashic.exceptions import SyntacticError, SemanticError
-from akashic.adsds.checker import Checker
-
-import re
+from akashic.adss.checker import Checker
+from akashic.adss.data_fetcher import DataFetcher
 
 
 class DataSourceDefinitionInterpreter(object):
@@ -16,6 +16,7 @@ class DataSourceDefinitionInterpreter(object):
         this_folder = dirname(__file__)
         self.meta_model = metamodel_from_file(join(this_folder, 'meta_model.tx'), debug=False)
         self.dsd = None
+        self.fetcher = None
 
 
     def print_error_message(self, ttype, line, col, message):
@@ -72,27 +73,40 @@ class DataSourceDefinitionInterpreter(object):
         return tempalte_def
 
 
+    def setup_data_fetcher(self):
+        self.fetcher = DataFetcher(self.dsd.auth_header, self.dsd.additional_headers)
 
-    def setup_data_aquisition_module(self, options):
-        pass
 
-    def setup_data_container(self, options):
-        pass
+    def generate_clips_fact(self, json_data):
+        fact = "(" + str(self.dsd.model_id)
+        fields = []
 
-    def instantiate_data_container(self, data_container_id):
-        pass
+         # Resolve field value
+        resolved_value = "Hello world string"
+
+        for field in self.dsd.fields:
+            fields.append("\t(" + str(field.field_name) + )
+
 
     def create(self, data):
         pass
 
-    def read_one(self, id):
-        pass
+
+    def read_one(self, **kwargs):
+        url_map = self.dsd.apis.read_one.url_map
+        url = self.fill_url_map(url_map, **kwargs)
+        
+        result = self.fetcher.read_one(url)
+        return result
     
+
     def read_multiple(self, options):
         pass
 
+
     def update(self, data):
         pass
+
 
     def delete(self, data_id):
         pass

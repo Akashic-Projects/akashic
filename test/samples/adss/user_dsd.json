@@ -1,0 +1,69 @@
+{
+    "data-source-definition-name": "User",
+    "data-source-definition-group-name": "StudentServiceGroup",
+    "model-name": "User",
+    "model-description": "Holds general user dara",
+    
+    "fields": [
+        {
+            "field-name": "id",
+            "type": "INTEGER",
+            "use-as": "primary-key",
+            "json-path": "$.data.id"
+        },
+        {
+            "field-name": "name",
+            "type": "STRING",
+            "use-as": "data",
+            "json-path": "$.data.name"
+        },
+        {
+            "field-name": "email",
+            "type": "STRING",
+            "use-as": "data",
+            "json-path": "$.data.email"
+        }
+    ],
+
+    "apis": [
+        {
+            "operation": "create",
+            "method": "POST",
+            "url-map": "http://localhost:80/api/users"
+        },
+        {
+            "operation": "read-one",
+            "method": "GET",
+            "url-map": "http://localhost:80/api/users/{id}",
+            "data-indexing-url-placement": "id"
+        },
+        {
+            "operation": "read-multiple",
+            "method": "GET",
+            "url-map": "http://localhost:80/api/users?pageIndex={pageIndex}&pageRowCount={pageRowCount}&searchFields={searchFields}&searchStrings={searchStrings}&sortField={sortField}&sortOrder={sortOrder}",
+            "page-index-url-placement": "pageIndex",
+            "page-row-count-url-placement": "pageRowCount",
+
+            "search-fields-url-placement": "searchFields",
+            "search-fields-url-delimiter": ",",
+
+            "search-strings-url-placement": "searchStrings",
+            "search-strings-url-delimiter": ",",
+
+            "sort-field-url-placement": "sortField",
+            "sort-order-url-placement": "sortOrder"
+        },
+        {
+            "operation": "update",
+            "method": "PUT",
+            "url-map": "http://localhost:80/api/users/{id}",
+            "data-indexing-url-placement": "id"
+        },
+        {
+            "operation": "delete",
+            "method": "DELETE",
+            "url-map": "http://localhost:80/api/users/{id}",
+            "data-indexing-url-placement": "id"
+        }
+    ]
+}

@@ -1,5 +1,5 @@
 from akashic.arules.interpreter import RulesInterpreter
-from akashic.adsds.interpreter import DataSourceDefinitionInterpreter
+from akashic.adss.interpreter import DataSourceDefinitionInterpreter
 
 from os.path import join, dirname, abspath
 
@@ -19,7 +19,7 @@ def test_data_soruce_def_interpreter():
 
     # Read rule from sample file
     this_folder = dirname(__file__)
-    sample_path = abspath(join(this_folder, '..', 'test', 'samples', 'adsds', 'data_source1_full.json'))
+    sample_path = abspath(join(this_folder, '..', 'test', 'samples', 'adss', 'user_dsd.json'))
     with open(sample_path, 'r') as sample:
         dsd_string = sample.read()
         dsdi.load(dsd_string)
@@ -31,6 +31,11 @@ def test_data_soruce_def_interpreter():
 
         r = dsdi.generate_clips_template()
         print("Generated tempalte: \n" + str(r))
+
+        dsdi.setup_data_fetcher()
+
+        r = dsdi.read_one(id=1)
+        print("Response: \n" + str(r))
 
 if __name__ == "__main__":
     test_data_soruce_def_interpreter()
