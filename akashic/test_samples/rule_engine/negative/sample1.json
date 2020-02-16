@@ -1,1 +1,0 @@
-{ "assert": "((User~Course).rating > 3)"}

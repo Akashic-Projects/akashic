@@ -79,16 +79,20 @@ USE_AS_KW:                  /\"use-as\"/ ;
 JSON_PATH_KW:               /\"json-path\"/ ;
 REF_FOREIGN_MODEL_NAME_KW:  /\"referenced-foreign-model-name\"/ ;
 REF_FOREIGN_FIELD_NAME_KW:  /\"referenced-foreign-field-name\"/ ;
-Type:                         'NUMBER' | 'STRING' | 'BOOLEAN' ;
+Type:                         INETGER_KW | FLAOT_KW | STRING_KW | BOOLEAN_KW ;
+INETGER_KW: "INTEGER" ;
+FLAOT_KW: "FLOAT" ;
+STRING_KW: "STRING" ;
+BOOLEAN_KW: "BOOLEAN" ;
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 Apis: (
-    create          = CreateApi? 
-    readOne         = ReadOneApi? 
-    readMultiple    = ReadMultipleApi? 
-    update          = UpdateApi? 
-    delete          = DeleteApi?
+    create           = CreateApi? 
+    read_one         = ReadOneApi? 
+    read_multiple    = ReadMultipleApi? 
+    update           = UpdateApi? 
+    delete           = DeleteApi?
 )#[','] ;
 
 CreateApi:

@@ -1,13 +1,14 @@
-from textx import metamodel_from_file
-from textx.export import metamodel_export, model_export
-
 from os.path import join, dirname
 
+from textx import metamodel_from_file
+from textx.export import metamodel_export, model_export
 from textx.exceptions import TextXSyntaxError, TextXSemanticError
 
 from akashic.exceptions import SyntacticError, SemanticError
+from akashic.adsds.checker import Checker
 
 import re
+
 
 class DataSourceDefinitionInterpreter(object):
 
@@ -29,33 +30,43 @@ class DataSourceDefinitionInterpreter(object):
         except TextXSemanticError as semanticError:
             self.print_error_message("Semantic", syntaxError.line, syntaxError.col, syntaxError.message)
     
-    
-    def check_structure(self):
-        if self.dsd is not None:
-            create = self.dsd.apis.create
-            if create is not None:
-                if create.ref_foreign_models is not None:
-                    url_field_list = []
-                    for m in re.finditer(r"\{(((?!\{|\}).)*)\}", create.url_map):
-                        url_field_list.append(m.group(1))
 
-                    for ref in create.ref_foreign_models:
-                        if ref.url_placement in url_field_list:
-                            url_field_list.remove(ref.url_placement)
-                        else:
-                            raise SemanticError(f"Field ({ref.url_placement}) cannot be found in url-map setting.")
-                    
-                    if len(url_field_list) > 0:
-                        fields_left_string = ", ".join(url_field_list)
-                        raise SemanticError(f"Following fields ({fields_left_string}) inside of url-map setting ({create.url_map}) are not referenced in (referenced-foreign-models) setting.")
-        return 1
+    def check_url_mappings(self):
+        checker = Checker(self.dsd)
+        checker.run()
 
+    def fill_url_map(self, url_map, **kwargs):
+        url_fields = []
+        for m in re.finditer(r"\{(((?!\{|\}).)*)\}", url_map):
+            url_fields.append(m.group(1))
+        
+        if len(url_fields) != len(kwargs):
+            return 1
 
-    def generate_url_dictionary(self):
-        pass
+        for key, value in kwargs.items():
+            pattern = re.compile("\{" + key + "\}")
+            url_map = re.sub(pattern, str(value), url_map)
+        
+        return url_map
+
 
     def generate_clips_template(self):
-        pass
+        tempalte_def = "(deftemplate " + str(self.dsd.model_id) + "\n"
+        slot_defs = []
+        for field in self.dsd.fields:
+
+            # Resolve BOOLEAN type
+            resolved_type = "INTEGER"
+            if (field.type == "BOOLEAN"):
+                resolved_type = "INTEGER"
+            else:
+                resolved_type = field.type
+            
+            slot_defs.append("\t(slot " + str(field.field_name) + " (type " + str(resolved_type) + "))")
+        
+        tempalte_def += "\n".join(slot_defs) + ")"
+
+        return tempalte_def
 
 
 
