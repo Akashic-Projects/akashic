@@ -89,22 +89,46 @@ class DataChecker(object):
         return 0
 
 
-    def check_field_types(self, json_string):
+    def translate_type(self, type_string):
+        ttype = None
+        if type_string == "INTEGER":
+            ttype = int
+        elif type_string == "FLOAT":
+            ttype = float
+        elif type_string == "STRING":
+            ttype = str
+        elif type_string == "BOOLEAN":
+            ttype = bool
+        return ttype
+
+
+    def check_field_types(self, use_json_as, operation, json_string):
+        json_path = None
+        if use_json_as == "response":
+            json_path = lambda field : field.response_json_path
+        elif use_json_as == "request":
+            json_path = lambda field : field.request_json_path
+
         for field in self.dsd.fields:
-            jsonpath_expr = parse(field.json_path)
+
+            if (
+                (not (use_json_as == "request" and operation == "create" and field.use_for_create)) and
+                (not (use_json_as == "request" and operation == "update" and field.use_for_update))
+            ): 
+                continue
+            
+
+            jsonpath_expr = parse(json_path(field))
             parsed_json = json.loads(json_string)
-            result = [match.value for match in jsonpath_expr.find(parsed_json)][0]
+            result = [match.value for match in jsonpath_expr.find(parsed_json)]
 
-            expected_type = None
-            if field.type == "INTEGER":
-                expected_type = int
-            elif field.type == "FLOAT":
-                expected_type = float
-            elif field.type == "STRING":
-                expected_type = str
-            elif field.type == "BOOLEAN":
-                expected_type = bool
+            if len(result) == 0:
+                raise SemanticError(f"Field ({field.field_name}) is not present in json object.")
 
-            if  not isinstance(result, expected_type):
-                raise SemanticError(f"Type of field ({field.field_name}) does not match type from provided data. Expected ({str(expected_type)}), but received ({result.__class__.__name__})")
-    
+            if len(result) > 1:
+                raise SemanticError(f"More than one field with same name ({field.field_name}) is present in json object.")
+
+            expected_type = self.translate_type(field.type)
+
+            if not isinstance(result[0], expected_type):
+                raise SemanticError(f"Type of field ({field.field_name}) does not match type from provided data. Expected ({str(expected_type)}), but received ({result[0].__class__.__name__}).")

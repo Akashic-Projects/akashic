@@ -9,19 +9,28 @@
             "field-name": "id",
             "type": "INTEGER",
             "use-as": "primary-key",
-            "json-path": "$.data.id"
+            "request-json-path": "$.id",
+            "response-json-path": "$.data.id",
+            "use-for-create": false,
+            "use-for-update": false
         },
         {
             "field-name": "name",
             "type": "STRING",
             "use-as": "data",
-            "json-path": "$.data.name"
+            "request-json-path": "$.name",
+            "response-json-path": "$.data.name",
+            "use-for-create": true,
+            "use-for-update": true
         },
         {
             "field-name": "email",
             "type": "STRING",
             "use-as": "data",
-            "json-path": "$.data.email"
+            "request-json-path": "$.email",
+            "response-json-path": "$.data.email",
+            "use-for-create": true,
+            "use-for-update": true
         }
     ],
 

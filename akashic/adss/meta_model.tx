@@ -49,10 +49,13 @@ HEADER_VALUE_KW:        /\"header-value\"/ ;
 Field: PrimaryKeyField | ForeignKeyField | DataField ;
 PrimaryKeyField:
     '{'
-        ((FIELD_NAME_KW     ':' '"' field_name          = ID       '"'  )
-        (TYPE_KW            ':' '"' type                = Type     '"'  )
-        (USE_AS_KW          ':'     /\"primary-key\"/                   )
-        (JSON_PATH_KW       ':'     json_path           = STRING        ))#[',']
+        ((FIELD_NAME_KW         ':' '"' field_name            = ID       '"'  )
+        (TYPE_KW                ':' '"' type                  = Type     '"'  )
+        (USE_AS_KW              ':'     /\"primary-key\"/                     )
+        (REQUEST_JSON_PATH_KW   ':'     request_json_path     = STRING        )
+        (RESPONSE_JSON_PATH_KW  ':'     response_json_path    = STRING        )
+        (USE_FOR_CREATE_KW      ':'     use_for_create        = BOOL          )
+        (USE_FOR_UPDATE_KW      ':'     use_for_update        = BOOL          ))#[',']
     '}'
 ;
 ForeignKeyField:
@@ -62,21 +65,32 @@ ForeignKeyField:
         (USE_AS_KW                  ':'     /\"foreign-key\"/                       )
         (REF_FOREIGN_MODEL_NAME_KW  ':' '"' ref_foreign_model_name  = ID        '"' )
         (REF_FOREIGN_FIELD_NAME_KW  ':' '"' ref_foreign_field_name  = ID        '"' )
-        (JSON_PATH_KW               ':'     json_path               = STRING        ))#[',']
+        (REQUEST_JSON_PATH_KW       ':'     request_json_path       = STRING        )
+        (RESPONSE_JSON_PATH_KW      ':'     response_json_path      = STRING        )
+        (USE_FOR_CREATE_KW          ':'     use_for_create          = BOOL          )
+        (USE_FOR_UPDATE_KW          ':'     use_for_update          = BOOL          ))#[',']
     '}'
 ;
 DataField:
     '{'
-        ((FIELD_NAME_KW     ':' '"' field_name          = ID       '"'  )
-        (TYPE_KW            ':' '"' type                = Type     '"'  )
-        (USE_AS_KW          ':'     /\"data\"/                          )
-        (JSON_PATH_KW       ':'     json_path           = STRING        ))#[',']
+        ((FIELD_NAME_KW         ':' '"' field_name            = ID       '"'  )
+        (TYPE_KW                ':' '"' type                  = Type     '"'  )
+        (USE_AS_KW              ':'     /\"data\"/                            )
+        (REQUEST_JSON_PATH_KW   ':'     request_json_path     = STRING        )
+        (RESPONSE_JSON_PATH_KW  ':'     response_json_path    = STRING        )
+        (USE_FOR_CREATE_KW      ':'     use_for_create        = BOOL          )
+        (USE_FOR_UPDATE_KW      ':'     use_for_update        = BOOL          ))#[',']
     '}'
 ;
 FIELD_NAME_KW:              /\"field-name\"/ ;
 TYPE_KW:                    /\"type\"/ ;
 USE_AS_KW:                  /\"use-as\"/ ;
-JSON_PATH_KW:               /\"json-path\"/ ;
+REQUEST_JSON_PATH_KW:       /\"request-json-path\"/ ;
+RESPONSE_JSON_PATH_KW:      /\"response-json-path\"/ ;
+
+USE_FOR_CREATE_KW:          /\"use-for-create\"/ ;
+USE_FOR_UPDATE_KW:          /\"use-for-update\"/ ;
+
 REF_FOREIGN_MODEL_NAME_KW:  /\"referenced-foreign-model-name\"/ ;
 REF_FOREIGN_FIELD_NAME_KW:  /\"referenced-foreign-field-name\"/ ;
 Type:                         INETGER_KW | FLAOT_KW | STRING_KW | BOOLEAN_KW ;

@@ -81,18 +81,24 @@ class DataProvider(object):
         return tempalte_def
 
 
-    def generate_clips_fact(self, json_string):
-        self.checker.check_field_types(json_string)
+    def generate_clips_fact(self, use_json_as, operation, json_string):
+        self.checker.check_field_types(use_json_as, operation, json_string)
+
+        json_path = None
+        if use_json_as == "response":
+            json_path = lambda field : field.response_json_path
+        elif use_json_as == "request":
+            json_path = lambda field : field.request_json_path
 
         clips_fact = "(" + str(self.dsd.model_id)
         clips_fields = []
 
-        # Resolve field values
         for field in self.dsd.fields:
-            jsonpath_expr = parse(field.json_path)
+            jsonpath_expr = parse(json_path(field))
             parsed_json = json.loads(json_string)
             result = [match.value for match in jsonpath_expr.find(parsed_json)][0]
 
+             # Resolve field value
             resolved_value = None
             if field.type == "INTEGER" or field.type == "FLOAT":
                 resolved_value = result
@@ -110,8 +116,8 @@ class DataProvider(object):
         return clips_fact
 
 
-    def create(self, data):
-        pass
+    def create(self, json_string):
+        self.checker.check_field_types(use_json_as="request", operation="create", json_string=json_string)
 
 
     def read_one(self, **kwargs):
@@ -122,7 +128,7 @@ class DataProvider(object):
         return result
     
 
-    def read_multiple(self, options):
+    def read_multiple(self, **kwargs):
         pass
 
 
