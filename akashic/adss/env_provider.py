@@ -6,6 +6,11 @@ class EnvProvider(object):
     def __init__(self):
         self.env = clips.Environment()
 
+        # Implement data queues
+        # Request to add data (by the rule)
+        # Request to remove data after it has expired (by the rule)
+        # Implement live security system using akashic
+
 
     def define_template(self, template):
         return self.env.build(template)

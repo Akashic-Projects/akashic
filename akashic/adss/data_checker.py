@@ -89,20 +89,32 @@ class DataChecker(object):
         return 0
 
 
-    def translate_type(self, type_string):
-        ttype = None
-        if type_string == "INTEGER":
-            ttype = int
-        elif type_string == "FLOAT":
-            ttype = float
-        elif type_string == "STRING":
-            ttype = str
-        elif type_string == "BOOLEAN":
-            ttype = bool
-        return ttype
+    def clips_to_py_type(self, ctype):
+        ptype = None
+        if ctype == "INTEGER":
+            ptype = int
+        elif ctype == "FLOAT":
+            ptype = float
+        elif ctype == "STRING":
+            ptype = str
+        elif ctype == "BOOLEAN":
+            ptype = bool
+        return ptype
+
+    def py_to_clips_type(self, ptype):
+        ctype = None
+        if ptype == int:
+            ctype = "INTEGER"
+        elif ptype == float:
+            ctype = "FLOAT"
+        elif ptype == str:
+            ctype = "STRING"
+        elif ptype == bool:
+            ctype = "BOOLEAN"
+        return ctype
 
 
-    def check_field_types(self, use_json_as, operation, json_string):
+    def check_field_types(self, use_json_as, operation, json_object):
         json_path = None
         if use_json_as == "response":
             json_path = lambda field : field.response_json_path
@@ -110,17 +122,14 @@ class DataChecker(object):
             json_path = lambda field : field.request_json_path
 
         for field in self.dsd.fields:
-
             if (
                 (not (use_json_as == "request" and operation == "create" and field.use_for_create)) and
                 (not (use_json_as == "request" and operation == "update" and field.use_for_update))
             ): 
                 continue
             
-
             jsonpath_expr = parse(json_path(field))
-            parsed_json = json.loads(json_string)
-            result = [match.value for match in jsonpath_expr.find(parsed_json)]
+            result = [match.value for match in jsonpath_expr.find(json_object)]
 
             if len(result) == 0:
                 raise SemanticError(f"Field ({field.field_name}) is not present in json object.")
@@ -128,7 +137,7 @@ class DataChecker(object):
             if len(result) > 1:
                 raise SemanticError(f"More than one field with same name ({field.field_name}) is present in json object.")
 
-            expected_type = self.translate_type(field.type)
+            expected_type = self.clips_to_py_type(field.type)
 
             if not isinstance(result[0], expected_type):
-                raise SemanticError(f"Type of field ({field.field_name}) does not match type from provided data. Expected ({str(expected_type)}), but received ({result[0].__class__.__name__}).")
+                raise SemanticError(f"Type of field ({field.field_name}) does not match type from provided data. Expected ({str(field.type)}), but received ({self.py_to_clips_type(result[0].__class__)}).")

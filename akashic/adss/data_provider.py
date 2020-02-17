@@ -81,8 +81,8 @@ class DataProvider(object):
         return tempalte_def
 
 
-    def generate_clips_fact(self, use_json_as, operation, json_string):
-        self.checker.check_field_types(use_json_as, operation, json_string)
+    def generate_clips_fact(self, use_json_as, operation, json_object):
+        self.checker.check_field_types(use_json_as, operation, json_object)
 
         json_path = None
         if use_json_as == "response":
@@ -95,8 +95,7 @@ class DataProvider(object):
 
         for field in self.dsd.fields:
             jsonpath_expr = parse(json_path(field))
-            parsed_json = json.loads(json_string)
-            result = [match.value for match in jsonpath_expr.find(parsed_json)][0]
+            result = [match.value for match in jsonpath_expr.find(json_object)][0]
 
              # Resolve field value
             resolved_value = None
@@ -116,8 +115,14 @@ class DataProvider(object):
         return clips_fact
 
 
-    def create(self, json_string):
-        self.checker.check_field_types(use_json_as="request", operation="create", json_string=json_string)
+    def create(self, json_object, **kwargs):
+        self.checker.check_field_types(use_json_as="request", operation="create", json_object=json_object)
+        
+        url_map = self.dsd.apis.create.url_map
+        url = self.fill_url_map(url_map, **kwargs)
+        
+        result = self.fetcher.create(url, json_object)
+        return json.loads(result)
 
 
     def read_one(self, **kwargs):
@@ -125,16 +130,45 @@ class DataProvider(object):
         url = self.fill_url_map(url_map, **kwargs)
         
         result = self.fetcher.read_one(url)
-        return result
+        return json.loads(result)
     
+    
+    def construct_query(self, **kwargs):
+        default_kwargs = {
+            "pageIndex": 1,
+            "pageRowCount": 5,
+            "searchFields": "",
+            "searchStrings": "",
+            "sortField": "",
+            "sortOrder": ""
+        }
+
+        for key, value in kwargs.items():
+            default_kwargs[key] = value
+        return default_kwargs
+
 
     def read_multiple(self, **kwargs):
-        pass
+        url_map = self.dsd.apis.read_multiple.url_map
+        url = self.fill_url_map(url_map, **self.construct_query(**kwargs))
+        
+        result = self.fetcher.read_multiple(url)
+        return json.loads(result)
 
 
-    def update(self, data):
-        pass
+    def update(self, json_object, **kwargs):
+        self.checker.check_field_types(use_json_as="request", operation="update", json_object=json_object)
+        
+        url_map = self.dsd.apis.update.url_map
+        url = self.fill_url_map(url_map, **kwargs)
+        
+        result = self.fetcher.update(url, json_object)
+        return json.loads(result)
 
 
-    def delete(self, data_id):
-        pass
+    def delete(self, **kwargs):
+        url_map = self.dsd.apis.delete.url_map
+        url = self.fill_url_map(url_map, **kwargs)
+        
+        result = self.fetcher.delete(url)
+        return json.loads(result)
