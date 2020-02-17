@@ -13,7 +13,7 @@ import json
 from jsonpath_ng import jsonpath, parse
 
 
-class DataSourceDefinitionInterpreter(object):
+class DataProvider(object):
 
     def __init__(self):
         this_folder = dirname(__file__)

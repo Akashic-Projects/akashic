@@ -90,7 +90,7 @@ class DataChecker(object):
 
 
     def check_field_types(self, json_string):
-         for field in self.dsd.fields:
+        for field in self.dsd.fields:
             jsonpath_expr = parse(field.json_path)
             parsed_json = json.loads(json_string)
             result = [match.value for match in jsonpath_expr.find(parsed_json)][0]

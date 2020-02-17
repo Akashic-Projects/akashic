@@ -1,5 +1,5 @@
 from akashic.arules.interpreter import RulesInterpreter
-from akashic.adss.interpreter import DataSourceDefinitionInterpreter
+from akashic.adss.data_provider import DataProvider
 
 from os.path import join, dirname, abspath
 
@@ -15,7 +15,7 @@ def test_rule_interpreter():
 
 
 def test_data_soruce_def_interpreter():
-    dsdi = DataSourceDefinitionInterpreter()
+    dsdi = DataProvider()
 
     # Read rule from sample file
     this_folder = dirname(__file__)
