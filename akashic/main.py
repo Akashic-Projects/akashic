@@ -23,19 +23,20 @@ def test_data_soruce_def_interpreter():
     with open(sample_path, 'r') as sample:
         dsd_string = sample.read()
         dsdi.load(dsd_string)
-        dsdi.check_url_mappings()
+        dsdi.setup()
 
         url_map = "http://localhost:80/api/users/{user_id}/courses/{id}"
         r = dsdi.fill_url_map(url_map, user_id=10, id=40)
-        print("Filled url: " + str(r))
+        print(f"Filled url:\n{str(r)}\n")
 
         r = dsdi.generate_clips_template()
-        print("Generated tempalte: \n" + str(r))
-
-        dsdi.setup_data_fetcher()
+        print(f"Generated tempalte:\n{str(r)}\n")
 
         r = dsdi.read_one(id=1)
-        print("Response: \n" + str(r))
+        print(f"Response:\n{str(r)}\n")
+
+        r = dsdi.generate_clips_fact(r)
+        print(f"Generated clips fact:\n{str(r)}\n")
 
 if __name__ == "__main__":
     test_data_soruce_def_interpreter()

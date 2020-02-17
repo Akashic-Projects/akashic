@@ -6,8 +6,11 @@ from textx.export import metamodel_export, model_export
 from textx.exceptions import TextXSyntaxError, TextXSemanticError
 
 from akashic.exceptions import SyntacticError, SemanticError
-from akashic.adss.checker import Checker
+from akashic.adss.data_checker import DataChecker
 from akashic.adss.data_fetcher import DataFetcher
+
+import json
+from jsonpath_ng import jsonpath, parse
 
 
 class DataSourceDefinitionInterpreter(object):
@@ -16,28 +19,35 @@ class DataSourceDefinitionInterpreter(object):
         this_folder = dirname(__file__)
         self.meta_model = metamodel_from_file(join(this_folder, 'meta_model.tx'), debug=False)
         self.dsd = None
+        self.checker = None
         self.fetcher = None
 
 
-    def print_error_message(self, ttype, line, col, message):
-        print(f"Detected: {ttype} error at line {line} and column {col}. \nMessage: " + message)
+    def transalte_exception(self, ttype, line, col, message):
+        message = f"Detected: {ttype} error at line {line} and column {col}. \nMessage: " + message
+        if ttype == "Syntax":
+            raise SyntacticError(message)
+        elif ttype == "Semantic":
+            raise SemanticError(message)
 
 
     def load(self, dsd_string):
         try:
             self.dsd = self.meta_model.model_from_str(dsd_string)
-            print(self.dsd.def_name)
-            return 1
+            return 0
         except TextXSyntaxError as syntaxError:
-            self.print_error_message("Syntax", syntaxError.line, syntaxError.col, syntaxError.message)
+            self.transalte_exception("Syntax", syntaxError.line, syntaxError.col, syntaxError.message)
         except TextXSemanticError as semanticError:
-            self.print_error_message("Semantic", syntaxError.line, syntaxError.col, syntaxError.message)
+            self.transalte_exception("Semantic", syntaxError.line, syntaxError.col, syntaxError.message)
     
 
-    def check_url_mappings(self):
-        checker = Checker(self.dsd)
-        checker.run()
+    def setup(self):
+        self.checker = DataChecker(self.dsd)
+        self.checker.check_url_mappings()
 
+        self.fetcher = DataFetcher(self.dsd.auth_header, self.dsd.additional_headers)
+        return 0
+        
 
     def fill_url_map(self, url_map, **kwargs):
         url_fields = []
@@ -58,14 +68,12 @@ class DataSourceDefinitionInterpreter(object):
         tempalte_def = "(deftemplate " + str(self.dsd.model_id) + "\n"
         slot_defs = []
         for field in self.dsd.fields:
-
             # Resolve BOOLEAN type
             resolved_type = "INTEGER"
             if (field.type == "BOOLEAN"):
                 resolved_type = "INTEGER"
             else:
                 resolved_type = field.type
-            
             slot_defs.append("\t(slot " + str(field.field_name) + " (type " + str(resolved_type) + "))")
         
         tempalte_def += "\n".join(slot_defs) + ")"
@@ -73,19 +81,33 @@ class DataSourceDefinitionInterpreter(object):
         return tempalte_def
 
 
-    def setup_data_fetcher(self):
-        self.fetcher = DataFetcher(self.dsd.auth_header, self.dsd.additional_headers)
+    def generate_clips_fact(self, json_string):
+        self.checker.check_field_types(json_string)
 
+        clips_fact = "(" + str(self.dsd.model_id)
+        clips_fields = []
 
-    def generate_clips_fact(self, json_data):
-        fact = "(" + str(self.dsd.model_id)
-        fields = []
-
-         # Resolve field value
-        resolved_value = "Hello world string"
-
+        # Resolve field values
         for field in self.dsd.fields:
-            fields.append("\t(" + str(field.field_name) + )
+            jsonpath_expr = parse(field.json_path)
+            parsed_json = json.loads(json_string)
+            result = [match.value for match in jsonpath_expr.find(parsed_json)][0]
+
+            resolved_value = None
+            if field.type == "INTEGER" or field.type == "FLOAT":
+                resolved_value = result
+            elif field.type == "BOOLEAN":
+                if result == True:
+                    resolved_value = 1
+                else:
+                    resolved_value = 0
+            elif field.type == "STRING":
+                resolved_value = f"\"{result}\""
+
+            clips_fields.append("\t(" + str(field.field_name) + " " + str(resolved_value) + ")")
+
+        clips_fact += "\n".join(clips_fields) + ")"
+        return clips_fact
 
 
     def create(self, data):

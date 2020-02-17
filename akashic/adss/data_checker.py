@@ -1,13 +1,13 @@
 from akashic.exceptions import SyntacticError, SemanticError
-import re
 
-class Checker(object):
+import re
+import json
+from jsonpath_ng import jsonpath, parse
+
+class DataChecker(object):
 
     def __init__(self, dsd):
         self.dsd = dsd
-
-    def run(self):
-        self.check_url_mappings()
 
     def check_url_mapping(self, operation, url_map, field_refs):
         url_fields = []
@@ -87,3 +87,24 @@ class Checker(object):
                     
                     self.check_url_mapping("delete", delete.url_map, field_refs)
         return 0
+
+
+    def check_field_types(self, json_string):
+         for field in self.dsd.fields:
+            jsonpath_expr = parse(field.json_path)
+            parsed_json = json.loads(json_string)
+            result = [match.value for match in jsonpath_expr.find(parsed_json)][0]
+
+            expected_type = None
+            if field.type == "INTEGER":
+                expected_type = int
+            elif field.type == "FLOAT":
+                expected_type = float
+            elif field.type == "STRING":
+                expected_type = str
+            elif field.type == "BOOLEAN":
+                expected_type = bool
+
+            if  not isinstance(result, expected_type):
+                raise SemanticError(f"Type of field ({field.field_name}) does not match type from provided data. Expected ({str(expected_type)}), but received ({result.__class__.__name__})")
+    
