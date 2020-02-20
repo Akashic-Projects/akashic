@@ -116,6 +116,7 @@ class DataProvider(object):
 
 
     def create(self, json_object, **kwargs):
+        # TODO: Add json header
         self.checker.check_field_types(use_json_as="request", operation="create", json_object=json_object)
         
         url_map = self.dsd.apis.create.url_map
@@ -157,6 +158,7 @@ class DataProvider(object):
 
 
     def update(self, json_object, **kwargs):
+         # TODO: Add json header
         self.checker.check_field_types(use_json_as="request", operation="update", json_object=json_object)
         
         url_map = self.dsd.apis.update.url_map

@@ -54,6 +54,24 @@ def test_data_soruce_def_interpreter():
         rm = data_provider.read_multiple()
         print(f"Response:\n{str(json.dumps(rm))}\n")
 
+        # TODO: API Key to make initial setup-request to akashic server
+        # Akashic server is anonymous entity, encrypted and safe. -> Koristi zero knowledge sistem
+        # Connection flow for one session:
+            # First time: Setup request (send API key, get secret key, get session token - needs to be refreshed)
+            
+            # Send secret key, to start new session (get session token)
+            
+            # Send session token with all of those:
+                # Define datasources (optional, may be already defined)
+                # Provide 'superuser' api token to akashic server and refresh-token-api url
+                # Create rules
+                # Get assistance for making rules
+                # Execute rules
+
+        # How is data encrypted in database?
+        # Enable user to ligin to account?
+        # No anonymous!
+
 if __name__ == "__main__":
     test_data_soruce_def_interpreter()
    
