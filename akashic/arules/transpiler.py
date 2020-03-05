@@ -8,4 +8,4 @@ class AkashicRulesTranspiler(object):
         lines = []
 
         for link in links:
-
+            pass
