@@ -3,14 +3,20 @@
     "data-source-definition-group-name": "StudentServiceGroup",
     "model-name": "User",
     "model-description": "Holds general user dara",
-    
+    "authentication-header": {
+        "auth-header-name": "Authorization",
+        "token-prefix": "bearer",
+        "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOlwvXC9sb2NhbGhvc3RcL2FwaVwvYXV0aFwvbG9naW4iLCJpYXQiOjE1ODM0NDc5NDQsImV4cCI6MTU4MzQ1MTU0NCwibmJmIjoxNTgzNDQ3OTQ0LCJqdGkiOiJrS1YxUWMzdDZuZEcxOW9GIiwic3ViIjoyLCJwcnYiOiIyM2JkNWM4OTQ5ZjYwMGFkYjM5ZTcwMWM0MDA4NzJkYjdhNTk3NmY3In0.SMcHnt5460i7oVsSN2iluox1Mcdc68c3AKX92IHLh48"
+    },
+
     "fields": [
         {
             "field-name": "id",
             "type": "INTEGER",
             "use-as": "primary-key",
             "request-json-path": "$.id",
-            "response-json-path": "$.data.id",
+            "response-one-json-path": "$.data.id",
+            "response-multiple-json-path": "$.data[{index}].id",
             "use-for-create": false,
             "use-for-update": false
         },
@@ -19,7 +25,8 @@
             "type": "STRING",
             "use-as": "data",
             "request-json-path": "$.name",
-            "response-json-path": "$.data.name",
+            "response-one-json-path": "$.data.name",
+            "response-multiple-json-path": "$.data[{index}].name",
             "use-for-create": true,
             "use-for-update": true
         },
@@ -28,7 +35,8 @@
             "type": "STRING",
             "use-as": "data",
             "request-json-path": "$.email",
-            "response-json-path": "$.data.email",
+            "response-one-json-path": "$.data.email",
+            "response-multiple-json-path": "$.data[{index}].email",
             "use-for-create": true,
             "use-for-update": true
         }
