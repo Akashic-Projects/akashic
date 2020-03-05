@@ -49,7 +49,7 @@ class DataProvider(object):
         return 0
         
 
-    def fill_url_map(self, url_map, **kwargs):
+    def fill_data_map(self, url_map, **kwargs):
         url_fields = []
         for m in re.finditer(r"\{(((?!\{|\}).)*)\}", url_map):
             url_fields.append(m.group(1))
@@ -80,15 +80,19 @@ class DataProvider(object):
 
         return tempalte_def
 
-
+    
+    # I use request when user defines request in rule RHS
+    # And I use response json when api is called
+    # How to handle multiple array json locator
+    # TODO: Create ENUMS for `request` and `response`
     def generate_clips_fact(self, use_json_as, operation, json_object):
         self.checker.check_field_types(use_json_as, operation, json_object)
 
         json_path = None
         if use_json_as == "response":
-            json_path = lambda field : field.response_json_path
+            json_path = lambda field : field.response_one_json_path
         elif use_json_as == "request":
-            json_path = lambda field : field.request_json_path
+            json_path = lambda field : field.request_one_json_path
 
         clips_fact = "(" + str(self.dsd.model_id)
         clips_fields = []
@@ -97,7 +101,7 @@ class DataProvider(object):
             jsonpath_expr = parse(json_path(field))
             result = [match.value for match in jsonpath_expr.find(json_object)][0]
 
-             # Resolve field value
+            # Resolve field value
             resolved_value = None
             if field.type == "INTEGER" or field.type == "FLOAT":
                 resolved_value = result
@@ -120,7 +124,7 @@ class DataProvider(object):
         self.checker.check_field_types(use_json_as="request", operation="create", json_object=json_object)
         
         url_map = self.dsd.apis.create.url_map
-        url = self.fill_url_map(url_map, **kwargs)
+        url = self.fill_data_map(url_map, **kwargs)
         
         result = self.fetcher.create(url, json_object)
         return json.loads(result)
@@ -128,7 +132,7 @@ class DataProvider(object):
 
     def read_one(self, **kwargs):
         url_map = self.dsd.apis.read_one.url_map
-        url = self.fill_url_map(url_map, **kwargs)
+        url = self.fill_data_map(url_map, **kwargs)
         
         result = self.fetcher.read_one(url)
         return json.loads(result)
@@ -151,7 +155,7 @@ class DataProvider(object):
 
     def read_multiple(self, **kwargs):
         url_map = self.dsd.apis.read_multiple.url_map
-        url = self.fill_url_map(url_map, **self.construct_query(**kwargs))
+        url = self.fill_data_map(url_map, **self.construct_query(**kwargs))
         
         result = self.fetcher.read_multiple(url)
         return json.loads(result)
@@ -162,7 +166,7 @@ class DataProvider(object):
         self.checker.check_field_types(use_json_as="request", operation="update", json_object=json_object)
         
         url_map = self.dsd.apis.update.url_map
-        url = self.fill_url_map(url_map, **kwargs)
+        url = self.fill_data_map(url_map, **kwargs)
         
         result = self.fetcher.update(url, json_object)
         return json.loads(result)
@@ -170,7 +174,7 @@ class DataProvider(object):
 
     def delete(self, **kwargs):
         url_map = self.dsd.apis.delete.url_map
-        url = self.fill_url_map(url_map, **kwargs)
+        url = self.fill_data_map(url_map, **kwargs)
         
         result = self.fetcher.delete(url)
         return json.loads(result)
