@@ -29,9 +29,11 @@ def test_data_soruce_def_interpreter():
         data_provider.setup()
 
         url_map = "http://localhost:80/api/users/{user_id}/courses/{id}"
-        url = data_provider.fill_url_map(url_map, user_id=10, id=40)
+        url = data_provider.fill_data_map(url_map, user_id=10, id=40)
         print(f"Filled url:\n{str(url)}\n")
 
+        # TODO: Fix this
+        # Do we need this to be done every time? No!
         clips_template = data_provider.generate_clips_template()
         print(f"Generated tempalte:\n{str(clips_template)}\n")
 
@@ -71,6 +73,8 @@ def test_data_soruce_def_interpreter():
         # How is data encrypted in database?
         # Enable user to ligin to account?
         # No anonymous!
+
+
 
 if __name__ == "__main__":
     test_data_soruce_def_interpreter()
