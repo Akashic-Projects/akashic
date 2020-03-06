@@ -80,16 +80,9 @@ class DataProvider(object):
 
         return tempalte_def
 
-    
 
-    # How to handle multiple array json locator?
+    # Generic clips fact generation function
     def generate_clips_fact(self, json_object, json_path_func):
-
-        # Those fields are only for requests???
-        # Not needed here
-        # Just as request option is not needed here!
-        # self.checker.check_field_types(use_json_as, operation, json_object)
-
         clips_fact = "(" + str(self.dsd.model_id)
         clips_fields = []
 
@@ -116,11 +109,14 @@ class DataProvider(object):
         clips_fact += "\n".join(clips_fields) + ")"
         return clips_fact
 
+
+    # Generate one fact from json object - response
     def generate_one_clips_fact(self, json_object):
         json_path_func = lambda field : field.response_one_json_path
         return self.generate_clips_fact(json_object, json_path_func)
 
-    # Generate multiple facts from json list
+
+    # Generate multiple facts from json list - response
     def generate_multiple_clips_facts(self, json_object, array_len):
         facts = []
         for i in range(0, array_len):
