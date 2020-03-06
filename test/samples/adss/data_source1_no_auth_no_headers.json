@@ -1,0 +1,114 @@
+{
+    "data-source-definition-name": "UserCourses data source",
+    "data-source-definition-group-name": "StudentServiceGroup",
+    "model-name": "UserCourse",
+    "model-description": "Holds data concearning individual student and course he is attending",
+    
+    "fields": [
+        {
+            "field-name": "id",
+            "type": "INTEGER",
+            "use-as": "primary-key",
+            "json-path": "$.data.id"
+        },
+        {
+            "field-name": "user_id",
+            "type": "INTEGER",
+            "use-as": "foreign-key",
+            "referenced-foreign-model-name": "User",
+            "referenced-foreign-field-name": "id",
+            "json-path": "$.data.user_id"
+        },
+        {
+            "field-name": "course_id",
+            "type": "INTEGER",
+            "use-as": "foreign-key",
+            "referenced-foreign-model-name": "Course",
+            "referenced-foreign-field-name": "id",
+            "json-path": "$.data.course_id"
+        },
+        {
+            "field-name": "rating",
+            "type": "INTEGER",
+            "use-as": "data",
+            "json-path": "$.data.rating"
+        }
+    ],
+
+    "apis": [
+        {
+            "operation": "create",
+            "method": "POST",
+            "url-map": "http://localhost:80/api/users/{user_id}/courses",
+            "referenced-foreign-models": [
+                {
+                    "model-name": "User",
+                    "field-name": "id",
+                    "url-placement": "user_id"
+                }
+            ]
+        },
+        {
+            "operation": "read-one",
+            "method": "GET",
+            "url-map": "http://localhost:80/api/users/{user_id}/courses/{id}",
+            "referenced-foreign-models": [
+                {
+                    "model-name": "User",
+                    "field-name": "id",
+                    "url-placement": "user_id"
+                }
+            ],
+            "data-indexing-url-placement": "id"
+        },
+        {
+            "operation": "read-multiple",
+            "method": "GET",
+            "url-map": "http://localhost:80/api/users/{user_id}/courses?pageIndex={pageIndex}&pageRowCount={pageRowCount}&searchFields={searchFields}&searchStrings={searchStrings}&sortField={sortField}&sortOrder={sortOrder}",
+            "referenced-foreign-models": [
+                {
+                    "model-name": "User",
+                    "field-name": "id",
+                    "url-placement": "user_id"
+                }
+            ],
+            "page-index-url-placement": "pageIndex",
+            "page-row-count-url-placement": "pageRowCount",
+
+            "search-fields-url-placement": "searchFields",
+            "search-fields-url-delimiter": ",",
+
+            "search-strings-url-placement": "searchStrings",
+            "search-strings-url-delimiter": ",",
+
+            "sort-field-url-placement": "sortField",
+            "sort-order-url-placement": "sortOrder"
+        },
+        {
+            "operation": "update",
+            "method": "PUT",
+            "url-map": "http://localhost:80/api/users/{user_id}/courses/{id}",
+            "referenced-foreign-models": [
+                {
+                    "model-name": "User",
+                    "field-name": "id",
+                    "url-placement": "user_id"
+                }
+            ],
+            "data-indexing-url-placement": "id"
+        },
+        {
+            "operation": "delete",
+            "method": "DELETE",
+            "url-map": "http://localhost:80/api/users/{user_id}/courses/{id}",
+            "referenced-foreign-models": [
+                {
+                    "model-name": "User",
+                    "field-name": "id",
+                    "url-placement": "user_id"
+                }
+            ],
+            "data-indexing-url-placement": "id"
+        }
+    ]
+}

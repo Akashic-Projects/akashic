@@ -1,41 +1,15 @@
 
-RuleChoice: RulesGroup | RuleAlone ;
-
-RulesGroup:
-    '{'
-        RULES_GROUP_NAME_KW     ':'         group_name=STRING       ','
-        RULES_KW                ':'     '[' rules*=Rule[','] ']'
-    '}'
-;
-
-RULES_GROUP_NAME_KW:    /\"group-name\"/ ;
-RULES_KW:               /\"rules\"/ ;
-
-
 Rule:
     '{'
-        RULE_NAME_KW        ':'     rule_name=STRING    ','
-        (RULE_SALIENCE_KW   ':'     salience=INT        ',')?
-        rhs=RHS                                         ','
-        lhs=LHS
+        ((RULE_NAME_KW        ':'     rule_name=STRING  )
+        (RULE_SALIENCE_KW     ':'     salience=INT      )?
+        (rhs=RHS                                        )
+        (lhs=LHS                                        ))#[',']
     '}'
 ;
 
 RULE_NAME_KW:       /\"rule-name\"/ ;
 RULE_SALIENCE_KW:   /\"salience\"/ ;
-
-RuleAlone:
-    '{'
-        RULE_NAME_KW        ':'     rule_name=STRING            ','
-        RULE_GROUP_NAME_KW  ':'     rule_group_name=STRING      ','
-        (RULE_SALIENCE_KW   ':'     salience=INT                ',')?
-        rhs=RHS                                                 ','
-        lhs=LHS
-    '}'
-;
-
-RULE_GROUP_NAME_KW: /\"rule-group-name\"/ ;
-
 
 RHS:
     WHEN_KW ':' '['
@@ -47,7 +21,7 @@ WHEN_KW:    /\"when\"/ ;
 
 
 RHSStatement: 
-    '{' func=FUNCTION_NAME_KW ':' '"' (not_operator=NOT)? '(' expr=LogicExpression ')' '"' '}'
+    '{' func=FUNCTION_NAME_KW ':' '"' expr=NegationExpression '"' '}'
 ;
 
 FUNCTION_NAME_KW:
@@ -65,6 +39,10 @@ SQR:            '^' ;
 CMP:            '=='    | '!=' | '<' | '>' | '<=' | '>=' ;
 LOGIC:          'and'   | 'or' ;
 NOT:            'not' ;
+
+NegationExpression:
+    operator=NOT? operand=LogicExpression
+;
 
 LogicExpression:
     operands=CompExpression (operator=LOGIC operands=CompExpression)*
@@ -87,7 +65,7 @@ SqrExpr:
 ;
 
 Factor:
-    value=NUMBER | value=STRING_C | value=DataLocator | value=VARIABLE | (lpar=LPAR? expr=LogicExpression rpar=RPAR?)
+    value=NUMBER | value=BOOL | value=STRING_C | value=VARIABLE | (lpar=LPAR value=NegationExpression rpar=RPAR) | value=DataLocator
 ;
 
 LPAR:   '(' ;

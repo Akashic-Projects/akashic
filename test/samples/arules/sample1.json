@@ -1,0 +1,10 @@
+{
+    "rule-name": "Rule 1",
+    "salience": 100,
+    "when": [
+        { "?value": "not (true and false)"}
+    ],
+    "then": [
+        {"read": "Some value"}
+    ]
+}

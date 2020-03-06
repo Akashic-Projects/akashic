@@ -1,0 +1,86 @@
+{
+    "data-source-definition-name": "User",
+    "data-source-definition-group-name": "StudentServiceGroup",
+    "model-name": "User",
+    "model-description": "Holds general user dara",
+    "authentication-header": {
+        "auth-header-name": "Authorization",
+        "token-prefix": "bearer",
+        "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOlwvXC9sb2NhbGhvc3RcL2FwaVwvYXV0aFwvbG9naW4iLCJpYXQiOjE1ODM0NTE3MDgsImV4cCI6MTU4MzQ1NTMwOCwibmJmIjoxNTgzNDUxNzA4LCJqdGkiOiI2YjlhVXdCMjZjbHFkUWpMIiwic3ViIjoyLCJwcnYiOiIyM2JkNWM4OTQ5ZjYwMGFkYjM5ZTcwMWM0MDA4NzJkYjdhNTk3NmY3In0.jyhg4I66SYE1vgQzq2fg1QxTv_W8PzL9mEUTNsBxSJ8"
+    },
+
+    "fields": [
+        {
+            "field-name": "id",
+            "type": "INTEGER",
+            "use-as": "primary-key",
+            "request-json-path": "$.id",
+            "response-one-json-path": "$.data.id",
+            "response-multiple-json-path": "$.data[{index}].id",
+            "use-for-create": false,
+            "use-for-update": false
+        },
+        {
+            "field-name": "name",
+            "type": "STRING",
+            "use-as": "data",
+            "request-json-path": "$.name",
+            "response-one-json-path": "$.data.name",
+            "response-multiple-json-path": "$.data[{index}].name",
+            "use-for-create": true,
+            "use-for-update": true
+        },
+        {
+            "field-name": "email",
+            "type": "STRING",
+            "use-as": "data",
+            "request-json-path": "$.email",
+            "response-one-json-path": "$.data.email",
+            "response-multiple-json-path": "$.data[{index}].email",
+            "use-for-create": true,
+            "use-for-update": true
+        }
+    ],
+
+    "apis": [
+        {
+            "operation": "create",
+            "method": "POST",
+            "url-map": "http://localhost:80/api/users"
+        },
+        {
+            "operation": "read-one",
+            "method": "GET",
+            "url-map": "http://localhost:80/api/users/{id}",
+            "data-indexing-url-placement": "id"
+        },
+        {
+            "operation": "read-multiple",
+            "method": "GET",
+            "url-map": "http://localhost:80/api/users?pageIndex={pageIndex}&pageRowCount={pageRowCount}&searchFields={searchFields}&searchStrings={searchStrings}&sortField={sortField}&sortOrder={sortOrder}",
+            "page-index-url-placement": "pageIndex",
+            "page-row-count-url-placement": "pageRowCount",
+
+            "search-fields-url-placement": "searchFields",
+            "search-fields-url-delimiter": ",",
+
+            "search-strings-url-placement": "searchStrings",
+            "search-strings-url-delimiter": ",",
+
+            "sort-field-url-placement": "sortField",
+            "sort-order-url-placement": "sortOrder"
+        },
+        {
+            "operation": "update",
+            "method": "PUT",
+            "url-map": "http://localhost:80/api/users/{id}",
+            "data-indexing-url-placement": "id"
+        },
+        {
+            "operation": "delete",
+            "method": "DELETE",
+            "url-map": "http://localhost:80/api/users/{id}",
+            "data-indexing-url-placement": "id"
+        }
+    ]
+}
