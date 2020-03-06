@@ -114,10 +114,11 @@ class DataChecker(object):
         return ctype
 
 
+    # Does this even make senase?
     def check_field_types(self, use_json_as, operation, json_object):
         json_path = None
         if use_json_as == "response":
-            json_path = lambda field : field.response_json_path
+            json_path = lambda field : field.response_one_json_path
         elif use_json_as == "request":
             json_path = lambda field : field.request_json_path
 

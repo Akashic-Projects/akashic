@@ -81,25 +81,23 @@ class DataProvider(object):
         return tempalte_def
 
     
-    # I use request when user defines request in rule RHS
-    # And I use response json when api is called
-    # How to handle multiple array json locator
-    # TODO: Create ENUMS for `request` and `response`
-    def generate_clips_fact(self, use_json_as, operation, json_object):
-        self.checker.check_field_types(use_json_as, operation, json_object)
 
-        json_path = None
-        if use_json_as == "response":
-            json_path = lambda field : field.response_one_json_path
-        elif use_json_as == "request":
-            json_path = lambda field : field.request_one_json_path
+    # How to handle multiple array json locator?
+    def generate_clips_fact(self, json_object, json_path_func):
+
+        # Those fields are only for requests???
+        # Not needed here
+        # Just as request option is not needed here!
+        # self.checker.check_field_types(use_json_as, operation, json_object)
 
         clips_fact = "(" + str(self.dsd.model_id)
         clips_fields = []
 
         for field in self.dsd.fields:
-            jsonpath_expr = parse(json_path(field))
+            print("IT IS: " + json_path_func(field))
+            jsonpath_expr = parse(str(json_path_func(field)))
             result = [match.value for match in jsonpath_expr.find(json_object)][0]
+            print("RESULT: " + str(result))
 
             # Resolve field value
             resolved_value = None
@@ -117,6 +115,19 @@ class DataProvider(object):
 
         clips_fact += "\n".join(clips_fields) + ")"
         return clips_fact
+
+    def generate_one_clips_fact(self, json_object):
+        json_path_func = lambda field : field.response_one_json_path
+        return self.generate_clips_fact(json_object, json_path_func)
+
+    # Generate multiple facts from json list
+    def generate_multiple_clips_facts(self, json_object, array_len):
+        facts = []
+        for i in range(0, array_len):
+            json_path_func = lambda field : self.fill_data_map(field.response_mul_json_path, index=i)
+            clips_fact = self.generate_clips_fact(json_object, json_path_func)
+            facts.append(clips_fact)
+        return facts
 
 
     def create(self, json_object, **kwargs):

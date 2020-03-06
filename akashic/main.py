@@ -40,7 +40,8 @@ def test_data_soruce_def_interpreter():
         response = data_provider.read_one(id=1)
         print(f"Response:\n{str(json.dumps(response))}\n")
 
-        clips_fact = data_provider.generate_clips_fact(use_json_as="response", operation="read-one", json_object=response)
+        #clips_fact = data_provider.generate_clips_fact(use_json_as="response", operation="read-one", json_object=response)
+        clips_fact = data_provider.generate_one_clips_fact(response)
         print(f"Generated clips fact:\n{str(clips_fact)}\n")
 
 
@@ -55,6 +56,12 @@ def test_data_soruce_def_interpreter():
 
         rm = data_provider.read_multiple()
         print(f"Response:\n{str(json.dumps(rm))}\n")
+
+
+        # TODO: Where should data_checker stand?
+        clips_facts = data_provider.generate_multiple_clips_facts(rm, 5)
+        for f in clips_facts:
+            print(f"Generated clips fact:\n{str(f)}\n")
 
         # TODO: API Key to make initial setup-request to akashic server
         # Akashic server is anonymous entity, encrypted and safe. -> Koristi zero knowledge sistem
