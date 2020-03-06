@@ -126,6 +126,8 @@ class DataProvider(object):
         return facts
 
 
+    # API OPERATIONS SECTION 
+    ################################################################
     def create(self, json_object, **kwargs):
         # TODO: Add json header
         self.checker.check_field_types(use_json_as="request", operation="create", json_object=json_object)
