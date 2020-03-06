@@ -6,16 +6,6 @@ from os.path import join, dirname, abspath
 import json
 
 
-def test_rule_interpreter():
-    i = RulesInterpreter()
-
-    # Read rule from sample file
-    this_folder = dirname(__file__)
-    sample_path = abspath(join(this_folder, '..', 'test', 'samples', 'arules', 'sample1.json'))
-    with open(sample_path, 'r') as sample:
-        akashic_rule = sample.read()
-        i.interpret(akashic_rule)
-
 
 def test_data_soruce_def_interpreter():
     data_provider = DataProvider()
@@ -82,8 +72,21 @@ def test_data_soruce_def_interpreter():
         # No anonymous!
 
 
+def test_rule_interpreter():
+    data_provider = DataProvider()
+    i = RulesInterpreter(data_provider)
+
+    # Read rule from sample file
+    this_folder = dirname(__file__)
+    sample_path = abspath(join(this_folder, '..', 'test', 'samples', 'arules', 'sample1.json'))
+    with open(sample_path, 'r') as sample:
+        akashic_rule = sample.read()
+        i.load(akashic_rule)
+
+        i.get_data()
 
 if __name__ == "__main__":
-    test_data_soruce_def_interpreter()
+    #test_data_soruce_def_interpreter()
+    test_rule_interpreter()
    
 
