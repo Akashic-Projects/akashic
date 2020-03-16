@@ -2,7 +2,7 @@
     "rule-name": "Rule 1",
     "salience": 100,
     "when": [
-        { "?value": "not (true and false)"}
+        { "?value": "not (?some_var and 6 > 1)"}
     ],
     "then": [
         {"read": "Some value"}
