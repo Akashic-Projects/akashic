@@ -1,26 +1,21 @@
 import akashic.exceptions as ae
 from enum import Enum
 
-class Type(Enum):
-    STRING = 1
-    BOOL = 2
-    INT = 3
-    FLOAT = 4
-    ASSERTION = 5
+
+class Entry(object):
+    def __init__(self):
+        self.translation = None
+        self.value = None
+        self.type = None
 
 
 class SymbolTable(object):
-    class Entry(object):
-        def __init__(self):
-            self.translation = None
-            self.value = None
-            self.type = None
-
-
     def __init__(self):
         # Initial position is (0,0)
         self.gen_var_index = 0
         self.table = {}
+        self.assertion = None
+
 
     def add_named_var(self, name, value, typee):
         if name in self.table:
@@ -31,7 +26,6 @@ class SymbolTable(object):
         e.translated = name
         e.value = value
         e.type = typee
-
         self.table[name] = e
 
 
@@ -44,7 +38,6 @@ class SymbolTable(object):
         e.translated = gen_name
         e.value = value
         e.type = typee
-
         self.table[name] = e
 
         return gen_name
