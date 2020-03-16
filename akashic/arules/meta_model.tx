@@ -25,12 +25,12 @@ RHSStatement:
 ;
 
 FUNCTION_NAME_KW:
-    ASSERT_KW | VARIABLE | LOG_KW
+    ASSERT_KW | VARIABLE_AS_FUNC | LOG_KW
 ;
 
 ASSERT_KW:                  /\"assert\"/ ;
 LOG_KW:                     /\"log\"/ ;
-VARIABLE:           '"' var=/\?[^\d\W]\w*\b/ '"' ;
+VARIABLE_AS_FUNC:           '"' var_name=/\?[^\d\W]\w*\b/ '"' ;
 
 
 PLUS_MINUS:     '+'     | '-'  ;
@@ -71,6 +71,7 @@ Factor:
 LPAR:   '(' ;
 RPAR:   ')' ;
 STRING_C: "'" val=/.*/ "'" ;
+VARIABLE: var_name=/\?[^\d\W]\w*\b/;
 
 DataLocator: (lpar=LPAR? link_expr=LINK_EXPRESSION rpar=RPAR?) ('.' attributes=ID)* ;
 LINK_EXPRESSION: links=ID ('~' links=ID)* ;

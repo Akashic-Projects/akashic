@@ -48,3 +48,14 @@ class SymbolTable(object):
             return self.table[name]
         else:
             return None
+
+
+    def set_assertion(self, value):
+        if self.assertion == None:
+            return 1
+        
+        self.assertion = value
+
+
+    def get_assertion(self):
+        return self.assertion
