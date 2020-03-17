@@ -25,12 +25,11 @@ RHSStatement:
 ;
 
 FUNCTION_NAME_KW:
-    ASSERT_KW | VARIABLE_AS_FUNC | LOG_KW
+    ASSERT_KW | VARIABLE_INIT
 ;
 
-ASSERT_KW:                  /\"assert\"/ ;
-LOG_KW:                     /\"log\"/ ;
-VARIABLE_AS_FUNC:           '"' var_name=/\?[^\d\W]\w*\b/ '"' ;
+ASSERT_KW:                 as=/\"assert\"/ ;
+VARIABLE_INIT:   '"' var_name=/\?[^\d\W]\w*\b/ '"' ;
 
 
 PLUS_MINUS:     '+'     | '-'  ;

@@ -2,7 +2,12 @@
     "rule-name": "Rule 1",
     "salience": 100,
     "when": [
-        { "?value": "not (?some_var and 6 > 1)"}
+        { "?value": "6*6" },
+        { "?data": "User.age"},
+        { "assert": "?data > ?value"},
+        { "?value1": "True" },
+        { "?user_data": "User.assigned"},
+        { "assert": "?value1 and ?user_data" }
     ],
     "then": [
         {"read": "Some value"}

@@ -5,6 +5,7 @@ from os.path import join, dirname
 from enum import Enum
 
 from akashic.arules.symbol_table import SymbolTable
+from akashic.exceptions import SemanticError
 
 
 class DataType(Enum):
@@ -20,6 +21,7 @@ class RulesInterpreter(object):
     def __init__(self, data_provider):
         self.data_provider = data_provider
         self.symbol_table = SymbolTable()
+        self.clips_command_list = []
 
         processors = {
             'RHSStatement': self.rhs_statement,
@@ -46,12 +48,12 @@ class RulesInterpreter(object):
 
     # For testing -> extracting data after processing
     def get_data(self):
-        print("\n")
-        print(str(self.rule.rhs.statements[0].func.var_name) + " = " + str(self.rule.rhs.statements[0].expr[0]))
-
-
-    def rhs_statement(self, rhss):
-        pass
+        print("\n\nCLIPS Commands:")
+        print()
+        for c in self.clips_command_list:
+            print(str(c))
+        
+        print()
 
 
     def translate(self, value):
@@ -62,6 +64,17 @@ class RulesInterpreter(object):
                 return "FALSE"
         else:
             return value
+
+
+    def rhs_statement(self, rhss):
+        if rhss.func.__class__.__name__ == "ASSERT_KW":
+            if (rhss.expr[1] != DataType.STATEMENT):
+                raise SemanticError("Assertion must be statement. {0} given.".format(rhss.expr[1].name))
+            self.clips_command_list.append(self.translate(rhss.expr[0]))
+
+
+        elif rhss.func.__class__.__name__ == "VARIABLE_INIT":
+            self.symbol_table.add_named_var(rhss.func.var_name, rhss.expr)
 
 
     def negation_expression(self, neg):
@@ -192,12 +205,18 @@ class RulesInterpreter(object):
 
     def factor(self, factor):
         if factor.value.__class__.__name__ in ["int", "float", "bool"]:
-            print("first entry")
             return (factor.value, DataType.WORKABLE)
+
         elif factor.value.__class__.__name__ == "STRING_C":
             return (factor.value.val, DataType.WORKABLE)
+
         elif factor.value.__class__.__name__ == "VARIABLE":
-            return (factor.value.var_name, DataType.VARIABLE)
+            symbol_entry = self.symbol_table.lookup(factor.value.var_name)
+            if symbol_entry == None:
+                raise SemanticError("Undefined variable {0}.".format(factor.value.var_name))
+            else:
+                return symbol_entry.value
+
         elif factor.value.__class__.__name__ == "DataLocator":
             return ("LOCATOR", DataType.DATA_LOCATOR)
         else:
