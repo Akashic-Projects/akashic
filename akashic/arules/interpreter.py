@@ -4,7 +4,7 @@ from textx.export import metamodel_export, model_export
 from os.path import join, dirname
 from enum import Enum
 
-from akashic.arules.symbol_table import SymbolTable
+from akashic.arules.variable_table import VariableTable
 from akashic.exceptions import SemanticError
 
 
@@ -18,9 +18,9 @@ class DataType(Enum):
 # Should be transpiler
 class RulesInterpreter(object):
 
-    def __init__(self, data_provider):
-        self.data_provider = data_provider
-        self.symbol_table = SymbolTable()
+    def __init__(self, data_providers):
+        self.data_providers = data_providers
+        self.variable_table = VariableTable()
         self.clips_command_list = []
 
         processors = {
@@ -67,14 +67,22 @@ class RulesInterpreter(object):
 
 
     def rhs_statement(self, rhss):
-        if rhss.func.__class__.__name__ == "ASSERT_KW":
+        if rhss.func.__class__.__name__ == "EXISTS_KW":
+            # Because we use return as (value, DataType)
             if (rhss.expr[1] != DataType.STATEMENT):
-                raise SemanticError("Assertion must be statement. {0} given.".format(rhss.expr[1].name))
+                raise SemanticError("Test must be statement. {0} given.".format(rhss.expr[1].name))
+            self.clips_command_list.append(self.translate(rhss.expr[0]))
+
+
+        elif rhss.func.__class__.__name__ == "TEST_KW":
+            # Because we use return as (value, DataType)
+            if (rhss.expr[1] != DataType.STATEMENT):
+                raise SemanticError("Test must be statement. {0} given.".format(rhss.expr[1].name))
             self.clips_command_list.append(self.translate(rhss.expr[0]))
 
 
         elif rhss.func.__class__.__name__ == "VARIABLE_INIT":
-            self.symbol_table.add_named_var(rhss.func.var_name, rhss.expr)
+            self.variable_table.add_named_var(rhss.func.var_name, rhss.expr)
 
 
     def negation_expression(self, neg):
@@ -211,11 +219,11 @@ class RulesInterpreter(object):
             return (factor.value.val, DataType.WORKABLE)
 
         elif factor.value.__class__.__name__ == "VARIABLE":
-            symbol_entry = self.symbol_table.lookup(factor.value.var_name)
-            if symbol_entry == None:
+            var_entry = self.variable_table.lookup(factor.value.var_name)
+            if var_entry == None:
                 raise SemanticError("Undefined variable {0}.".format(factor.value.var_name))
             else:
-                return symbol_entry.value
+                return var_entry.value
 
         elif factor.value.__class__.__name__ == "DataLocator":
             return ("LOCATOR", DataType.DATA_LOCATOR)
