@@ -25,10 +25,17 @@ RHSStatement:
 ;
 
 FUNCTION_NAME_KW:
-    ASSERT_KW | VARIABLE_INIT
+    NOT_KW |
+    EXISTS_KW |
+    FORALL_KW |
+    TEST_KW | 
+    VARIABLE_INIT
 ;
 
-ASSERT_KW:                 as=/\"assert\"/ ;
+NOT_KW:              func_name=/\"not\"/ ;
+EXISTS_KW:           func_name=/\"exists\"/ ;
+FORALL_KW:           func_name=/\"forall\"/ ;
+TEST_KW:             func_name=/\"test\"/ ;
 VARIABLE_INIT:   '"' var_name=/\?[^\d\W]\w*\b/ '"' ;
 
 
@@ -64,7 +71,13 @@ SqrExpr:
 ;
 
 Factor:
-    value=NUMBER | value=BOOL | value=STRING_C | value=VARIABLE | (lpar=LPAR value=NegationExpression rpar=RPAR) | value=DataLocator
+    value=NUMBER | 
+    value=BOOL | 
+    value=STRING_C | 
+    value=VARIABLE | 
+    value=DataLocator |
+    (lpar=LPAR value=NegationExpression rpar=RPAR) | 
+    value=NegationExpression
 ;
 
 LPAR:   '(' ;
@@ -72,7 +85,7 @@ RPAR:   ')' ;
 STRING_C: "'" val=/.*/ "'" ;
 VARIABLE: var_name=/\?[^\d\W]\w*\b/;
 
-DataLocator: (lpar=LPAR? link_expr=LINK_EXPRESSION rpar=RPAR?) ('.' attributes=ID)* ;
+DataLocator: link_expr=LINK_EXPRESSION ('.' attributes=ID)* ;
 LINK_EXPRESSION: links=ID ('~' links=ID)* ;
 
 
