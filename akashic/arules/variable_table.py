@@ -10,7 +10,7 @@ class Entry(object):
         self.value = None
 
 
-class SymbolTable(object):
+class VariableTable(object):
     def __init__(self):
         # Initial position is (0,0)
         self.gen_var_index = 0

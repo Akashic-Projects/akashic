@@ -3,7 +3,7 @@
     "rule-group-name": "Perfect rules",
     "salience": 100,
     "when": [
-        { "assert": "((User~Course).rating > 3)"}
+        { "test": "User~Course.rating > 3"}
     ],
     "then": [
         {"read": "Course"}

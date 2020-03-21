@@ -2,12 +2,8 @@
     "rule-name": "Rule 1",
     "salience": 100,
     "when": [
-        { "?value": "6*6" },
-        { "?data": "User.age"},
-        { "assert": "?data > ?value"},
-        { "?value1": "True" },
-        { "?user_data": "User.assigned"},
-        { "assert": "?value1 and ?user_data" }
+        { "?value": "6 * 6" },
+        { "test": "User~UserCourse.age > ?value" }
     ],
     "then": [
         {"read": "Some value"}
