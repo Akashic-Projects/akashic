@@ -3,7 +3,7 @@
     "salience": 100,
     "when": [
         { "?value": "6 * 6" },
-        { "test": "User~UserCourse.age > ?value" }
+        { "test": "UserCourse.age > ?value" }
     ],
     "then": [
         {"read": "Some value"}

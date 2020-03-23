@@ -5,14 +5,15 @@ from os.path import join, dirname
 from enum import Enum
 
 from akashic.arules.variable_table import VariableTable
+from akashic.arules.data_locator_table import DataLocatorTable, TableType
+
 from akashic.exceptions import SemanticError
 
 
 class DataType(Enum):
     WORKABLE = 1
     VARIABLE = 2
-    DATA_LOCATOR = 3
-    STATEMENT = 4
+    STATEMENT = 3
 
 
 # Should be transpiler
@@ -21,6 +22,7 @@ class RulesInterpreter(object):
     def __init__(self, data_providers):
         self.data_providers = data_providers
         self.variable_table = VariableTable()
+        self.data_locator_table = DataLocatorTable()
         self.clips_command_list = []
 
         processors = {
@@ -33,6 +35,7 @@ class RulesInterpreter(object):
             'SqrExpr': self.sqr_expr,
             'Factor': self.factor,
             'DataLocator': self.data_locator,
+            'VARIABLE': self.variable
         }
 
         this_folder = dirname(__file__)
@@ -214,30 +217,30 @@ class RulesInterpreter(object):
     def factor(self, factor):
         if factor.value.__class__.__name__ in ["int", "float", "bool"]:
             return (factor.value, DataType.WORKABLE)
-
         elif factor.value.__class__.__name__ == "STRING_C":
             return (factor.value.val, DataType.WORKABLE)
-
-        elif factor.value.__class__.__name__ == "VARIABLE":
-            var_entry = self.variable_table.lookup(factor.value.var_name)
-            if var_entry == None:
-                raise SemanticError("Undefined variable {0}.".format(factor.value.var_name))
-            else:
-                return var_entry.value
-
-        elif factor.value.__class__.__name__ == "DataLocator":
-            return ("LOCATOR", DataType.DATA_LOCATOR)
         else:
+            # Enters here for variable and data_locator
             return factor.value
 
 
+    def variable(self, var):
+        var_entry = self.variable_table.lookup(var.var_name)
+        if var_entry == None:
+            raise SemanticError("Undefined variable {0}.".format(var.var_name))
+        else:
+            return var_entry.value
 
-    def data_locator(self, loc):
-        links = loc.link_expr.links
-        for l in links:
-            print("link: " + str(l))
 
-        for a in loc.attributes:
-            print("attribute: " + str(a))
+    def data_locator(self, data_locator):
+        templates = data_locator.template_conn_expr.templates
+        field = data_locator.field
 
-        return loc
+        found_var_name = self.data_locator_table.lookup(data_locator, TableType.TMP)
+        if found_var_name:
+            return (found_var_name, DataType.VARIABLE)
+        else:
+            gen_var_name = self.variable_table.add_helper_var("")
+            print("NESTO: " + gen_var_name)
+            self.data_locator_table.add(data_locator, gen_var_name, TableType.TMP)
+            return (gen_var_name, DataType.VARIABLE)

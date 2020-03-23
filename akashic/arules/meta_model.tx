@@ -85,8 +85,8 @@ RPAR:   ')' ;
 STRING_C: "'" val=/.*/ "'" ;
 VARIABLE: var_name=/\?[^\d\W]\w*\b/;
 
-DataLocator: link_expr=LINK_EXPRESSION ('.' attributes=ID)* ;
-LINK_EXPRESSION: links=ID ('~' links=ID)* ;
+DataLocator: template_conn_expr=TEMPLATE_CONNECTION_EXPRESSION ('.' field=ID)? ;
+TEMPLATE_CONNECTION_EXPRESSION: templates=ID ('~' templates=ID)* ;
 
 
 LHS:
