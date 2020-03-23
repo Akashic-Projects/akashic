@@ -22,10 +22,16 @@ class DataLocatorTable(object):
         self.tables[TableType.TMP] = {}
 
 
-    def add(self, data_locator, var_name, table_type):
-        template_name = data_locator.template_conn_expr.templates[0]
-        field_name = data_locator.field
+    def transfer_from_to(self, from_table_type, to_table_type):
+        for template_name, template in self.tables[from_table_type].items():
+            for field_name, field in template.fields.items():
 
+                if not self.lookup(template_name, field_name, to_table_type):
+                    self.add(template_name, field_name, field.var_name, to_table_type)
+
+
+
+    def add(self, template_name, field_name, var_name, table_type):
         if template_name not in self.tables[table_type]:
             self.tables[table_type][template_name] = Template()
             t = self.tables[table_type][template_name]
@@ -40,10 +46,7 @@ class DataLocatorTable(object):
         t.fields[field_name] = f
 
     
-    def lookup(self, data_locator, table_type):
-        template_name = data_locator.template_conn_expr.templates[0]
-        field_name = data_locator.field
-
+    def lookup(self, template_name, field_name, table_type):
         if template_name in self.tables[table_type]:
             if field_name in self.tables[table_type][template_name].fields:
                 return self.tables[table_type][template_name].fields[field_name]

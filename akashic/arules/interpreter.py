@@ -7,6 +7,8 @@ from enum import Enum
 from akashic.arules.variable_table import VariableTable
 from akashic.arules.data_locator_table import DataLocatorTable, TableType
 
+from akashic.arules.clips_pattern_builder import CLIPSPatternBuilder
+
 from akashic.exceptions import SemanticError
 
 
@@ -42,6 +44,9 @@ class RulesInterpreter(object):
         self.meta_model = metamodel_from_file(join(this_folder, 'meta_model.tx'), debug=False)
         self.meta_model.register_obj_processors(processors)
 
+        #Get builder classes
+        self.clips_pattern_builder = CLIPSPatternBuilder()
+
         self.rule = None
 
 
@@ -74,14 +79,23 @@ class RulesInterpreter(object):
             # Because we use return as (value, DataType)
             if (rhss.expr[1] != DataType.STATEMENT):
                 raise SemanticError("Test must be statement. {0} given.".format(rhss.expr[1].name))
-            self.clips_command_list.append(self.translate(rhss.expr[0]))
+            self.clips_command_list.append(rhss.expr[0])
 
 
         elif rhss.func.__class__.__name__ == "TEST_KW":
             # Because we use return as (value, DataType)
             if (rhss.expr[1] != DataType.STATEMENT):
                 raise SemanticError("Test must be statement. {0} given.".format(rhss.expr[1].name))
-            self.clips_command_list.append(self.translate(rhss.expr[0]))
+
+            clips_commands = self.clips_pattern_builder.build_regular_pattern(self.data_locator_table)
+            self.clips_command_list.extend(clips_commands)
+
+            self.clips_command_list.append(rhss.expr[0])
+
+            # Transfer to regular and clear up the TMP data locator table
+            self.data_locator_table.transfer_from_to(TableType.TMP, TableType.REGULAR)
+            self.data_locator_table.reset_table(TableType.TMP)
+            
 
 
         elif rhss.func.__class__.__name__ == "VARIABLE_INIT":
@@ -233,14 +247,17 @@ class RulesInterpreter(object):
 
 
     def data_locator(self, data_locator):
-        templates = data_locator.template_conn_expr.templates
-        field = data_locator.field
+        template_name = data_locator.template_conn_expr.templates[0]
+        field_name = data_locator.field
 
-        found_var_name = self.data_locator_table.lookup(data_locator, TableType.TMP)
-        if found_var_name:
-            return (found_var_name, DataType.VARIABLE)
+        found_var_name1 = self.data_locator_table.lookup(template_name, field_name, TableType.TMP)
+        found_var_name2 = self.data_locator_table.lookup(template_name, field_name, TableType.REGULAR)
+        if found_var_name1:
+            return (found_var_name1, DataType.VARIABLE)
+        elif found_var_name2:
+            return (found_var_name2, DataType.VARIABLE)
         else:
             gen_var_name = self.variable_table.add_helper_var("")
             print("NESTO: " + gen_var_name)
-            self.data_locator_table.add(data_locator, gen_var_name, TableType.TMP)
+            self.data_locator_table.add(template_name, field_name, gen_var_name, TableType.TMP)
             return (gen_var_name, DataType.VARIABLE)
