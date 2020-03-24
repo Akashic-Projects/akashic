@@ -55,7 +55,7 @@ class RulesInterpreter(object):
 
 
     # For testing -> extracting data after processing
-    def get_data(self):
+    def print_clips_commands(self):
         print("\n\nCLIPS Commands:")
         print()
         for c in self.clips_command_list:
@@ -74,6 +74,7 @@ class RulesInterpreter(object):
             return value
 
 
+    #TODO: Create Count function
     def rhs_statement(self, rhss):
         if rhss.func.__class__.__name__ == "EXISTS_KW":
             # Because we use return as (value, DataType)
@@ -90,16 +91,15 @@ class RulesInterpreter(object):
             clips_commands = self.clips_pattern_builder.build_regular_pattern(self.data_locator_table)
             self.clips_command_list.extend(clips_commands)
 
-            self.clips_command_list.append(rhss.expr[0])
+            self.clips_command_list.append("(test " + rhss.expr[0] + ")")
 
             # Transfer to regular and clear up the TMP data locator table
             self.data_locator_table.transfer_from_to(TableType.TMP, TableType.REGULAR)
             self.data_locator_table.reset_table(TableType.TMP)
-            
-
 
         elif rhss.func.__class__.__name__ == "VARIABLE_INIT":
             self.variable_table.add_named_var(rhss.func.var_name, rhss.expr)
+
 
 
     def negation_expression(self, neg):
@@ -135,7 +135,7 @@ class RulesInterpreter(object):
                     str(self.translate(logic.operands[1][0])) + ')',  DataType.STATEMENT)
 
 
-
+    #TODO: Comaring strings function
     def comp_expression(self, comp):
         if len(comp.operands) < 2:
             return comp.operands[0]
@@ -232,10 +232,13 @@ class RulesInterpreter(object):
         if factor.value.__class__.__name__ in ["int", "float", "bool"]:
             return (factor.value, DataType.WORKABLE)
         elif factor.value.__class__.__name__ == "STRING_C":
-            return (factor.value.val, DataType.WORKABLE)
+
+            # Translate single quotation marks to double
+            return (factor.value.val.replace("'", "\""), DataType.WORKABLE)
         else:
             # Enters here for variable and data_locator
             return factor.value
+
 
 
     def variable(self, var):
@@ -244,6 +247,7 @@ class RulesInterpreter(object):
             raise SemanticError("Undefined variable {0}.".format(var.var_name))
         else:
             return var_entry.value
+
 
 
     def data_locator(self, data_locator):

@@ -83,7 +83,7 @@ def test_rule_interpreter():
         akashic_rule = sample.read()
         i.load(akashic_rule)
 
-        i.get_data()
+        i.print_clips_commands()
 
 if __name__ == "__main__":
     #test_data_soruce_def_interpreter()

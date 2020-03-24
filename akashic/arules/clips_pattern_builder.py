@@ -17,3 +17,8 @@ class CLIPSPatternBuilder(object):
             clips_statement_list.append(clips_statement)
 
         return clips_statement_list
+
+    
+    #TODO: handle special conditional elements (exists, forall, ...)
+    def build_special_pattern():
+        pass

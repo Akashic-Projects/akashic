@@ -2,8 +2,9 @@
     "rule-name": "Rule 1",
     "salience": 100,
     "when": [
+        { "?test": "'hello world. People!'"},
         { "?value": "6 * 6" },
-        { "test": "User.age > ?value" }
+        { "test": "User.age > ?value and User.name == ?test" }
     ],
     "then": [
         {"read": "Some value"}

@@ -30,7 +30,6 @@ class DataLocatorTable(object):
                     self.add(template_name, field_name, field.var_name, to_table_type)
 
 
-
     def add(self, template_name, field_name, var_name, table_type):
         if template_name not in self.tables[table_type]:
             self.tables[table_type][template_name] = Template()

@@ -82,7 +82,7 @@ Factor:
 
 LPAR:   '(' ;
 RPAR:   ')' ;
-STRING_C: "'" val=/.*/ "'" ;
+STRING_C: val=/(\')(.*)(\')/ ;
 VARIABLE: var_name=/\?[^\d\W]\w*\b/;
 
 DataLocator: template_conn_expr=TEMPLATE_CONNECTION_EXPRESSION ('.' field=ID)? ;
