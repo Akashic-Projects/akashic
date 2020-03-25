@@ -21,23 +21,20 @@ WHEN_KW:    /\"when\"/ ;
 
 
 RHSStatement: 
-    '{' func=FUNCTION_NAME_KW ':' '"' expr=NegationExpression '"' '}'
+    stat=VARIABLE_INIT | 
+    stat=ASSERTION
 ;
 
-FUNCTION_NAME_KW:
-    NOT_KW |
-    EXISTS_KW |
-    FORALL_KW |
-    TEST_KW | 
-    VARIABLE_INIT
+VARIABLE_INIT:
+    '{' '"' var_name=/\?[^\d\W]\w*\b/ '"' ':' '"' expr=NegationExpression '"' '}'
 ;
 
-NOT_KW:              func_name=/\"not\"/ ;
-EXISTS_KW:           func_name=/\"exists\"/ ;
-FORALL_KW:           func_name=/\"forall\"/ ;
-TEST_KW:             func_name=/\"test\"/ ;
-VARIABLE_INIT:   '"' var_name=/\?[^\d\W]\w*\b/ '"' ;
+ASSERTION:
+    '{' ASSERT_KW ':' '"' expr=SpecialBinaryLogicExpression '"' '}' |
+    '{' ASSERT_KW ':' '"' expr=TestSingularLogicExpression '"' '}'
+;
 
+ASSERT_KW:  /\"assert\"/ ;
 
 PLUS_MINUS:     '+'     | '-'  ;
 MUL_DIV:        '*'     | '/'  ;
@@ -46,28 +43,51 @@ CMP:            '=='    | '!=' | '<' | '>' | '<=' | '>=' ;
 LOGIC:          'and'   | 'or' ;
 NOT:            'not' ;
 
+EXISTS:         'exists' ;
+FORALL:         'forall' ;
+TEST:           'test' ;
+
+SPECIAL_SINGULAR: NOT | EXISTS | FORALL ;
+
+
+SpecialBinaryLogicExpression:
+    operands=SpecialLogicExpressionFactor (operator=LOGIC operands=SpecialLogicExpressionFactor)*
+;
+SpecialLogicExpressionFactor:
+    '[' value=NegationExpression ']' |
+    value=SpecialSingularLogicExpression
+;
+SpecialSingularLogicExpression:
+    operator=SPECIAL_SINGULAR? '[' operand=NegationExpression ']'
+;
+TestSingularLogicExpression:
+    operator=TEST? '[' operand=NegationExpression ']'
+;
+
+
+
 NegationExpression:
     operator=NOT? operand=LogicExpression
 ;
 
 LogicExpression:
-    operands=CompExpression (operator=LOGIC operands=CompExpression)*
+    operands=CompExpression (operator=LOGIC operands=CompExpression)?
 ;
 
 CompExpression:
-    operands=PlusMinusExpr (operator=CMP operands=PlusMinusExpr)*
+    operands=PlusMinusExpr (operator=CMP operands=PlusMinusExpr)?
 ;
 
 PlusMinusExpr:
-    operands=MulDivExpr (operator=PLUS_MINUS operands=MulDivExpr)*
+    operands=MulDivExpr (operator=PLUS_MINUS operands=MulDivExpr)?
 ;
 
 MulDivExpr:
-    operands=SqrExpr (operator=MUL_DIV operands=SqrExpr)*
+    operands=SqrExpr (operator=MUL_DIV operands=SqrExpr)?
 ;
 
 SqrExpr:
-    operands=Factor (operator=SQR operands=Factor)*
+    operands=Factor (operator=SQR operands=Factor)?
 ;
 
 Factor:

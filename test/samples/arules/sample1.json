@@ -4,7 +4,8 @@
     "when": [
         { "?test": "'hello world. People!'"},
         { "?value": "6 * 6" },
-        { "test": "User.age > ?value and User.name == ?test" }
+
+        { "assert": "exists[User.age > ?value] and exists[User.name == ?test]" }
     ],
     "then": [
         {"read": "Some value"}

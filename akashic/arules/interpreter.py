@@ -16,6 +16,7 @@ class DataType(Enum):
     WORKABLE = 1
     VARIABLE = 2
     STATEMENT = 3
+    SPECIAL = 4
 
 
 # Should be transpiler
@@ -29,6 +30,10 @@ class RulesInterpreter(object):
 
         processors = {
             'RHSStatement': self.rhs_statement,
+            'SpecialBinaryLogicExpression': self.special_binary_logic_expression,
+            'SpecialLogicExpressionFactor': self.special_logic_expression_factor,
+            'SpecialSingularLogicExpression': self.special_singular_logic_expression,
+            'TestSingularLogicExpression': self.test_singular_logic_expression,
             'NegationExpression': self.negation_expression,
             'LogicExpression': self.logic_expression,
             'CompExpression': self.comp_expression,
@@ -51,6 +56,7 @@ class RulesInterpreter(object):
 
 
     def load(self, akashic_rule):
+        # TODO: Need to catch this exception!!!
         self.rule = self.meta_model.model_from_str(akashic_rule)
 
 
@@ -76,29 +82,85 @@ class RulesInterpreter(object):
 
     #TODO: Create Count function
     def rhs_statement(self, rhss):
-        if rhss.func.__class__.__name__ == "EXISTS_KW":
-            # Because we use return as (value, DataType)
-            if (rhss.expr[1] != DataType.STATEMENT):
-                raise SemanticError("Test must be statement. {0} given.".format(rhss.expr[1].name))
-            self.clips_command_list.append(rhss.expr[0])
+        if rhss.stat.__class__.__name__ == "VARIABLE_INIT":
+            self.variable_table.add_named_var(rhss.stat.var_name, self.translate(rhss.stat.expr))
+        elif rhss.stat.__class__.__name__ == "ASSERTION":
+            print("Assertion done.")
 
 
-        elif rhss.func.__class__.__name__ == "TEST_KW":
-            # Because we use return as (value, DataType)
-            if (rhss.expr[1] != DataType.STATEMENT):
-                raise SemanticError("Test must be statement. {0} given.".format(rhss.expr[1].name))
 
-            clips_commands = self.clips_pattern_builder.build_regular_pattern(self.data_locator_table)
-            self.clips_command_list.extend(clips_commands)
+    def special_binary_logic_expression(self, binary):
+        # if no explicit conditional element is given use 'test'
+        if len(binary.operands) < 2:
+            if binary.operands[0][1] == DataType.STATEMENT:
+                # Build clips commands
+                clips_commands = self.clips_pattern_builder.build_regular_pattern(self.data_locator_table)
+                self.clips_command_list.extend(clips_commands)
+                self.clips_command_list.append("(test " + binary.operands[0][0] + ")")
 
-            self.clips_command_list.append("(test " + rhss.expr[0] + ")")
+                # Transfer to regular and clear up the TMP data locator table
+                self.data_locator_table.transfer_from_to(TableType.TMP, TableType.REGULAR)
+                self.data_locator_table.reset_table(TableType.TMP)
 
-            # Transfer to regular and clear up the TMP data locator table
-            self.data_locator_table.transfer_from_to(TableType.TMP, TableType.REGULAR)
-            self.data_locator_table.reset_table(TableType.TMP)
+            elif binary.operands[0][1] == DataType.SPECIAL:
+                self.clips_command_list.append(binary.operands[0][0])
 
-        elif rhss.func.__class__.__name__ == "VARIABLE_INIT":
-            self.variable_table.add_named_var(rhss.func.var_name, rhss.expr)
+        else:
+            ops = []
+            for i in range(0, len(binary.operands)):
+                if binary.operands[i][1] == DataType.STATEMENT:
+                    # Build clips command
+                    clips_command = self.clips_pattern_builder.build_special_pattern(self.data_locator_table, binary.operands[i][0])
+                    ops.append("(" + binary.operator + " " + clips_command + ")")
+
+                    # Just clear up the TMP data locator table
+                    self.data_locator_table.reset_table(TableType.TMP)
+
+                elif binary.operands[i][1] == DataType.SPECIAL:
+                    ops.append(binary.operands[i][0])
+
+            self.clips_command_list.append(
+                    "(" + binary.operator[0] + " " + 
+                   ops[0] + " " + 
+                   ops[1] + ")"
+            )
+
+
+
+    def special_logic_expression_factor(self, factor):
+        return factor.value
+    
+
+
+    def special_singular_logic_expression(self, singular):
+        # Because we use return as (value, DataType)
+        if singular.operand[1] != DataType.STATEMENT:
+            raise SemanticError("{0} must be statement. {1} given.".format(singular.operator, singular.operand[1].name))
+
+        # Build clips command
+        clips_command = self.clips_pattern_builder.build_special_pattern(self.data_locator_table, singular.operand[0])
+
+        # Just clear up the TMP data locator table
+        self.data_locator_table.reset_table(TableType.TMP)
+
+        # Return CLIPS command
+        return ("(" + singular.operator + " " + clips_command + ")", DataType.SPECIAL)
+
+
+
+    def test_singular_logic_expression(self, test):
+        # Because we use return as (value, DataType)
+        if test.operand[1] != DataType.STATEMENT:
+            raise SemanticError("Test must be statement. {0} given.".format(test.operand[1]))
+
+        # Build clips commands
+        clips_commands = self.clips_pattern_builder.build_regular_pattern(self.data_locator_table)
+        self.clips_command_list.extend(clips_commands)
+        self.clips_command_list.append("(test " + test.operand[0] + ")")
+
+        # Transfer to regular and clear up the TMP data locator table
+        self.data_locator_table.transfer_from_to(TableType.TMP, TableType.REGULAR)
+        self.data_locator_table.reset_table(TableType.TMP)
 
 
 
@@ -262,6 +324,5 @@ class RulesInterpreter(object):
             return (found_var_name2, DataType.VARIABLE)
         else:
             gen_var_name = self.variable_table.add_helper_var("")
-            print("NESTO: " + gen_var_name)
             self.data_locator_table.add(template_name, field_name, gen_var_name, TableType.TMP)
             return (gen_var_name, DataType.VARIABLE)
