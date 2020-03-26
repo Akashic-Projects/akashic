@@ -71,23 +71,23 @@ NegationExpression:
 ;
 
 LogicExpression:
-    operands=CompExpression (operator=LOGIC operands=CompExpression)?
+    operands=CompExpression (operator=LOGIC operands=CompExpression)*
 ;
 
 CompExpression:
-    operands=PlusMinusExpr (operator=CMP operands=PlusMinusExpr)?
+    operands=PlusMinusExpr (operator=CMP operands=PlusMinusExpr)*
 ;
 
 PlusMinusExpr:
-    operands=MulDivExpr (operator=PLUS_MINUS operands=MulDivExpr)?
+    operands=MulDivExpr (operator=PLUS_MINUS operands=MulDivExpr)*
 ;
 
 MulDivExpr:
-    operands=SqrExpr (operator=MUL_DIV operands=SqrExpr)?
+    operands=SqrExpr (operator=MUL_DIV operands=SqrExpr)*
 ;
 
 SqrExpr:
-    operands=Factor (operator=SQR operands=Factor)?
+    operands=Factor (operator=SQR operands=Factor)*
 ;
 
 Factor:

@@ -18,6 +18,9 @@ class DataType(Enum):
     STATEMENT = 3
     SPECIAL = 4
 
+#TODO: Need to add DataType: STRING_VAR, INT_VAR, FLOAT_VAR, BOOL_VAR 
+#-> podatke vuci iz data_providera
+
 
 # Should be transpiler
 class RulesInterpreter(object):
@@ -179,115 +182,115 @@ class RulesInterpreter(object):
 
 
     def logic_expression(self, logic):
-        if len(logic.operands) < 2:
-            return logic.operands[0]
-
-        if logic.operands[0][1] == DataType.WORKABLE and logic.operands[1][1] == DataType.WORKABLE:
-            val = None
-            if logic.operator[0] == 'and':
-                val = logic.operands[0][0] and logic.operands[1][0]
-            if logic.operator[0] == 'or':
-                val = logic.operands[0][0] or logic.operands[1][0]
-
-            return (val, DataType.WORKABLE)
-        else:
-            return ('(' + 
-                    logic.operator[0] + ' ' + 
-                    str(self.translate(logic.operands[0][0])) + ' ' + 
-                    str(self.translate(logic.operands[1][0])) + ')',  DataType.STATEMENT)
-
-
-    #TODO: Comaring strings function
-    def comp_expression(self, comp):
-        if len(comp.operands) < 2:
-            return comp.operands[0]
-
-        if comp.operands[0][1] == DataType.WORKABLE and comp.operands[1][1] == DataType.WORKABLE:
-            if ((comp.operands[0][0].__class__ == int or comp.operands[0][0].__class__ == float)
-            and (comp.operands[1][0].__class__ == int or comp.operands[1][0].__class__ == float)
-            or  (comp.operands[0][0].__class__ == str and comp.operands[1][0].__class__ == str)):
+        result = logic.operands[0]
+        for i in range(1, len(logic.operands)):
+            if result[1] == DataType.WORKABLE and logic.operands[i][1] == DataType.WORKABLE:
                 val = None
-                if comp.operator[0] == '==':
-                    val = comp.operands[0][0] == comp.operands[1][0]
-                if comp.operator[0] == '!=':
-                    val = comp.operands[0][0] != comp.operands[1][0]
-                if comp.operator[0] == '<':
-                    val = comp.operands[0][0] < comp.operands[1][0]
-                if comp.operator[0] == '>':
-                    val = comp.operands[0][0] > comp.operands[1][0]
-                if comp.operator[0] == '<=':
-                    val = comp.operands[0][0] <= comp.operands[1][0]
-                if comp.operator[0] == '>=':
-                    val = comp.operands[0][0] >= comp.operands[1][0]
+                if logic.operator[i-1] == 'and':
+                    val = result[0] and logic.operands[i][0]
+                if logic.operator[i-1] == 'or':
+                    val = result[0] or logic.operands[i][0]
 
-                return (val, DataType.WORKABLE)
-        else:
-            return ('(' + 
-                    comp.operator[0] + ' ' + 
-                    str(self.translate(comp.operands[0][0])) + ' ' + 
-                    str(self.translate(comp.operands[1][0])) + ')',  DataType.STATEMENT)
+                result = (val, DataType.WORKABLE)
+            else:
+                result = ('(' + 
+                        logic.operator[i-1] + ' ' + 
+                        str(self.translate(result[0])) + ' ' + 
+                        str(self.translate(logic.operands[i][0])) + ')',  DataType.STATEMENT)
+        return result
+
+
+    #TODO: Comaring strings function -> it will be complex -> requires data_provider data about field
+    def comp_expression(self, comp):
+        result = comp.operands[0]
+        for i in range(1, len(comp.operands)):
+            if result[1] == DataType.WORKABLE and comp.operands[i][1] == DataType.WORKABLE:
+                if ((result[0].__class__ == int or result[0].__class__ == float)
+                and (comp.operands[i][0].__class__ == int or comp.operands[i][0].__class__ == float)
+                or  (result[0].__class__ == str and comp.operands[i][0].__class__ == str)):
+                    val = None
+                    if comp.operator[i-1] == '<':
+                        val = result[0] < comp.operands[i][0]
+                    if comp.operator[i-1] == '>':
+                        val = result[0] > comp.operands[i][0]
+                    if comp.operator[i-1] == '<=':
+                        val = result[0] <= comp.operands[i][0]
+                    if comp.operator[i-1] == '>=':
+                        val = result[0] >= comp.operands[i][0]
+                    if comp.operator[i-1] == '==':
+                        val = result[0] == comp.operands[i][0]
+                    if comp.operator[i-1] == '!=':
+                        val = result[0] != comp.operands[i][0]
+                    
+                    result = (val, DataType.WORKABLE)
+            else:
+                result = ('(' + 
+                        comp.operator[i-1] + ' ' + 
+                        str(self.translate(result[0])) + ' ' + 
+                        str(self.translate(comp.operands[i][0])) + ')',  DataType.STATEMENT)
+        return result
 
 
 
     def plus_minus_expr(self, plus_minus):
-        if len(plus_minus.operands) < 2:
-            return plus_minus.operands[0]
-
-        if plus_minus.operands[0][1] == DataType.WORKABLE and plus_minus.operands[1][1] == DataType.WORKABLE:
-            if ((plus_minus.operands[0][0].__class__ == int or plus_minus.operands[0][0].__class__ == float)
-            and (plus_minus.operands[1][0].__class__ == int or plus_minus.operands[1][0].__class__ == float)):
-                val = None
-                if plus_minus.operator[0] == '+':
-                    val = plus_minus.operands[0][0] + plus_minus.operands[1][0]
-                if plus_minus.operator[0] == '-':
-                    val = plus_minus.operands[0][0] - plus_minus.operands[1][0]
-                
-                return (val, DataType.WORKABLE)
-        else:
-            return ('(' + 
-                    plus_minus.operator[0] + ' ' + 
-                    str(plus_minus.operands[0][0]) + ' ' + 
-                    str(plus_minus.operands[1][0]) + ')',  DataType.STATEMENT)
-
+        result = plus_minus.operands[0]
+        for i in range(1, len(plus_minus.operands)):
+            if result[1] == DataType.WORKABLE and plus_minus.operands[i][1] == DataType.WORKABLE:
+                if ((result[0].__class__ == int or result[0].__class__ == float)
+                and (plus_minus.operands[i][0].__class__ == int or plus_minus.operands[i][0].__class__ == float)):
+                    val = None
+                    if plus_minus.operator[i-1] == '+':
+                        val = result[0] + plus_minus.operands[i][0]
+                    if plus_minus.operator[i-1] == '-':
+                        val = result[0] - plus_minus.operands[i][0]
+                    
+                    result = (val, DataType.WORKABLE)
+            else:
+                result = ('(' + 
+                        plus_minus.operator[i-1] + ' ' + 
+                        str(result[0]) + ' ' + 
+                        str(plus_minus.operands[i][0]) + ')',  DataType.STATEMENT)
+        return result
 
 
     def mul_div_expr(self, mul_div):
-        if len(mul_div.operands) < 2:
-            return mul_div.operands[0]
-        
-        if mul_div.operands[0][1] == DataType.WORKABLE and mul_div.operands[1][1] == DataType.WORKABLE:
-            if ((mul_div.operands[0][0].__class__ == int or mul_div.operands[0][0].__class__ == float)
-            and (mul_div.operands[1][0].__class__ == int or mul_div.operands[1][0].__class__ == float)):    
-                val = None
-                if mul_div.operator[0] == '*':
-                    val = mul_div.operands[0][0] * mul_div.operands[1][0]
-                if mul_div.operator[0] == '/':
-                    val = mul_div.operands[0][0] / mul_div.operands[1][0]
-                
-                return (val, DataType.WORKABLE)
-        else:
-            return ('(' + 
-                    mul_div.operator[0] + ' ' + 
-                    str(mul_div.operands[0][0]) + ' ' + 
-                    str(mul_div.operands[1][0]) + ')',  DataType.STATEMENT)
+        result = mul_div.operands[0]
+        for i in range(1, len(mul_div.operands)):
+            if result[1] == DataType.WORKABLE and mul_div.operands[i][1] == DataType.WORKABLE:
+                if ((result[0].__class__ == int or result[0].__class__ == float)
+                and (mul_div.operands[i][0].__class__ == int or mul_div.operands[i][0].__class__ == float)):    
+                    val = None
+                    if mul_div.operator[i-1] == '*':
+                        val = result[0] * mul_div.operands[i][0]
+                    if mul_div.operator[i-1] == '/':
+                        val = result[0] / mul_div.operands[i][0]
+                    
+                    result = (val, DataType.WORKABLE)
+            else:
+                result = ('(' + 
+                        mul_div.operator[i-1] + ' ' + 
+                        str(result[0]) + ' ' + 
+                        str(mul_div.operands[1][0]) + ')',  DataType.STATEMENT)
+
+        return result
 
 
 
     def sqr_expr(self, sqr):
-        if len(sqr.operands) < 2:
-            return sqr.operands[0]
-      
-        if sqr.operands[0][1] == DataType.WORKABLE and sqr.operands[1][1] == DataType.WORKABLE:
-            if ((sqr.operands[0][0].__class__ == int or sqr.operands[0][0].__class__ == float)
-            and (sqr.operands[1][0].__class__ == int or sqr.operands[1][0].__class__ == float)):
+        result = sqr.operands[0]
+        for i in range(1, len(sqr.operands)):
+            if result[1] == DataType.WORKABLE and sqr.operands[i][1] == DataType.WORKABLE:
+                if ((result[0].__class__ == int or result[0].__class__ == float)
+                and (sqr.operands[i][0].__class__ == int or sqr.operands[i][0].__class__ == float)):
 
-                val = sqr.operands[0][0] ** sqr.operands[1][0]
-                return (val, DataType.WORKABLE)
-        else:
-            return ('(** ' + 
-                    str(sqr.operands[0][0]) + ' ' + 
-                    str(sqr.operands[1][0]) + ')',  DataType.STATEMENT)
+                    val = result[0] ** sqr.operands[i][0]
+                    result = (val, DataType.WORKABLE)
+            else:
+                result = ('(** ' + 
+                        str(result[0]) + ' ' + 
+                        str(sqr.operands[i][0]) + ')',  DataType.STATEMENT)
 
+        return result
 
 
     def factor(self, factor):
