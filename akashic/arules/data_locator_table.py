@@ -48,7 +48,7 @@ class DataLocatorTable(object):
     def lookup(self, template_name, field_name, table_type):
         if template_name in self.tables[table_type]:
             if field_name in self.tables[table_type][template_name].fields:
-                return self.tables[table_type][template_name].fields[field_name]
+                return self.tables[table_type][template_name].fields[field_name].var_name
         
         return None
 

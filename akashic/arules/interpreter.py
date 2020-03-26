@@ -112,9 +112,10 @@ class RulesInterpreter(object):
             ops = []
             for i in range(0, len(binary.operands)):
                 if binary.operands[i][1] == DataType.STATEMENT:
+                    print(binary.operator[0])
                     # Build clips command
                     clips_command = self.clips_pattern_builder.build_special_pattern(self.data_locator_table, binary.operands[i][0])
-                    ops.append("(" + binary.operator + " " + clips_command + ")")
+                    ops.append(clips_command) 
 
                     # Just clear up the TMP data locator table
                     self.data_locator_table.reset_table(TableType.TMP)
@@ -122,11 +123,11 @@ class RulesInterpreter(object):
                 elif binary.operands[i][1] == DataType.SPECIAL:
                     ops.append(binary.operands[i][0])
 
-            self.clips_command_list.append(
-                    "(" + binary.operator[0] + " " + 
-                   ops[0] + " " + 
-                   ops[1] + ")"
-            )
+            result = ops[0]
+            for i in range(1, len(binary.operands)):
+                result = "(" + binary.operator[i-1] + " " + result + " " + ops[i] + ")"
+
+            self.clips_command_list.append(result)
 
 
 

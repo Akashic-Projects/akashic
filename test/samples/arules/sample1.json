@@ -3,9 +3,10 @@
     "salience": 100,
     "when": [
         { "?test": "'hello world. People!'"},
-        { "?value": "3 * 3" },
+        { "?age": "person.age" },
+        { "?c_age": "34 / 2"},
 
-        { "assert": "exists[User.age > 4]" }
+        { "assert": "exists[?age < ?c_age] and [person.age > 23]" }
     ],
     "then": [
         {"read": "Some value"}
