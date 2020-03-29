@@ -7,6 +7,7 @@ class Entry(object):
     def __init__(self):
         self.name = None
         self.value = None
+        self.used_variables = []
 
 
 class VariableTable(object):
@@ -15,10 +16,11 @@ class VariableTable(object):
         self.table = {}
 
 
-    def add_named_var(self, name, value):
+    def add_named_var(self, name, value, used_vars):
         e = Entry()
         e.name = name
         e.value = value
+        e.used_variables = used_vars
 
         self.table[name] = e
         return e.name
@@ -31,6 +33,8 @@ class VariableTable(object):
         e = Entry()
         e.name = gen_name
         e.value = value
+        e.used_variables = []
+       
         
         self.table[gen_name] = e
         return gen_name

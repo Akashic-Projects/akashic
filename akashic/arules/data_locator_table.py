@@ -12,20 +12,18 @@ class Field(object):
         self.var_name = None
 
 class TableType(Enum):
-    REGULAR = 0
-    TMP = 1
+    TMP = 0
+
 
 class DataLocatorTable(object):
     def __init__(self):
         self.tables = {}
-        self.tables[TableType.REGULAR] = {}
         self.tables[TableType.TMP] = {}
 
 
     def transfer_from_to(self, from_table_type, to_table_type):
         for template_name, template in self.tables[from_table_type].items():
             for field_name, field in template.fields.items():
-
                 if not self.lookup(template_name, field_name, to_table_type):
                     self.add(template_name, field_name, field.var_name, to_table_type)
 

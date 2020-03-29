@@ -17,6 +17,7 @@ class DataType(Enum):
     VARIABLE = 2
     STATEMENT = 3
     SPECIAL = 4
+    NOTHING = 5
 
 #TODO: Need to add DataType: STRING_VAR, INT_VAR, FLOAT_VAR, BOOL_VAR 
 #-> podatke vuci iz data_providera
@@ -32,7 +33,7 @@ class RulesInterpreter(object):
         self.clips_command_list = []
 
         # Keep track of used variables in this array
-        self.used_vars = []
+        self.data_locator_vars = []
 
         processors = {
             'RHSStatement': self.rhs_statement,
@@ -86,16 +87,30 @@ class RulesInterpreter(object):
             return value
 
 
+
     def rotate_used_data_locator_vars(self):
-        
+        for var_name in self.data_locator_vars:
+            for template_name, template in self.data_locator_table.tables[TableType.TMP].items():
+                for field_name, field in template.fields.items():
+                    if field.var_name == var_name:
+                        to_add = ("", DataType.NOTHING)
+                        gen_var_name = self.variable_table.add_helper_var(to_add)
+                        field.var_name = gen_var_name
+
+                        for vn, var_value in self.variable_table.table.items():
+                            var_value.value = (var_value.value[0].replace(var_name, gen_var_name), var_value.value[1])
 
 
-    #TODO: Create Count function
+
+
     def rhs_statement(self, rhss):
         if rhss.stat.__class__.__name__ == "VARIABLE_INIT":
-            self.variable_table.add_named_var(rhss.stat.var_name, self.translate(rhss.stat.expr))
+            self.variable_table.add_named_var(rhss.stat.var_name, self.translate(rhss.stat.expr), self.data_locator_vars)
+            self.data_locator_vars = []
         elif rhss.stat.__class__.__name__ == "ASSERTION":
+            print(self.data_locator_vars)
             print("Assertion done.")
+            
 
 
 
@@ -107,11 +122,6 @@ class RulesInterpreter(object):
                 clips_commands = self.clips_pattern_builder.build_regular_pattern(self.data_locator_table)
                 self.clips_command_list.extend(clips_commands)
                 self.clips_command_list.append("(test " + binary.operands[0][0] + ")")
-
-                # Transfer to regular and clear up the TMP data locator table
-                self.data_locator_table.transfer_from_to(TableType.TMP, TableType.REGULAR)
-                self.data_locator_table.reset_table(TableType.TMP)
-
             elif binary.operands[0][1] == DataType.SPECIAL:
                 self.clips_command_list.append(binary.operands[0][0])
 
@@ -119,13 +129,12 @@ class RulesInterpreter(object):
             ops = []
             for i in range(0, len(binary.operands)):
                 if binary.operands[i][1] == DataType.STATEMENT:
-                    print(binary.operator[0])
                     # Build clips command
                     clips_command = self.clips_pattern_builder.build_special_pattern(self.data_locator_table, binary.operands[i][0])
                     ops.append(clips_command) 
 
-                    # Just clear up the TMP data locator table
-                    self.data_locator_table.reset_table(TableType.TMP)
+                     # Rotate defined variables for next special expression
+                    self.rotate_used_data_locator_vars()
 
                 elif binary.operands[i][1] == DataType.SPECIAL:
                     ops.append(binary.operands[i][0])
@@ -151,8 +160,8 @@ class RulesInterpreter(object):
         # Build clips command
         clips_command = self.clips_pattern_builder.build_special_pattern(self.data_locator_table, singular.operand[0])
 
-        # Just clear up the TMP data locator table
-        self.data_locator_table.reset_table(TableType.TMP)
+        # Rotate defined variables for next special expression
+        self.rotate_used_data_locator_vars()
 
         # Return CLIPS command
         return ("(" + singular.operator + " " + clips_command + ")", DataType.SPECIAL)
@@ -168,10 +177,6 @@ class RulesInterpreter(object):
         clips_commands = self.clips_pattern_builder.build_regular_pattern(self.data_locator_table)
         self.clips_command_list.extend(clips_commands)
         self.clips_command_list.append("(test " + test.operand[0] + ")")
-
-        # Transfer to regular and clear up the TMP data locator table
-        self.data_locator_table.transfer_from_to(TableType.TMP, TableType.REGULAR)
-        self.data_locator_table.reset_table(TableType.TMP)
 
 
 
@@ -315,12 +320,11 @@ class RulesInterpreter(object):
 
 
     def variable(self, var):
-        # Pamtimo promenjive koje koristimo dok ne dobijemo njihov kontekst
-        self.used_vars.append(var.var_name)
         var_entry = self.variable_table.lookup(var.var_name)
         if var_entry == None:
             raise SemanticError("Undefined variable {0}.".format(var.var_name))
         else:
+            self.data_locator_vars = list(set(self.data_locator_vars) | set(var_entry.used_variables))
             return var_entry.value
 
 
@@ -329,13 +333,11 @@ class RulesInterpreter(object):
         template_name = data_locator.template_conn_expr.templates[0]
         field_name = data_locator.field
 
-        found_var_name1 = self.data_locator_table.lookup(template_name, field_name, TableType.TMP)
-        found_var_name2 = self.data_locator_table.lookup(template_name, field_name, TableType.REGULAR)
-        if found_var_name1:
-            return (found_var_name1, DataType.VARIABLE)
-        elif found_var_name2:
-            return (found_var_name2, DataType.VARIABLE)
+        found_var_name = self.data_locator_table.lookup(template_name, field_name, TableType.TMP)
+        if found_var_name:
+            return (found_var_name, DataType.VARIABLE)
         else:
-            gen_var_name = self.variable_table.add_helper_var("")
+            gen_var_name = self.variable_table.add_helper_var(("", DataType.NOTHING))
+            self.data_locator_vars.append(gen_var_name)
             self.data_locator_table.add(template_name, field_name, gen_var_name, TableType.TMP)
             return (gen_var_name, DataType.VARIABLE)
