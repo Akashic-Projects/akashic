@@ -4,9 +4,10 @@
     "when": [
         { "?test": "'hello world. People!'"},
         { "?age": "person.age" },
+        { "?name": "person.name == 'Marko' " },
         { "?c_age": "34 / 2"},
 
-        { "assert": "exists[?age < ?c_age] and [person.age > 23]" }
+        { "assert": "exists[?age < ?c_age and ?name]" }
     ],
     "then": [
         {"read": "Some value"}

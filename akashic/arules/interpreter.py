@@ -31,6 +31,9 @@ class RulesInterpreter(object):
         self.data_locator_table = DataLocatorTable()
         self.clips_command_list = []
 
+        # Keep track of used variables in this array
+        self.used_vars = []
+
         processors = {
             'RHSStatement': self.rhs_statement,
             'SpecialBinaryLogicExpression': self.special_binary_logic_expression,
@@ -81,6 +84,10 @@ class RulesInterpreter(object):
                 return "FALSE"
         else:
             return value
+
+
+    def rotate_used_data_locator_vars(self):
+        
 
 
     #TODO: Create Count function
@@ -308,6 +315,8 @@ class RulesInterpreter(object):
 
 
     def variable(self, var):
+        # Pamtimo promenjive koje koristimo dok ne dobijemo njihov kontekst
+        self.used_vars.append(var.var_name)
         var_entry = self.variable_table.lookup(var.var_name)
         if var_entry == None:
             raise SemanticError("Undefined variable {0}.".format(var.var_name))
