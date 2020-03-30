@@ -100,6 +100,9 @@ class RulesInterpreter(object):
                         for vn, var_value in self.variable_table.table.items():
                             var_value.value = (var_value.value[0].replace(var_name, gen_var_name), var_value.value[1])
 
+                            var_value.used_variables = [gen_var_name if uv == var_name else uv for uv in var_value.used_variables]
+
+
 
 
 
@@ -108,7 +111,6 @@ class RulesInterpreter(object):
             self.variable_table.add_named_var(rhss.stat.var_name, self.translate(rhss.stat.expr), self.data_locator_vars)
             self.data_locator_vars = []
         elif rhss.stat.__class__.__name__ == "ASSERTION":
-            print(self.data_locator_vars)
             print("Assertion done.")
             
 
@@ -130,11 +132,12 @@ class RulesInterpreter(object):
             for i in range(0, len(binary.operands)):
                 if binary.operands[i][1] == DataType.STATEMENT:
                     # Build clips command
-                    clips_command = self.clips_pattern_builder.build_special_pattern(self.data_locator_table, binary.operands[i][0])
+                    clips_command = self.clips_pattern_builder.build_special_pattern(self.data_locator_table, self.data_locator_vars, binary.operands[i][0])
                     ops.append(clips_command) 
 
-                     # Rotate defined variables for next special expression
+                    # Rotate defined variables for next special expression
                     self.rotate_used_data_locator_vars()
+                    self.data_locator_vars = []
 
                 elif binary.operands[i][1] == DataType.SPECIAL:
                     ops.append(binary.operands[i][0])
@@ -157,11 +160,13 @@ class RulesInterpreter(object):
         if singular.operand[1] != DataType.STATEMENT:
             raise SemanticError("{0} must be statement. {1} given.".format(singular.operator, singular.operand[1].name))
 
+        print("From special_singular_logic_expression: " + str(self.data_locator_vars))
         # Build clips command
-        clips_command = self.clips_pattern_builder.build_special_pattern(self.data_locator_table, singular.operand[0])
+        clips_command = self.clips_pattern_builder.build_special_pattern(self.data_locator_table, self.data_locator_vars, singular.operand[0])
 
         # Rotate defined variables for next special expression
         self.rotate_used_data_locator_vars()
+        self.data_locator_vars = []
 
         # Return CLIPS command
         return ("(" + singular.operator + " " + clips_command + ")", DataType.SPECIAL)
@@ -211,6 +216,7 @@ class RulesInterpreter(object):
                         str(self.translate(result[0])) + ' ' + 
                         str(self.translate(logic.operands[i][0])) + ')',  DataType.STATEMENT)
         return result
+
 
 
     #TODO: Comaring strings function -> it will be complex -> requires data_provider data about field
@@ -324,6 +330,8 @@ class RulesInterpreter(object):
         if var_entry == None:
             raise SemanticError("Undefined variable {0}.".format(var.var_name))
         else:
+            print("To add vars from : " + str(var.var_name))
+            print("-------")
             self.data_locator_vars = list(set(self.data_locator_vars) | set(var_entry.used_variables))
             return var_entry.value
 

@@ -13,9 +13,22 @@ import json
 from jsonpath_ng import jsonpath, parse
 
 
+
 class DataProvider(object):
+    """ DataProvider class
+
+    It serves the purpose of mapping json data obtained 
+    from specified web services to the clips templates and facts,
+    using written specification called DSD (data source definition).
+    """
 
     def __init__(self):
+        """ DataProvider constructor method
+        
+        Main operation is loading the meta-model which describes and defines
+        the grammar and structure of single data source definition.
+        """
+
         this_folder = dirname(__file__)
         self.meta_model = metamodel_from_file(join(this_folder, 'meta_model.tx'), debug=False)
         self.dsd = None
@@ -23,7 +36,32 @@ class DataProvider(object):
         self.fetcher = None
 
 
+
+
+    # LOADING & SETUP OPERATIONS SECTION 
+    ################################################################
     def transalte_exception(self, ttype, line, col, message):
+        """ Translates the textX exceptions to akashic exceptions
+        
+        Parameters
+        ----------
+        ttype : str
+            Type of exception, possible values: "Syntax" & "Semantic"
+        line : int
+            Line number in data source definition where error was occured
+        col : int
+            Column number in data source definition where error was occured
+        message : str
+            Error message
+
+        Raises
+        ------
+        SyntacticError
+            If syntactic error has occured
+        SemanticError
+            If semantic error has occured
+        """
+
         message = f"Detected: {ttype} error at line {line} and column {col}. \nMessage: " + message
         if ttype == "Syntax":
             raise SyntacticError(message)
@@ -31,7 +69,23 @@ class DataProvider(object):
             raise SemanticError(message)
 
 
+
     def load(self, dsd_string):
+        """ Loads data-provider specification from given string
+
+        Parameters
+        ----------
+        dsd_string : str
+            String containing data source definition
+
+        Raises
+        ------
+        SyntacticError
+            If syntactic error has occured
+        SemanticError
+            If semantic error has occured
+        """
+
         try:
             self.dsd = self.meta_model.model_from_str(dsd_string)
             return 0
@@ -41,7 +95,11 @@ class DataProvider(object):
             self.transalte_exception("Semantic", syntaxError.line, syntaxError.col, syntaxError.message)
     
 
+
     def setup(self):
+        """ Setup DataChecker and DataFetcher based on loaded data source definition
+
+        """
         self.checker = DataChecker(self.dsd)
         self.checker.check_url_mappings()
 
@@ -49,23 +107,25 @@ class DataProvider(object):
         return 0
         
 
-    def fill_data_map(self, url_map, **kwargs):
-        url_fields = []
-        for m in re.finditer(r"\{(((?!\{|\}).)*)\}", url_map):
-            url_fields.append(m.group(1))
-        
-        if len(url_fields) != len(kwargs):
-            return 1
-
-        for key, value in kwargs.items():
-            pattern = re.compile("\{" + key + "\}")
-            url_map = re.sub(pattern, str(value), url_map)
-        
-        return url_map
 
 
+    # CLIPS STATEMENTS GENERATION SECTION 
+    ################################################################
     def generate_clips_template(self):
-        tempalte_def = "(deftemplate " + str(self.dsd.model_id) + "\n"
+        """ Generates CLIPS template from loaded data source definition
+
+        Details
+        -------
+        We use DSD model_id unique identifier for CLIPS template name.
+        CLIPS does not support BOOLEAN type, so we convert it to INTEGER.
+
+        Returns
+        -------
+        clips_tempalte_def : str
+            Generated CLIPS template definition statement
+        """
+
+        clips_tempalte_def = "(deftemplate " + str(self.dsd.model_id) + "\n"
         slot_defs = []
         for field in self.dsd.fields:
             # Resolve BOOLEAN type
@@ -76,21 +136,45 @@ class DataProvider(object):
                 resolved_type = field.type
             slot_defs.append("\t(slot " + str(field.field_name) + " (type " + str(resolved_type) + "))")
         
-        tempalte_def += "\n".join(slot_defs) + ")"
+        clips_tempalte_def += "\n".join(slot_defs) + ")"
 
-        return tempalte_def
+        return clips_tempalte_def
 
 
-    # Generic clips fact generation function
+
     def generate_clips_fact(self, json_object, json_path_func):
+        """ Generic method that generates CLIPS fact from given parsed JSON object
+
+        Parameters
+        ----------
+        json_object : object
+            Parsed JSON object
+        json_path_func: function
+            Function which determines which JSON path expression will be used,
+            possible functions: for single object & for multitude of objects inside of array
+
+        Details
+        -------
+        We use DSD model_id unique identifier for CLIPS fact name.
+        CLIPS does not support BOOLEAN type, so we convert it to INTEGER.
+
+        1. We loop through all fields of this data source definition.
+        2. We locate DSD field in JSON object and read data from it.
+        3. We translate BOOLEAN to INTEGER, if present.
+        4. We add quotes to STRING type, if present.
+
+        Returns
+        -------
+        clips_fact: str
+            Generated CLIPS fact definition statement
+        """
+
         clips_fact = "(" + str(self.dsd.model_id)
         clips_fields = []
 
         for field in self.dsd.fields:
-            print("IT IS: " + json_path_func(field))
             jsonpath_expr = parse(str(json_path_func(field)))
             result = [match.value for match in jsonpath_expr.find(json_object)][0]
-            print("RESULT: " + str(result))
 
             # Resolve field value
             resolved_value = None
@@ -110,14 +194,52 @@ class DataProvider(object):
         return clips_fact
 
 
-    # Generate one fact from json object - response
+
     def generate_one_clips_fact(self, json_object):
+        """ Generate single CLIPS fact from given single parsed JSON object originating
+        from web service's RESPONSE!
+
+        Parameters
+        ----------
+        json_object : object
+            Parsed JSON object
+
+        Details
+        -------
+        We define lambda func which extracts 'response_one_json_path' field from given field object.
+        We feed the generic CLIPS fact generator with JSON object and this lambda function.
+
+        Returns
+        -------
+        str
+            Generated single CLIPS fact definition statement
+        """
+
         json_path_func = lambda field : field.response_one_json_path
         return self.generate_clips_fact(json_object, json_path_func)
 
 
-    # Generate multiple facts from json list - response
+
     def generate_multiple_clips_facts(self, json_object, array_len):
+        """ Generate multiple CLIPS facts from given parsed JSON array of object originating
+        from web service's RESPONSE!
+
+        Parameters
+        ----------
+        json_object : object-array
+            Parsed JSON array
+
+        Details
+        -------
+        We define lambda func which extracts 'response_mul_json_path' field from given field object.
+        We feed the generic CLIPS fact generator with JSON object and this lambda function.
+
+        Returns
+        -------
+        facts: list[str]
+            Generated array of CLIPS fact definition statements
+        """
+
         facts = []
         for i in range(0, array_len):
             json_path_func = lambda field : self.fill_data_map(field.response_mul_json_path, index=i)
@@ -126,28 +248,65 @@ class DataProvider(object):
         return facts
 
 
+
+
     # API OPERATIONS SECTION 
     ################################################################
-    def create(self, json_object, **kwargs):
-        # TODO: Add json header
-        self.checker.check_field_types(use_json_as="request", operation="create", json_object=json_object)
+    def fill_data_map(self, url_map, **kwargs):
+        """ Generates real URL by filling given URL with provided dict data
+
+        Parameters
+        ----------
+        url_map : str
+            URL map is regular URL string containing '{variable_name}' in places of real key data
+        **kwargs: dict
+            Dictionary of pairs 'variable_name: value'
+
+        Details
+        -------
+        Here we use regular expression matcher to find all occurences like '{variable_name}'.
         
-        url_map = self.dsd.apis.create.url_map
-        url = self.fill_data_map(url_map, **kwargs)
+        Returns
+        -------
+        1 : int
+            If number of provided variables does not match number of variables in url_map
+        url_map : str
+            Built real url
+        """
+
+        url_fields = []
+        for m in re.finditer(r"\{(((?!\{|\}).)*)\}", url_map):
+            url_fields.append(m.group(1))
         
-        result = self.fetcher.create(url, json_object)
-        return json.loads(result)
+        if len(url_fields) != len(kwargs):
+            return 1
+
+        for key, value in kwargs.items():
+            pattern = re.compile("\{" + key + "\}")
+            url_map = re.sub(pattern, str(value), url_map)
+        
+        return url_map
 
 
-    def read_one(self, **kwargs):
-        url_map = self.dsd.apis.read_one.url_map
-        url = self.fill_data_map(url_map, **kwargs)
-        
-        result = self.fetcher.read_one(url)
-        return json.loads(result)
-    
-    
+
     def construct_query(self, **kwargs):
+        """ Constructs search query with provided data - dict
+
+        Parameters
+        ----------
+        **kwargs: dict
+            Dictionary of pairs 'search_field: value'
+
+        Details
+        -------
+        First we define default search query, then we override them with given fields
+        
+        Returns
+        -------
+        default_kwargs : dict
+            Constructed search query in form of dictionary
+        """
+
         default_kwargs = {
             "pageIndex": 1,
             "pageRowCount": 5,
@@ -162,28 +321,149 @@ class DataProvider(object):
         return default_kwargs
 
 
-    def read_multiple(self, **kwargs):
-        url_map = self.dsd.apis.read_multiple.url_map
-        url = self.fill_data_map(url_map, **self.construct_query(**kwargs))
+
+    def create(self, json_object, **kwargs):
+        """ Constructs 'create' web service request, as specified in DSD 
+
+        Parameters
+        ----------
+        json_object: object
+            Parsed JSON array
+        **kwargs: dict
+            Dictionary of data used to fill URL map
+
+        Details
+        -------
+        1. We if all check field types are right
+        2. We fill the URL map
+        3. We call data featcher to execute request
         
-        result = self.fetcher.read_multiple(url)
+        Returns
+        -------
+        parsed JSON object
+            Web service response as parsed JSON object
+        """
+       
+        self.checker.check_field_types(use_json_as="request", operation="create", json_object=json_object)
+        
+        url_map = self.dsd.apis.create.url_map
+        url = self.fill_data_map(url_map, **kwargs)
+        
+        # We set required JSON header
+        result = self.fetcher.create(url, json_object, {"Content-Type": "application/json"})
         return json.loads(result)
 
 
+
+    def read_one(self, **kwargs):
+        """ Constructs 'read_one' web service request, as specified in DSD 
+
+        Parameters
+        ----------
+        **kwargs: dict
+            Dictionary of data used to fill URL map
+
+        Details
+        -------
+        1. We fill the URL map
+        2. We call data featcher to execute request
+        
+        Returns
+        -------
+        parsed JSON object
+            Web service response as parsed JSON object
+        """
+
+        url_map = self.dsd.apis.read_one.url_map
+        url = self.fill_data_map(url_map, **kwargs)
+        
+        result = self.fetcher.read_one(url, {})
+        return json.loads(result)
+    
+
+
+    def read_multiple(self, **kwargs):
+        """ Constructs 'read_multiple' web service request, as specified in DSD 
+
+        Parameters
+        ----------
+        **kwargs: dict
+            Dictionary of data used to fill URL map
+
+        Details
+        -------
+        1. We fill the URL map
+        2. We call data featcher to execute request
+        
+        Returns
+        -------
+        parsed JSON object
+            Web service response as parsed JSON object
+        """
+
+        url_map = self.dsd.apis.read_multiple.url_map
+        url = self.fill_data_map(url_map, **self.construct_query(**kwargs))
+        
+        result = self.fetcher.read_multiple(url, {})
+        return json.loads(result)
+
+
+
     def update(self, json_object, **kwargs):
-         # TODO: Add json header
+        """ Constructs 'update' web service request, as specified in DSD 
+
+        Parameters
+        ----------
+        json_object: object
+            Parsed JSON array
+        **kwargs: dict
+            Dictionary of data used to fill URL map
+
+        Details
+        -------
+        1. We if all check field types are right
+        2. We fill the URL map
+        3. We call data featcher to execute request
+        
+        Returns
+        -------
+        parsed JSON object
+            Web service response as parsed JSON object
+        """
+        
         self.checker.check_field_types(use_json_as="request", operation="update", json_object=json_object)
         
         url_map = self.dsd.apis.update.url_map
         url = self.fill_data_map(url_map, **kwargs)
         
-        result = self.fetcher.update(url, json_object)
+        # We set required JSON header
+        result = self.fetcher.update(url, json_object, {"Content-Type": "application/json"})
         return json.loads(result)
 
 
+
+    # TODO: There might be problem if response is empty
     def delete(self, **kwargs):
+        """ Constructs 'delete' web service request, as specified in DSD 
+
+        Parameters
+        ----------
+        **kwargs: dict
+            Dictionary of data used to fill URL map
+
+        Details
+        -------
+        1. We fill the URL map
+        2. We call data featcher to execute request
+        
+        Returns
+        -------
+        parsed JSON object
+            Web service response as parsed JSON object
+        """
+
         url_map = self.dsd.apis.delete.url_map
         url = self.fill_data_map(url_map, **kwargs)
         
-        result = self.fetcher.delete(url)
+        result = self.fetcher.delete(url, {})
         return json.loads(result)

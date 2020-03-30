@@ -13,32 +13,32 @@ class DataFetcher(object):
                 self.headers[h.header_name] = h.header_value
 
 
-    def create(self, url, payload):
-        response = requests.post(url, data=json.dumps(payload), headers=self.headers)
+    def create(self, url, payload, headers):
+        response = requests.post(url, data=json.dumps(payload), headers=headers.update(self.headers))
         response.raise_for_status()
         return response.text
 
 
-    def read_one(self, url):
-        response = requests.get(url, headers=self.headers)
+    def read_one(self, url, headers):
+        response = requests.get(url, headers=headers.update(self.headers))
         response.raise_for_status()
         return response.text
 
 
-    def read_multiple(self, url):
-        response = requests.get(url, headers=self.headers)
+    def read_multiple(self, url, headers):
+        response = requests.get(url, headers=headers.update(self.headers))
         response.raise_for_status()
         return response.text
 
 
-    def update(self, url, payload):
-        response = requests.put(url, data=json.dumps(payload), headers=self.headers)
+    def update(self, url, payload, headers):
+        response = requests.put(url, data=json.dumps(payload), headers=headers.update(self.headers))
         response.raise_for_status()
         return response.text
     
 
-    def delete(self, url):
-        response = requests.delete(url, headers=self.headers)
+    def delete(self, url, headers):
+        response = requests.delete(url, headers=headers.update(self.headers))
         response.raise_for_status()
         return response.text
     
