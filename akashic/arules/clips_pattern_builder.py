@@ -4,7 +4,7 @@ from akashic.arules.data_locator_table import DataLocatorTable, TableType
 from akashic.exceptions import SemanticError
 
 
-# Needs to checks template and field names against given data_providers 
+# TODO: Needs to checks template and field names against given data_providers 
 class CLIPSPatternBuilder(object):
 
     def build_regular_pattern(self, data_locator_table):

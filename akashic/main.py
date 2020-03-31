@@ -1,4 +1,4 @@
-from akashic.arules.interpreter import RulesInterpreter
+from akashic.arules.transpiler import Transpiler
 from akashic.ads.data_provider import DataProvider
 from akashic.ads.env_provider import EnvProvider
 
@@ -7,7 +7,7 @@ import json
 
 
 
-def test_data_soruce_def_interpreter():
+def test_data_provider():
     data_provider = DataProvider()
 
     # Read rule from sample file
@@ -72,9 +72,9 @@ def test_data_soruce_def_interpreter():
         # No anonymous!
 
 
-def test_rule_interpreter():
+def test_rule_transpiler():
     data_provider = DataProvider()
-    i = RulesInterpreter(data_provider)
+    i = Transpiler(data_provider)
 
     # Read rule from sample file
     this_folder = dirname(__file__)
@@ -86,7 +86,7 @@ def test_rule_interpreter():
         i.print_clips_commands()
 
 if __name__ == "__main__":
-    #test_data_soruce_def_interpreter()
-    test_rule_interpreter()
+    #test_data_provider()
+    test_rule_transpiler()
    
 
