@@ -1,3 +1,4 @@
+
 from os.path import join, dirname
 import re
 
@@ -6,8 +7,8 @@ from textx.export import metamodel_export, model_export
 from textx.exceptions import TextXSyntaxError, TextXSemanticError
 
 from akashic.exceptions import SyntacticError, SemanticError
-from akashic.adss.data_checker import DataChecker
-from akashic.adss.data_fetcher import DataFetcher
+from akashic.ads.data_checker import DataChecker
+from akashic.ads.data_fetcher import DataFetcher
 
 import json
 from jsonpath_ng import jsonpath, parse

@@ -1,6 +1,6 @@
 from akashic.arules.interpreter import RulesInterpreter
-from akashic.adss.data_provider import DataProvider
-from akashic.adss.env_provider import EnvProvider
+from akashic.ads.data_provider import DataProvider
+from akashic.ads.env_provider import EnvProvider
 
 from os.path import join, dirname, abspath
 import json
@@ -12,7 +12,7 @@ def test_data_soruce_def_interpreter():
 
     # Read rule from sample file
     this_folder = dirname(__file__)
-    sample_path = abspath(join(this_folder, '..', 'test', 'samples', 'adss', 'user_dsd.json'))
+    sample_path = abspath(join(this_folder, '..', 'test', 'samples', 'ads', 'user_dsd.json'))
     with open(sample_path, 'r') as sample:
         dsd_string = sample.read()
         data_provider.load(dsd_string)
