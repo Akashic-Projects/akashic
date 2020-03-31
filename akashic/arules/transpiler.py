@@ -6,7 +6,6 @@ from enum import Enum
 
 from akashic.arules.variable_table import VariableTable
 from akashic.arules.data_locator_table import DataLocatorTable, TableType
-
 from akashic.arules.clips_pattern_builder import CLIPSPatternBuilder
 
 from akashic.exceptions import SemanticError
