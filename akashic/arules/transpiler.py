@@ -26,7 +26,7 @@ class DataType(Enum):
     NOTHING = 5
 
 
-# Should be transpiler
+
 class Transpiler(object):
 
     def __init__(self, data_providers):
