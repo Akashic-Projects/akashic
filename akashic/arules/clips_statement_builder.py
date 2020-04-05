@@ -1,16 +1,32 @@
 
-from akashic.arules.data_locator_table import DataLocatorTable, TableType
+from akashic.arules.data_locator_table import DataLocatorTable
 
 from akashic.exceptions import SemanticError
 
 
 # TODO: Needs to checks template and field names against given data_providers 
-class CLIPSPatternBuilder(object):
+class ClipsStatementBuilder(object):
+    """ CLIPSPatternBuilder class
 
-    def build_regular_pattern(self, data_locator_table):
+    We use this class to build complex CLIPS statements. 
+    """
+
+    def build_regular_dl_patterns(self, data_locator_table):
+        """ Builds CLIPS statement without *Predicate Constraints*
+        
+        Details
+        -------
+        We analyse data_locator_table and create simple SLIPS pattern(s)
+
+        Returns
+        -------
+        list
+            List of clips statemtns in string form
+        """
+
         clips_statement_list = []
 
-        for template_name, template in data_locator_table.tables[TableType.TMP].items():
+        for template_name, template in data_locator_table.table.items():
             clips_statement = "(" + template_name + " "
 
             clips_field_list = []
@@ -27,7 +43,7 @@ class CLIPSPatternBuilder(object):
     def count_different_templates(self, data_locator_table, used_vars):
         t_set = set()
         print("\nBEGIN count")
-        for template_name, template in data_locator_table.tables[TableType.TMP].items():
+        for template_name, template in data_locator_table.table.items():
             for field_name, field in template.fields.items():
                 print("inside dlt: " + field.var_name)
                 if field.var_name in used_vars:
@@ -42,13 +58,13 @@ class CLIPSPatternBuilder(object):
         l = self.count_different_templates(data_locator_table, used_vars)
         print("NUM of used vars for DLs: " + str(len(used_vars)))
         print("NUM of diff templates: " + str(l))
-        print("NUM of reg tempaltes: " + str(len(data_locator_table.tables[TableType.TMP].items())))
+        print("NUM of reg tempaltes: " + str(len(data_locator_table.table.items())))
         if self.count_different_templates(data_locator_table, used_vars) > 1:
             raise SemanticError("Total number of different templates referenced inside of single conditional statement(except for 'test') must be 1. {0} given.".format(l))
 
         clips_statement_list = []
 
-        for template_name, template in data_locator_table.tables[TableType.TMP].items():
+        for template_name, template in data_locator_table.table.items():
             clips_statement = "(" + template_name + " "
 
             clips_field_list = []
@@ -70,3 +86,6 @@ class CLIPSPatternBuilder(object):
             clips_statement_list.append(clips_statement)
         
         return clips_statement_list[0]
+
+
+#TODO: Build assignment statement

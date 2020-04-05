@@ -5,10 +5,11 @@ from os.path import join, dirname
 from enum import Enum
 
 from akashic.arules.variable_table import VariableTable
-from akashic.arules.data_locator_table import DataLocatorTable, TableType
-from akashic.arules.clips_pattern_builder import CLIPSPatternBuilder
+from akashic.arules.data_locator_table import DataLocatorTable
+from akashic.arules.clips_statement_builder import ClipsStatementBuilder
 
 from akashic.exceptions import SemanticError
+
 
 
 #TODO: Need to add DataType: STRING_VAR, INT_VAR, FLOAT_VAR, BOOL_VAR 
@@ -28,8 +29,24 @@ class DataType(Enum):
 
 
 class Transpiler(object):
+    """ Transpiler class
+
+    We use this class to transpile Akashic rule into the CLIPS rule.
+    """
 
     def __init__(self, data_providers):
+        """ Transpiler constructor method
+        
+        Details
+        -------
+            1. Imports created data_providers.
+            2. Creates new Variable table (used for managing symbolic and real variables).
+            3. Creates new DataLocatorTable (used for namaging fact data referencing inside of rule).
+            4. Setups model processor functions - transpiler loop.
+            5. Loads Akashic meta-model.
+            6. Loads CLIPS Pattern Builder module.
+        """
+
         self.data_providers = data_providers
         self.variable_table = VariableTable()
         self.data_locator_table = DataLocatorTable()
@@ -39,9 +56,8 @@ class Transpiler(object):
         self.data_locator_vars = []
 
         processors = {
-            'RHSStatement': self.rhs_statement,
+            'LHSStatement': self.lhs_statement,
             'SpecialBinaryLogicExpression': self.special_binary_logic_expression,
-            'SpecialLogicExpressionFactor': self.special_logic_expression_factor,
             'SpecialSingularLogicExpression': self.special_singular_logic_expression,
             'TestSingularLogicExpression': self.test_singular_logic_expression,
             'NegationExpression': self.negation_expression,
@@ -59,28 +75,48 @@ class Transpiler(object):
         self.meta_model = metamodel_from_file(join(this_folder, 'meta_model.tx'), debug=False)
         self.meta_model.register_obj_processors(processors)
 
-        #Get builder classes
-        self.clips_pattern_builder = CLIPSPatternBuilder()
+        # Get builder classes
+        self.clips_statement_builder = ClipsStatementBuilder()
 
         self.rule = None
 
 
+
+    # TODO: Need to catch this exception!!!
     def load(self, akashic_rule):
-        # TODO: Need to catch this exception!!!
+        """ Loads akashic_rule from given string
+
+        Parameters
+        ----------
+        akashic_rule : str
+            String containing Akashic rule
+
+        Raises
+        ------
+        None
+        """
+        
         self.rule = self.meta_model.model_from_str(akashic_rule)
 
 
-    # For testing -> extracting data after processing
-    def print_clips_commands(self):
-        print("\n\nCLIPS Commands:")
-        print()
-        for c in self.clips_command_list:
-            print(str(c))
-        
-        print()
 
+    # TODO: Check what's up with boolean as 1s of 0s in data_provider tempalte type
+    def translate_bool(self, value):
+        """ Translates python bool into the CLIPS boolean
 
-    def translate(self, value):
+        Parameters
+        ----------
+        value : bool
+            Python boolean value
+
+        Returns
+        -------
+        str: "TRUE" or "FALSE"
+            If passed value is of python bool type
+        value
+            Else
+        """
+
         if value.__class__ == bool:
             if value == True:
                 return "TRUE"
@@ -92,8 +128,21 @@ class Transpiler(object):
 
 
     def rotate_used_data_locator_vars(self):
+        """ Function rotates used data locator variables
+
+        Details
+        -------
+        1. We go through variables used to reference CLIPS facts (data locators (DL) - in Akashic terminology)
+        2. We through data locator table to get every entry using current DL variable
+        3. We generate new variable in varialbe table (with new name - 'name rotation')
+        4. We reassign this new variable to mentioned entry
+        
+        5. We go through all defined variables* and replace old helper varialbe names with new ones.
+        6. We go through list of variables refenrenced in statement of * and replace their names also.
+        """
+
         for var_name in self.data_locator_vars:
-            for template_name, template in self.data_locator_table.tables[TableType.TMP].items():
+            for template_name, template in self.data_locator_table.table.items():
                 for field_name, field in template.fields.items():
                     if field.var_name == var_name:
                         to_add = ("", DataType.NOTHING)
@@ -107,35 +156,41 @@ class Transpiler(object):
 
 
 
+    def lhs_statement(self, lhss):
+        """ Processes left hand side (LHS) of the rule
 
+        Parameters
+        ----------
+        lhss : object
+            LHS object constructed by the textX by parsing Akashic rule based on predefined meta-model
+        
+        Details
+        -------
+        1. If statement represents variable definition / init then we add varaible name
+        to the variable table (something like table of sumbols) along with value / defined expression
+        and list of used DL variables in that expression. After adding to the variable list, we empty
+        the data_locator_vars - list that contains current DL variables in use in last expression.
 
-    def rhs_statement(self, rhss):
-        if rhss.stat.__class__.__name__ == "VARIABLE_INIT":
-            self.variable_table.add_named_var(rhss.stat.var_name, self.translate(rhss.stat.expr), self.data_locator_vars)
+        2. Id statement represents assertion function. Then nothing... for now.. 
+        """
+
+        if lhss.stat.__class__.__name__ == "VARIABLE_INIT":
+            self.variable_table.add_named_var(lhss.stat.var_name, self.translate_bool(lhss.stat.expr), self.data_locator_vars)
             self.data_locator_vars = []
-        elif rhss.stat.__class__.__name__ == "ASSERTION":
+        elif lhss.stat.__class__.__name__ == "ASSERTION":
             print("Assertion done.")
             
 
 
-
     def special_binary_logic_expression(self, binary):
-        # if no explicit conditional element is given use 'test'
         if len(binary.operands) < 2:
-            if binary.operands[0][1] == DataType.STATEMENT:
-                # Build clips commands
-                clips_commands = self.clips_pattern_builder.build_regular_pattern(self.data_locator_table)
-                self.clips_command_list.extend(clips_commands)
-                self.clips_command_list.append("(test " + binary.operands[0][0] + ")")
-            elif binary.operands[0][1] == DataType.SPECIAL:
-                self.clips_command_list.append(binary.operands[0][0])
-
+            self.clips_command_list.append(binary.operands[0][0])
         else:
             ops = []
             for i in range(0, len(binary.operands)):
                 if binary.operands[i][1] == DataType.STATEMENT:
                     # Build clips command
-                    clips_command = self.clips_pattern_builder.build_special_pattern(self.data_locator_table, self.data_locator_vars, binary.operands[i][0])
+                    clips_command = self.clips_statement_builder.build_special_pattern(self.data_locator_table, self.data_locator_vars, binary.operands[i][0])
                     ops.append(clips_command) 
 
                     # Rotate defined variables for next special expression
@@ -153,11 +208,6 @@ class Transpiler(object):
 
 
 
-    def special_logic_expression_factor(self, factor):
-        return factor.value
-    
-
-
     def special_singular_logic_expression(self, singular):
         # Because we use return as (value, DataType)
         if singular.operand[1] != DataType.STATEMENT:
@@ -165,7 +215,7 @@ class Transpiler(object):
 
         print("From special_singular_logic_expression: " + str(self.data_locator_vars))
         # Build clips command
-        clips_command = self.clips_pattern_builder.build_special_pattern(self.data_locator_table, self.data_locator_vars, singular.operand[0])
+        clips_command = self.clips_statement_builder.build_special_pattern(self.data_locator_table, self.data_locator_vars, singular.operand[0])
 
         # Rotate defined variables for next special expression
         self.rotate_used_data_locator_vars()
@@ -182,7 +232,7 @@ class Transpiler(object):
             raise SemanticError("Test must be statement. {0} given.".format(test.operand[1]))
 
         # Build clips commands
-        clips_commands = self.clips_pattern_builder.build_regular_pattern(self.data_locator_table)
+        clips_commands = self.clips_statement_builder.build_regular_dl_patterns(self.data_locator_table)
         self.clips_command_list.extend(clips_commands)
         self.clips_command_list.append("(test " + test.operand[0] + ")")
 
@@ -198,7 +248,7 @@ class Transpiler(object):
         else:
             return ('(' + 
                     neg.operator + ' ' + 
-                    str(self.translate(neg.operand[0])) + ')',  DataType.STATEMENT)
+                    str(self.translate_bool(neg.operand[0])) + ')',  DataType.STATEMENT)
 
 
 
@@ -216,8 +266,8 @@ class Transpiler(object):
             else:
                 result = ('(' + 
                         logic.operator[i-1] + ' ' + 
-                        str(self.translate(result[0])) + ' ' + 
-                        str(self.translate(logic.operands[i][0])) + ')',  DataType.STATEMENT)
+                        str(self.translate_bool(result[0])) + ' ' + 
+                        str(self.translate_bool(logic.operands[i][0])) + ')',  DataType.STATEMENT)
         return result
 
 
@@ -248,8 +298,8 @@ class Transpiler(object):
             else:
                 result = ('(' + 
                         comp.operator[i-1] + ' ' + 
-                        str(self.translate(result[0])) + ' ' + 
-                        str(self.translate(comp.operands[i][0])) + ')',  DataType.STATEMENT)
+                        str(self.translate_bool(result[0])) + ' ' + 
+                        str(self.translate_bool(comp.operands[i][0])) + ')',  DataType.STATEMENT)
         return result
 
 
@@ -344,11 +394,11 @@ class Transpiler(object):
         template_name = data_locator.template_conn_expr.templates[0]
         field_name = data_locator.field
 
-        found_var_name = self.data_locator_table.lookup(template_name, field_name, TableType.TMP)
+        found_var_name = self.data_locator_table.lookup(template_name, field_name)
         if found_var_name:
             return (found_var_name, DataType.VARIABLE)
         else:
             gen_var_name = self.variable_table.add_helper_var(("", DataType.NOTHING))
             self.data_locator_vars.append(gen_var_name)
-            self.data_locator_table.add(template_name, field_name, gen_var_name, TableType.TMP)
+            self.data_locator_table.add(template_name, field_name, gen_var_name)
             return (gen_var_name, DataType.VARIABLE)

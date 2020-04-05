@@ -83,7 +83,14 @@ def test_rule_transpiler():
         akashic_rule = sample.read()
         i.load(akashic_rule)
 
-        i.print_clips_commands()
+        # Print transpiled commands
+        print("\n\nCLIPS Commands:")
+        print()
+        for c in i.clips_command_list:
+            print(str(c))
+        
+        print()
+       
 
 if __name__ == "__main__":
     #test_data_provider()

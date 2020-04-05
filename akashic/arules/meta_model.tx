@@ -3,26 +3,27 @@ Rule:
     '{'
         ((RULE_NAME_KW        ':'     rule_name=STRING  )
         (RULE_SALIENCE_KW     ':'     salience=INT      )?
-        (rhs=RHS                                        )
-        (lhs=LHS                                        ))#[',']
+        (lhs=LHS                                        )
+        (rhs=RHS                                        ))#[',']
     '}'
 ;
 
 RULE_NAME_KW:       /\"rule-name\"/ ;
 RULE_SALIENCE_KW:   /\"salience\"/ ;
 
-RHS:
+LHS:
     WHEN_KW ':' '['
-        statements *= RHSStatement[',']
+        statements *= LHSStatement[',']
     ']'
 ;
 
 WHEN_KW:    /\"when\"/ ;
 
 
-RHSStatement: 
+LHSStatement: 
     stat=VARIABLE_INIT | 
-    stat=ASSERTION
+    stat=ASSERTION |
+    stat=ASSIGNMENT
 ;
 
 VARIABLE_INIT:
@@ -30,8 +31,13 @@ VARIABLE_INIT:
 ;
 
 ASSERTION:
-    '{' ASSERT_KW ':' '"' expr=SpecialBinaryLogicExpression '"' '}' |
-    '{' ASSERT_KW ':' '"' expr=TestSingularLogicExpression '"' '}'
+    '{' ASSERT_KW ':' '"' 
+        (expr=SpecialBinaryLogicExpression | expr=TestSingularLogicExpression) '"' '}'
+;
+
+ASSIGNMENT:
+    '{' '"' var_name=/\?[^\d\W]\w*\b/ '=' '"' ':' '"'
+        (expr=SpecialBinaryLogicExpression | expr=TestSingularLogicExpression) '"' '}'
 ;
 
 ASSERT_KW:  /\"assert\"/ ;
@@ -51,15 +57,13 @@ SPECIAL_SINGULAR: NOT | EXISTS | FORALL ;
 
 
 SpecialBinaryLogicExpression:
-    operands=SpecialLogicExpressionFactor (operator=LOGIC operands=SpecialLogicExpressionFactor)*
+    operands=SpecialSingularLogicExpression (operator=LOGIC operands=SpecialSingularLogicExpression)*
 ;
-SpecialLogicExpressionFactor:
-    '[' value=NegationExpression ']' |
-    value=SpecialSingularLogicExpression
-;
+
 SpecialSingularLogicExpression:
     operator=SPECIAL_SINGULAR? '[' operand=NegationExpression ']'
 ;
+
 TestSingularLogicExpression:
     operator=TEST? '[' operand=NegationExpression ']'
 ;
@@ -109,16 +113,16 @@ DataLocator: template_conn_expr=TEMPLATE_CONNECTION_EXPRESSION ('.' field=ID)? ;
 TEMPLATE_CONNECTION_EXPRESSION: templates=ID ('~' templates=ID)* ;
 
 
-LHS:
+RHS:
     THEN_KW ':' '['
-        statements*=LHSStatement[',']
+        statements*=RHSStatement[',']
     ']'
 ;
 
 THEN_KW:    /\"then\"/ ;
 
 
-LHSStatement:
+RHSStatement:
     stat=CreateStatement | stat=UpdateStatement | stat=ReadStatement | stat=DeleteStatement
 ;
 

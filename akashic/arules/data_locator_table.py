@@ -1,55 +1,107 @@
+
 from enum import Enum
 
 
+
 class Template(object):
+    """ Template class
+
+    This class represents single CLIPS template: name and .
+    """
+
     def __init__(self):
+        """ Template constructor method
+
+        Set name to None. Init fields dictionary.
+        """
+
         self.name = None
         self.fields = {}
 
+
+
 class Field(object):
+    """ Field class
+
+    This class represents single CLIPS fact inside of CLIPS template: 
+    name and variable name
+    """
+
     def __init__(self):
+        """ Field constructor method
+
+        Set field name to None. Set variable name to None.
+        """
+
         self.name = None
         self.var_name = None
 
-class TableType(Enum):
-    TMP = 0
 
 
 class DataLocatorTable(object):
+    """ DataLocatorTable class
+
+        Class that contains all usages of data locators and variables ascribed to them.
+    """
+
     def __init__(self):
-        self.tables = {}
-        self.tables[TableType.TMP] = {}
+        """ DataLocatorTable constructor method
+
+        Init table as dictionary
+        """
+
+        self.table = {}
 
 
-    def transfer_from_to(self, from_table_type, to_table_type):
-        for template_name, template in self.tables[from_table_type].items():
-            for field_name, field in template.fields.items():
-                if not self.lookup(template_name, field_name, to_table_type):
-                    self.add(template_name, field_name, field.var_name, to_table_type)
 
+    def add(self, template_name, field_name, var_name):
+        """ Adds data locator to the table, pair [tempalte_name][field_name] : var_name
 
-    def add(self, template_name, field_name, var_name, table_type):
-        if template_name not in self.tables[table_type]:
-            self.tables[table_type][template_name] = Template()
-            t = self.tables[table_type][template_name]
+        Parameters
+        ----------
+        template_name : str
+            Name of the referenced template
+        field_name : str
+            Name of the referenced field inside of referenced template
+        var_name : str
+            Name of the variable used to reference given template and field
+        """
+
+        if template_name not in self.table:
+            self.table[template_name] = Template()
+            t = self.table[template_name]
             t.name = template_name
         else:
-            t = self.tables[table_type][template_name]
+            t = self.table[template_name]
 
-        f = Field()
-        f.name = field_name
-        f.var_name = var_name
-
-        t.fields[field_name] = f
+        if field_name not in t.fields:
+            f = Field()
+            f.name = field_name
+            f.var_name = var_name
+            t.fields[field_name] = f
 
     
-    def lookup(self, template_name, field_name, table_type):
-        if template_name in self.tables[table_type]:
-            if field_name in self.tables[table_type][template_name].fields:
-                return self.tables[table_type][template_name].fields[field_name].var_name
+
+    def lookup(self, template_name, field_name):
+        """ Searches for template-field entry in data locator table
+
+        Parameters
+        ----------
+        template_name : str
+            Name of the referenced template
+        field_name : str
+            Name of the referenced field inside of referenced template
+        
+        Returns
+        -------
+        str
+            If data locator is found
+        None
+            If data locator is not found
+        """
+
+        if template_name in self.table:
+            if field_name in self.table[template_name].fields:
+                return self.table[template_name].fields[field_name].var_name
         
         return None
-
-    
-    def reset_table(self, table_type):
-        self.tables[table_type] = {}
