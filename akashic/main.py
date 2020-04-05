@@ -73,20 +73,34 @@ def test_data_provider():
 
 
 def test_rule_transpiler():
+    
+    # Setup User data provider
+    this_folder = dirname(__file__)
+    sample_path = abspath(join(this_folder, '..', 'test', 'samples', 'ads', 'user_dsd.json'))
+
+    dsd_string = None
+    with open(sample_path, 'r') as sample:
+        dsd_string = sample.read()
+
     data_provider = DataProvider()
-    i = Transpiler(data_provider)
+    data_provider.load(dsd_string)
+    data_provider.setup()
+
+
+    # Setup akashic transpiler
+    transpiler = Transpiler([data_provider])
 
     # Read rule from sample file
     this_folder = dirname(__file__)
     sample_path = abspath(join(this_folder, '..', 'test', 'samples', 'arules', 'sample1.json'))
     with open(sample_path, 'r') as sample:
         akashic_rule = sample.read()
-        i.load(akashic_rule)
+        transpiler.load(akashic_rule)
 
         # Print transpiled commands
         print("\n\nCLIPS Commands:")
         print()
-        for c in i.clips_command_list:
+        for c in transpiler.clips_command_list:
             print(str(c))
         
         print()
@@ -94,6 +108,7 @@ def test_rule_transpiler():
 
 if __name__ == "__main__":
     #test_data_provider()
+
     test_rule_transpiler()
    
 

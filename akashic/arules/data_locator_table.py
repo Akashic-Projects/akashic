@@ -35,6 +35,7 @@ class Field(object):
 
         self.name = None
         self.var_name = None
+        self.dp_field = None
 
 
 
@@ -54,7 +55,7 @@ class DataLocatorTable(object):
 
 
 
-    def add(self, template_name, field_name, var_name):
+    def add(self, template_name, field_name, var_name, dp_field):
         """ Adds data locator to the table, pair [tempalte_name][field_name] : var_name
 
         Parameters
@@ -78,6 +79,8 @@ class DataLocatorTable(object):
             f = Field()
             f.name = field_name
             f.var_name = var_name
+            f.dp_field = dp_field
+
             t.fields[field_name] = f
 
     
@@ -102,6 +105,6 @@ class DataLocatorTable(object):
 
         if template_name in self.table:
             if field_name in self.table[template_name].fields:
-                return self.table[template_name].fields[field_name].var_name
+                return self.table[template_name].fields[field_name]
         
         return None

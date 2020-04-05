@@ -109,6 +109,25 @@ class DataProvider(object):
         
 
 
+    # EXTERNAL OPERATIONS SECTION
+    ################################################################
+    def field_lookup(self, field_name):
+        """ Searches field with given name
+        
+        Returns
+        -------
+        object
+            Field object is returned if found
+        None
+            If field with given name is not found
+        """
+
+        for field in self.dsd.fields:
+            if field.field_name == field_name:
+                return field
+        return None
+
+
 
     # CLIPS STATEMENTS GENERATION SECTION 
     ################################################################

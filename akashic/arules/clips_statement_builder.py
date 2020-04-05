@@ -4,7 +4,6 @@ from akashic.arules.data_locator_table import DataLocatorTable
 from akashic.exceptions import SemanticError
 
 
-# TODO: Needs to checks template and field names against given data_providers 
 class ClipsStatementBuilder(object):
     """ CLIPSPatternBuilder class
 
@@ -88,4 +87,7 @@ class ClipsStatementBuilder(object):
         return clips_statement_list[0]
 
 
-#TODO: Build assignment statement
+
+    #TODO: Implement build_address_assignment_pattern method
+    def build_address_assignment_pattern(self, data_locator_table, used_vars, expression):
+        pass

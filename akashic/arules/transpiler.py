@@ -13,18 +13,18 @@ from akashic.exceptions import SemanticError
 
 
 #TODO: Need to add DataType: STRING_VAR, INT_VAR, FLOAT_VAR, BOOL_VAR 
-#-> podatke vuci iz data_providera
+#-> podatke vuci iz data_provider-a
 class DataType(Enum):
     """ DataType enum class
 
     We use this class to define type of data generated inside of transpiler loop
     """
 
-    WORKABLE = 1
-    VARIABLE = 2
-    STATEMENT = 3
-    SPECIAL = 4
-    NOTHING = 5
+    WORKABLE    = 1
+    VARIABLE    = 2
+    STATEMENT   = 3
+    SPECIAL     = 4
+    NOTHING     = 5
 
 
 
@@ -39,12 +39,12 @@ class Transpiler(object):
         
         Details
         -------
-            1. Imports created data_providers.
-            2. Creates new Variable table (used for managing symbolic and real variables).
-            3. Creates new DataLocatorTable (used for namaging fact data referencing inside of rule).
-            4. Setups model processor functions - transpiler loop.
-            5. Loads Akashic meta-model.
-            6. Loads CLIPS Pattern Builder module.
+        1. Imports created data_providers.
+        2. Creates new Variable table (used for managing symbolic and real variables).
+        3. Creates new DataLocatorTable (used for namaging fact data referencing inside of rule).
+        4. Setups model processor functions - transpiler loop.
+        5. Loads Akashic meta-model.
+        6. Loads CLIPS Pattern Builder module.
         """
 
         self.data_providers = data_providers
@@ -391,14 +391,31 @@ class Transpiler(object):
 
 
     def data_locator(self, data_locator):
+        # Get needed data
         template_name = data_locator.template_conn_expr.templates[0]
         field_name = data_locator.field
 
-        found_var_name = self.data_locator_table.lookup(template_name, field_name)
-        if found_var_name:
-            return (found_var_name, DataType.VARIABLE)
+        # Search for existing entry in data locator table
+        field = self.data_locator_table.lookup(template_name, field_name)
+        if field and field.var_name:
+            return (field.var_name, DataType.VARIABLE)
         else:
+            # Checks field names against given data_providers
+            found_data_provider = None
+            for data_provider in self.data_providers:
+                if data_provider.dsd.model_id == template_name:
+                    found_data_provider = data_provider
+
+            if found_data_provider == None:
+                raise SemanticError("There is no data provider defined for template connection '{0}'.".format(template_name))
+            
+            found_dp_field = found_data_provider.field_lookup(field_name)
+
+            if not found_dp_field:
+                raise SemanticError("Template field '{0}' is not defined in data provider's template '{1}'".format(field_name, template_name))
+
+            # Generate new variable and add new entry to the data locator table
             gen_var_name = self.variable_table.add_helper_var(("", DataType.NOTHING))
             self.data_locator_vars.append(gen_var_name)
-            self.data_locator_table.add(template_name, field_name, gen_var_name)
+            self.data_locator_table.add(template_name, field_name, gen_var_name, found_dp_field)
             return (gen_var_name, DataType.VARIABLE)
