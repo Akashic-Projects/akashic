@@ -175,6 +175,7 @@ class Transpiler(object):
         """
 
         if lhss.stat.__class__.__name__ == "VARIABLE_INIT":
+            # Check if WORKABLE and string -> add " " and build str-cmp expression
             self.variable_table.add_named_var(lhss.stat.var_name, self.translate_bool(lhss.stat.expr), self.data_locator_vars)
             self.data_locator_vars = []
         elif lhss.stat.__class__.__name__ == "ASSERTION":
@@ -415,7 +416,7 @@ class Transpiler(object):
                 raise SemanticError("Template field '{0}' is not defined in data provider's template '{1}'".format(field_name, template_name))
 
             # Generate new variable and add new entry to the data locator table
-            gen_var_name = self.variable_table.add_helper_var(("", DataType.NOTHING))
+            gen_var_name = self.variable_table.add_helper_var(("", DataType.NOTHING, found_dp_field.type))
             self.data_locator_vars.append(gen_var_name)
             self.data_locator_table.add(template_name, field_name, gen_var_name, found_dp_field)
-            return (gen_var_name, DataType.VARIABLE)
+            return (gen_var_name, DataType.VARIABLE, found_dp_field.type)

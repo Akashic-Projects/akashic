@@ -30,7 +30,9 @@ class Field(object):
     def __init__(self):
         """ Field constructor method
 
-        Set field name to None. Set variable name to None.
+        Set field name to None. 
+        Set variable name to None.
+        Set data provider field to None.
         """
 
         self.name = None
@@ -66,6 +68,8 @@ class DataLocatorTable(object):
             Name of the referenced field inside of referenced template
         var_name : str
             Name of the variable used to reference given template and field
+        dp_field : object
+            Field object from specific data provider
         """
 
         if template_name not in self.table:
@@ -97,7 +101,7 @@ class DataLocatorTable(object):
         
         Returns
         -------
-        str
+        Field object
             If data locator is found
         None
             If data locator is not found
