@@ -1,4 +1,6 @@
 
+from akashic.util.type_converter import clips_to_py_type, py_to_clips_type
+
 from akashic.exceptions import SyntacticError, SemanticError
 
 import re
@@ -135,61 +137,6 @@ class DataChecker(object):
 
 
 
-    # TODO: Check if BOOLEAN is really needed here
-    def clips_to_py_type(self, ctype):
-        """ Converts CLIPS type to Python type
-        
-        Parameters
-        ----------
-        ctype : str
-            CLIPS type, possible values: "INTEGER", "FLOAT", "STRING" and maybe "BOOLEAN"
-
-        Returns
-        -------
-        ptype: type
-            Coresponding python type
-        """
-
-        ptype = None
-        if ctype == "INTEGER":
-            ptype = int
-        elif ctype == "FLOAT":
-            ptype = float
-        elif ctype == "STRING":
-            ptype = str
-        elif ctype == "BOOLEAN":
-            ptype = bool
-        return ptype
-
-
-
-    def py_to_clips_type(self, ptype):
-        """ Converts Python type to CLIPS type
-        
-        Parameters
-        ----------
-        ptype : str
-            Python type
-
-        Returns
-        -------
-        ctype: str
-            Coresponding CLIPS type
-        """
-
-        ctype = None
-        if ptype == int:
-            ctype = "INTEGER"
-        elif ptype == float:
-            ctype = "FLOAT"
-        elif ptype == str:
-            ctype = "STRING"
-        elif ptype == bool:
-            ctype = "BOOLEAN"
-        return ctype
-
-
-
     # TODO: Does this even make senase?
     def check_field_types(self, use_json_as, operation, json_object):
         """ Checks JSON object field types against fields defined in DSD
@@ -232,7 +179,7 @@ class DataChecker(object):
             if len(result) > 1:
                 raise SemanticError(f"More than one field with same name ({field.field_name}) is present in json object.")
 
-            expected_type = self.clips_to_py_type(field.type)
+            expected_type = clips_to_py_type(field.type)
 
             if not isinstance(result[0], expected_type):
-                raise SemanticError(f"Type of field ({field.field_name}) does not match type from provided data. Expected ({str(field.type)}), but received ({self.py_to_clips_type(result[0].__class__)}).")
+                raise SemanticError(f"Type of field ({field.field_name}) does not match type from provided data. Expected ({str(field.type)}), but received ({py_to_clips_type(result[0].__class__)}).")

@@ -10,6 +10,7 @@ from akashic.arules.clips_statement_builder import ClipsStatementBuilder
 
 from akashic.exceptions import SemanticError
 
+from akashic.util.type_converter import clips_to_py_type, py_to_clips_type
 
 
 #TODO: Need to add DataType: STRING_VAR, INT_VAR, FLOAT_VAR, BOOL_VAR 
@@ -366,15 +367,26 @@ class Transpiler(object):
         return result
 
 
+
     def factor(self, factor):
         if factor.value.__class__.__name__ in ["int", "float", "bool"]:
-            return (factor.value, DataType.WORKABLE)
-        elif factor.value.__class__.__name__ == "STRING_C":
+            # If factor class is simple python type
+            return {
+                "content": factor.value, 
+                "content_type": py_to_clips_type(py_to_clips_type(factor.value.__class__))
+                "construct_type": DataType.WORKABLE
+            }
 
-            # Translate single quotation marks to double
-            return (factor.value.val.replace("'", "\""), DataType.WORKABLE)
+        elif factor.value.__class__.__name__ == "STRING_C":
+            # Remove single quotation marks if factor class is string
+            return {
+                "content": factor.value.val.replace("'", ""), 
+                "content_type": py_to_clips_type(py_to_clips_type(str))
+                "construct_type": DataType.WORKABLE
+            }
+
         else:
-            # Enters here for variable and data_locator
+            # Enters when factor class is: VARIABLE and DataLocator class
             return factor.value
 
 
@@ -384,8 +396,7 @@ class Transpiler(object):
         if var_entry == None:
             raise SemanticError("Undefined variable {0}.".format(var.var_name))
         else:
-            print("To add vars from : " + str(var.var_name))
-            print("-------")
+            # Add used variables from current variable to the list of globally used variables
             self.data_locator_vars = list(set(self.data_locator_vars) | set(var_entry.used_variables))
             return var_entry.value
 
@@ -399,7 +410,12 @@ class Transpiler(object):
         # Search for existing entry in data locator table
         field = self.data_locator_table.lookup(template_name, field_name)
         if field and field.var_name:
-            return (field.var_name, DataType.VARIABLE)
+            return {
+                "content": field.var_name, 
+                "content_type": field.dp_field.type,
+                "construct_type": DataType.VARIABLE
+            }
+
         else:
             # Checks field names against given data_providers
             found_data_provider = None
@@ -419,4 +435,9 @@ class Transpiler(object):
             gen_var_name = self.variable_table.add_helper_var(("", DataType.NOTHING, found_dp_field.type))
             self.data_locator_vars.append(gen_var_name)
             self.data_locator_table.add(template_name, field_name, gen_var_name, found_dp_field)
-            return (gen_var_name, DataType.VARIABLE, found_dp_field.type)
+            
+            return {
+                "content": gen_var_name,
+                "content_type": found_dp_field.type,
+                "construct_type": DataType.VARIABLE
+            }
