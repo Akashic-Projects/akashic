@@ -11,6 +11,7 @@ from akashic.arules.clips_statement_builder import ClipsStatementBuilder
 from akashic.exceptions import SemanticError
 
 from akashic.util.type_converter import clips_to_py_type, py_to_clips_type
+from akashic.util.type_resolver import resolve_types
 
 
 #TODO: Need to add DataType: STRING_VAR, INT_VAR, FLOAT_VAR, BOOL_VAR 
@@ -23,7 +24,7 @@ class DataType(Enum):
 
     WORKABLE    = 1
     VARIABLE    = 2
-    STATEMENT   = 3
+    EXPRESSION  = 3
     SPECIAL     = 4
     NOTHING     = 5
 
@@ -352,17 +353,37 @@ class Transpiler(object):
 
     def sqr_expr(self, sqr):
         result = sqr.operands[0]
-        for i in range(1, len(sqr.operands)):
-            if result[1] == DataType.WORKABLE and sqr.operands[i][1] == DataType.WORKABLE:
-                if ((result[0].__class__ == int or result[0].__class__ == float)
-                and (sqr.operands[i][0].__class__ == int or sqr.operands[i][0].__class__ == float)):
 
-                    val = result[0] ** sqr.operands[i][0]
-                    result = (val, DataType.WORKABLE)
+        l = len(sqr.operands)
+        i = 1
+        while i < l:
+            current = sqr.operands[i]
+
+            if result["content_type"] not in ["INTEGER", "FLOAT"]:
+                raise SemanticError("Operand of type INTEGER or FLOAT expected, {0} geven.".format(current_object_type))
+            if current["content_type"] not in ["INTEGER", "FLOAT"]:
+                raise SemanticError("Operand of type INTEGER or FLOAT expected, {0} geven.".format(current_object_type))
+
+            if (result["construct_type"]  == DataType.WORKABLE 
+            and current["construct_type"] == DataType.WORKABLE):
+                val = result["content"] ** current["content"]
+                result = {
+                    "content": val, 
+                    "content_type": py_to_clips_type(val.__class__),
+                    "construct_type": DataType.WORKABLE
+                }
+
             else:
-                result = ('(** ' + 
-                        str(result[0]) + ' ' + 
-                        str(sqr.operands[i][0]) + ')',  DataType.STATEMENT)
+                val = '(** ' + str(result["content"]) + ' ' + str(current["content"]) + ')'
+                resolved_c_type = resolve_types("sqr", result["content_type"], current["content_type"])
+
+                result = {
+                    "content": val, 
+                    "content_type": resolved_c_type,
+                    "construct_type": DataType.EXPRESSION
+                }
+
+            i += 1
 
         return result
 
@@ -373,7 +394,7 @@ class Transpiler(object):
             # If factor class is simple python type
             return {
                 "content": factor.value, 
-                "content_type": py_to_clips_type(py_to_clips_type(factor.value.__class__))
+                "content_type": py_to_clips_type(factor.value.__class__),
                 "construct_type": DataType.WORKABLE
             }
 
@@ -381,7 +402,7 @@ class Transpiler(object):
             # Remove single quotation marks if factor class is string
             return {
                 "content": factor.value.val.replace("'", ""), 
-                "content_type": py_to_clips_type(py_to_clips_type(str))
+                "content_type": py_to_clips_type(str),
                 "construct_type": DataType.WORKABLE
             }
 
