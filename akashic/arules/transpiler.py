@@ -10,8 +10,8 @@ from akashic.arules.clips_statement_builder import ClipsStatementBuilder
 
 from akashic.exceptions import SemanticError
 
-from akashic.util.type_converter import clips_to_py_type, py_to_clips_type
-from akashic.util.type_resolver import resolve_types
+from akashic.util.type_converter import clips_to_py_type, py_to_clips_type, translate_if_c_bool
+from akashic.util.type_resolver import resolve_expr_type
 
 
 #TODO: Need to add DataType: STRING_VAR, INT_VAR, FLOAT_VAR, BOOL_VAR 
@@ -99,33 +99,6 @@ class Transpiler(object):
         """
         
         self.rule = self.meta_model.model_from_str(akashic_rule)
-
-
-
-    # TODO: Check what's up with boolean as 1s of 0s in data_provider tempalte type
-    def translate_bool(self, value):
-        """ Translates python bool into the CLIPS boolean
-
-        Parameters
-        ----------
-        value : bool
-            Python boolean value
-
-        Returns
-        -------
-        str: "TRUE" or "FALSE"
-            If passed value is of python bool type
-        value
-            Else
-        """
-
-        if value.__class__ == bool:
-            if value == True:
-                return "TRUE"
-            else:
-                return "FALSE"
-        else:
-            return value
 
 
 
@@ -228,10 +201,10 @@ class Transpiler(object):
         return ("(" + singular.operator + " " + clips_command + ")", DataType.SPECIAL)
 
 
-
+    # TODO: Here!!
     def test_singular_logic_expression(self, test):
         # Because we use return as (value, DataType)
-        if test.operand[1] != DataType.STATEMENT:
+        if test.operand[1] != DataType.EXPRESSION:
             raise SemanticError("Test must be statement. {0} given.".format(test.operand[1]))
 
         # Build clips commands
@@ -242,110 +215,247 @@ class Transpiler(object):
 
 
     def negation_expression(self, neg):
-        if neg.operator != "not":
-            return neg.operand
+        result = neg.operand
 
-        if neg.operand[1] == DataType.WORKABLE:
-            val = not neg.operand[0]
-            return (val, DataType.WORKABLE)
+        # Exit if operator is not present
+        if neg.operator and neg.operator != "not":
+            return result
+
+        if result["content_type"] not in ["INTEGER", "FLOAT", "BOOLEAN"]:
+            raise SemanticError("Operand of type INTEGER, FLOAT or BOOLEAN expected, {0} geven.".format(result["content_type"]))
+
+        operator = neg.operator
+
+        if result["content_type"] == DataType.WORKABLE:
+            val = not result["content"]
+            return {
+                    "content": val, 
+                    "content_type": py_to_clips_type(val.__class__),
+                    "construct_type": DataType.WORKABLE
+                }
+
         else:
-            return ('(' + 
-                    neg.operator + ' ' + 
-                    str(self.translate_bool(neg.operand[0])) + ')',  DataType.STATEMENT)
+            val = '(' + operator + ' ' + 
+                    str(translate_if_c_bool(result["content"])) + ')'
+
+            # It is always bool
+            resolved_c_type = "BOOLEAN"
+            return {
+                    "content": val, 
+                    "content_type": py_to_clips_type(val.__class__),
+                    "construct_type": DataType.EXPRESSION
+            }
 
 
 
     def logic_expression(self, logic):
         result = logic.operands[0]
-        for i in range(1, len(logic.operands)):
-            if result[1] == DataType.WORKABLE and logic.operands[i][1] == DataType.WORKABLE:
-                val = None
-                if logic.operator[i-1] == 'and':
-                    val = result[0] and logic.operands[i][0]
-                if logic.operator[i-1] == 'or':
-                    val = result[0] or logic.operands[i][0]
 
-                result = (val, DataType.WORKABLE)
+        l = len(logic.operands)
+        i = 1
+        while i < l:
+            current = logic.operands[i]
+
+            if result["content_type"] not in ["INTEGER", "FLOAT", "BOOLEAN"]:
+                raise SemanticError("Operand of type INTEGER, FLOAT or BOOLEAN expected, {0} geven.".format(result["content_type"]))
+            if current["content_type"] not in ["INTEGER", "FLOAT", "BOOLEAN"]:
+                raise SemanticError("Operand of type INTEGER, FLOAT or BOOLEAN expected, {0} geven.".format(result["content_type"]))
+
+            operator = logic.operator[i-1]
+
+            if (result["construct_type"]  == DataType.WORKABLE 
+            and current["construct_type"] == DataType.WORKABLE):
+                if operator == 'and':
+                    val = result["content"] and current["content"]
+                if operator == 'or':
+                    val = result["content"] or current["content"]
+
+                result = {
+                    "content": val, 
+                    "content_type": py_to_clips_type(val.__class__),
+                    "construct_type": DataType.WORKABLE
+                }
+
             else:
-                result = ('(' + 
-                        logic.operator[i-1] + ' ' + 
-                        str(self.translate_bool(result[0])) + ' ' + 
-                        str(self.translate_bool(logic.operands[i][0])) + ')',  DataType.STATEMENT)
+                val = '(' + operator + ' ' + 
+                        str(translate_if_c_bool(result["content"])) + ' ' +
+                        str(translate_if_c_bool(current["content"])) + ')'
+
+                resolved_c_type = resolve_expr_type("logic", result["content_type"], current["content_type"])
+
+                result = {
+                    "content": val,
+                    "content_type": resolved_c_type,
+                    "construct_type": DataType.EXPRESSION
+                }
+
+            i += 1
+
         return result
 
 
 
-    #TODO: Comaring strings function -> it will be complex -> requires data_provider data about field
     def comp_expression(self, comp):
         result = comp.operands[0]
-        for i in range(1, len(comp.operands)):
-            if result[1] == DataType.WORKABLE and comp.operands[i][1] == DataType.WORKABLE:
-                if ((result[0].__class__ == int or result[0].__class__ == float)
-                and (comp.operands[i][0].__class__ == int or comp.operands[i][0].__class__ == float)
-                or  (result[0].__class__ == str and comp.operands[i][0].__class__ == str)):
-                    val = None
-                    if comp.operator[i-1] == '<':
-                        val = result[0] < comp.operands[i][0]
-                    if comp.operator[i-1] == '>':
-                        val = result[0] > comp.operands[i][0]
-                    if comp.operator[i-1] == '<=':
-                        val = result[0] <= comp.operands[i][0]
-                    if comp.operator[i-1] == '>=':
-                        val = result[0] >= comp.operands[i][0]
-                    if comp.operator[i-1] == '==':
-                        val = result[0] == comp.operands[i][0]
-                    if comp.operator[i-1] == '!=':
-                        val = result[0] != comp.operands[i][0]
-                    
-                    result = (val, DataType.WORKABLE)
+
+        l = len(comp.operands)
+        i = 1
+        while i < l:
+            current = comp.operands[i]
+
+            if result["content_type"] not in ["INTEGER", "FLOAT", "STRING"]:
+                raise SemanticError("Operand of type INTEGER, FLOAT or STRING expected, {0} geven.".format(result["content_type"]))
+            if current["content_type"] not in ["INTEGER", "FLOAT", "STRING"]:
+                raise SemanticError("Operand of type INTEGER, FLOAT or STRING expected, {0} geven.".format(result["content_type"]))
+
+            # Resolve eq operaator
+            if comp.operator[i-1] == '==':
+                operator = '='
             else:
-                result = ('(' + 
-                        comp.operator[i-1] + ' ' + 
-                        str(self.translate_bool(result[0])) + ' ' + 
-                        str(self.translate_bool(comp.operands[i][0])) + ')',  DataType.STATEMENT)
+                operator = comp.operator[i-1]
+
+            if (result["construct_type"]  == DataType.WORKABLE 
+            and current["construct_type"] == DataType.WORKABLE)
+            and ((result["content_type"] in ["INTEGER", "FLOAT"] and current["content_type"] in  ["INTEGER", "FLOAT"])
+            or  (result["content_type"] == "STRING" and current["content_type"] == "STRING")):
+                   
+                if operator == '<':
+                    val = result["content"] < current["content"]
+                elif operator == '>':
+                    val = result["content"] > current["content"]
+                elif operator == '<=':
+                    val = result["content"] <= current["content"]
+                elif operator == '>=':
+                    val = result["content"] >= current["content"]
+                elif operator == '=':
+                    val = result["content"] == current["content"]
+                elif operator == '!=':
+                    val = result["content"] + current["content"]
+                
+                result = {
+                    "content": val, 
+                    "content_type": py_to_clips_type(val.__class__),
+                    "construct_type": DataType.WORKABLE
+                }
+
+            else:
+                op1 = ""
+                op2 = ""
+                if result["content_type"] == "STRING" and result["construct_type"]  == DataType.WORKABLE:
+                    op1 = "\"" + result["content"] + "\""
+                else:
+                    op1 = result["content"]
+
+                if current["content_type"] == "STRING" and current["construct_type"]  == DataType.WORKABLE:
+                    op2 = "\"" + current["content"] + "\""
+                 else:
+                    op2 = current["content"]
+                    
+                op1 = translate_if_c_bool(op1)
+                op2 = translate_if_c_bool(op2)
+
+                val = self.clips_statement_builder.build_string_comparison_expr(op1, op2, operator)
+                resolved_c_type = resolve_expr_type("comp", result["content_type"], current["content_type"])
+
+                # Check if type is resolved correctly
+                if resolved_c_type > 0:
+                    raise SemanticError("Incompatible operand types present in comparison expression.")
+
+                result = {
+                    "content": val,
+                    "content_type": resolved_c_type,
+                    "construct_type": DataType.EXPRESSION
+                }
+
+            i += 1
+
         return result
 
 
 
     def plus_minus_expr(self, plus_minus):
         result = plus_minus.operands[0]
-        for i in range(1, len(plus_minus.operands)):
-            if result[1] == DataType.WORKABLE and plus_minus.operands[i][1] == DataType.WORKABLE:
-                if ((result[0].__class__ == int or result[0].__class__ == float)
-                and (plus_minus.operands[i][0].__class__ == int or plus_minus.operands[i][0].__class__ == float)):
-                    val = None
-                    if plus_minus.operator[i-1] == '+':
-                        val = result[0] + plus_minus.operands[i][0]
-                    if plus_minus.operator[i-1] == '-':
-                        val = result[0] - plus_minus.operands[i][0]
+
+        l = len(plus_minus.operands)
+        i = 1
+        while i < l:
+            current = plus_minus.operands[i]
+
+            if result["content_type"] not in ["INTEGER", "FLOAT"]:
+                raise SemanticError("Operand of type INTEGER or FLOAT expected, {0} geven.".format(result["content_type"]))
+            if current["content_type"] not in ["INTEGER", "FLOAT"]:
+                raise SemanticError("Operand of type INTEGER or FLOAT expected, {0} geven.".format(result["content_type"]))
+
+            operator = plus_minus.operator[i-1]
+
+            if (result["construct_type"]  == DataType.WORKABLE 
+            and current["construct_type"] == DataType.WORKABLE):
+                if operator == '+':
+                    val = result["content"] + current["content"]
+                elif operator == '-':
+                    val = result["content"] - current["content"]
                     
-                    result = (val, DataType.WORKABLE)
+                result = {
+                    "content": val, 
+                    "content_type": py_to_clips_type(val.__class__),
+                    "construct_type": DataType.WORKABLE
+                }
+
             else:
-                result = ('(' + 
-                        plus_minus.operator[i-1] + ' ' + 
-                        str(result[0]) + ' ' + 
-                        str(plus_minus.operands[i][0]) + ')',  DataType.STATEMENT)
+                val = '(' + operator + ' ' + str(result["content"]) + ' ' + str(current["content"]) + ')'
+                resolved_c_type = resolve_expr_type("plus_minus", result["content_type"], current["content_type"])
+
+                result = {
+                    "content": val,
+                    "content_type": resolved_c_type,
+                    "construct_type": DataType.EXPRESSION
+                }
+
+            i += 1
+
         return result
+
 
 
     def mul_div_expr(self, mul_div):
         result = mul_div.operands[0]
-        for i in range(1, len(mul_div.operands)):
-            if result[1] == DataType.WORKABLE and mul_div.operands[i][1] == DataType.WORKABLE:
-                if ((result[0].__class__ == int or result[0].__class__ == float)
-                and (mul_div.operands[i][0].__class__ == int or mul_div.operands[i][0].__class__ == float)):    
-                    val = None
-                    if mul_div.operator[i-1] == '*':
-                        val = result[0] * mul_div.operands[i][0]
-                    if mul_div.operator[i-1] == '/':
-                        val = result[0] / mul_div.operands[i][0]
-                    
-                    result = (val, DataType.WORKABLE)
+
+        l = len(mul_div.operands)
+        i = 1
+        while i < l:
+            current = mul_div.operands[i]
+
+            if result["content_type"] not in ["INTEGER", "FLOAT"]:
+                raise SemanticError("Operand of type INTEGER or FLOAT expected, {0} geven.".format(result["content_type"]))
+            if current["content_type"] not in ["INTEGER", "FLOAT"]:
+                raise SemanticError("Operand of type INTEGER or FLOAT expected, {0} geven.".format(result["content_type"]))
+
+            operator = mul_div.operator[i-1]
+
+            if (result["construct_type"]  == DataType.WORKABLE 
+            and current["construct_type"] == DataType.WORKABLE):
+                if operator == '*':
+                    val = result["content"] * current["content"]
+                elif operator == '/':
+                    val = result["content"] / current["content"]
+                
+                result = {
+                    "content": val, 
+                    "content_type": py_to_clips_type(val.__class__),
+                    "construct_type": DataType.WORKABLE
+                }
+
             else:
-                result = ('(' + 
-                        mul_div.operator[i-1] + ' ' + 
-                        str(result[0]) + ' ' + 
-                        str(mul_div.operands[1][0]) + ')',  DataType.STATEMENT)
+                val = '(' + operator + ' ' + str(result["content"]) + ' ' + str(current["content"]) + ')'
+                resolved_c_type = resolve_expr_type("mul_div", result["content_type"], current["content_type"])
+
+                result = {
+                    "content": val,
+                    "content_type": resolved_c_type,
+                    "construct_type": DataType.EXPRESSION
+                }
+
+            i += 1
 
         return result
 
@@ -358,15 +468,18 @@ class Transpiler(object):
         i = 1
         while i < l:
             current = sqr.operands[i]
-
+           
             if result["content_type"] not in ["INTEGER", "FLOAT"]:
-                raise SemanticError("Operand of type INTEGER or FLOAT expected, {0} geven.".format(current_object_type))
+                raise SemanticError("Operand of type INTEGER or FLOAT expected, {0} geven.".format(result["content_type"]))
             if current["content_type"] not in ["INTEGER", "FLOAT"]:
-                raise SemanticError("Operand of type INTEGER or FLOAT expected, {0} geven.".format(current_object_type))
+                raise SemanticError("Operand of type INTEGER or FLOAT expected, {0} geven.".format(result["content_type"]))
+
+            operator = '**'
 
             if (result["construct_type"]  == DataType.WORKABLE 
             and current["construct_type"] == DataType.WORKABLE):
                 val = result["content"] ** current["content"]
+
                 result = {
                     "content": val, 
                     "content_type": py_to_clips_type(val.__class__),
@@ -374,8 +487,8 @@ class Transpiler(object):
                 }
 
             else:
-                val = '(** ' + str(result["content"]) + ' ' + str(current["content"]) + ')'
-                resolved_c_type = resolve_types("sqr", result["content_type"], current["content_type"])
+                val = '(' + operator + ' ' + str(result["content"]) + ' ' + str(current["content"]) + ')'
+                resolved_c_type = resolve_expr_type("sqr", result["content_type"], current["content_type"])
 
                 result = {
                     "content": val, 
@@ -407,7 +520,7 @@ class Transpiler(object):
             }
 
         else:
-            # Enters when factor class is: VARIABLE and DataLocator class
+            # Enters when factor class is: VARIABLE or DataLocator VALUE ENTRY
             return factor.value
 
 

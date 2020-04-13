@@ -91,3 +91,22 @@ class ClipsStatementBuilder(object):
     #TODO: Implement build_address_assignment_pattern method
     def build_address_assignment_pattern(self, data_locator_table, used_vars, expression):
         pass
+
+    
+    
+    def build_string_comparison_expr(self, op1, op2, operation):
+        val = None
+        if operator == '<':
+            val = '(< ' + '(str-compare ' + op1 + ' ' + op2 + ')' + '0)'
+        elif operator == '>':
+            val = '(> ' + '(str-compare ' + op1 + ' ' + op2 + ')' + '0)'
+        elif operator == '<=':
+            val = '(<= ' + '(str-compare ' + op1 + ' ' + op2 + ')' + '0)'
+        elif operator == '>=':
+            val = '(>= ' + '(str-compare ' + op1 + ' ' + op2 + ')' + '0)'
+        elif operator == '=':
+            val = '(= ' + '(str-compare ' + op1 + ' ' + op2 + ')' + '0)'
+        elif operator == '!=':
+            val = '(!= ' + '(str-compare ' + op1 + ' ' + op2 + ')' + '0)'
+        
+        return val

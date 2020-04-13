@@ -51,3 +51,29 @@ def py_to_clips_type(ptype):
     elif ptype == bool:
         ctype = "BOOLEAN"
     return ctype
+
+
+ # TODO: Check what's up with boolean as 1s of 0s in data_provider tempalte type
+def translate_if_c_bool(self, value):
+    """ Translates python bool into the CLIPS boolean
+
+    Parameters
+    ----------
+    value : bool
+        Python boolean value
+
+    Returns
+    -------
+    str: "TRUE" or "FALSE"
+        If passed value is of python bool type
+    value
+        Else
+    """
+
+    if value.__class__ == bool:
+        if value == True:
+            return "TRUE"
+        else:
+            return "FALSE"
+    else:
+        return value
