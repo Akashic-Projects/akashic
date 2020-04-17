@@ -65,7 +65,7 @@ SpecialSingularLogicExpression:
 ;
 
 TestSingularLogicExpression:
-    operator=TEST? '[' operand=NegationExpression ']'
+    operator=TEST '[' operand=NegationExpression ']'
 ;
 
 

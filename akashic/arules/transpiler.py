@@ -160,57 +160,90 @@ class Transpiler(object):
 
     def special_binary_logic_expression(self, binary):
         if len(binary.operands) < 2:
-            self.clips_command_list.append(binary.operands[0][0])
-        else:
-            ops = []
-            for i in range(0, len(binary.operands)):
-                if binary.operands[i][1] == DataType.STATEMENT:
-                    # Build clips command
-                    clips_command = self.clips_statement_builder.build_special_pattern(self.data_locator_table, self.data_locator_vars, binary.operands[i][0])
-                    ops.append(clips_command) 
+            self.clips_command_list.append(binary.operands[0]["content"])
+            return 0
 
-                    # Rotate defined variables for next special expression
-                    self.rotate_used_data_locator_vars()
-                    self.data_locator_vars = []
+        ops = []
+        for i in range(0, len(binary.operands)):
+            if binary.operands[i]["construct_type"] == DataType.EXPRESSION:
+                # Build clips command
+                clips_command = self.clips_statement_builder.build_special_pattern(
+                    self.data_locator_table, 
+                    self.data_locator_vars, 
+                    binary.operands[i]["content"]
+                )
+                ops.append(clips_command) 
 
-                elif binary.operands[i][1] == DataType.SPECIAL:
-                    ops.append(binary.operands[i][0])
+                # Rotate defined variables for next special expression
+                self.rotate_used_data_locator_vars()
+                self.data_locator_vars = []
 
-            result = ops[0]
-            for i in range(1, len(binary.operands)):
-                result = "(" + binary.operator[i-1] + " " + result + " " + ops[i] + ")"
+            elif binary.operands[i]["construct_type"] == DataType.SPECIAL:
+                ops.append(binary.operands[i]["content"])
+            
+            else:
+                raise SemanticError(
+                    "AND-OR logic operation argument must be either . {1} given."
+                    .format(singular.operator, singular.operand["construct_type"])
+                )
 
-            self.clips_command_list.append(result)
+        result = ops[0]
+        for i in range(1, len(binary.operands)):
+            result = "(" + binary.operator[i-1] + " " + result + " " + ops[i] + ")"
+
+        self.clips_command_list.append(result)
+        return 0
 
 
 
     def special_singular_logic_expression(self, singular):
-        # Because we use return as (value, DataType)
-        if singular.operand[1] != DataType.STATEMENT:
-            raise SemanticError("{0} must be statement. {1} given.".format(singular.operator, singular.operand[1].name))
+        # Exit if operator is not present
+        if not singular.operator 
+            return singular.operand
 
-        print("From special_singular_logic_expression: " + str(self.data_locator_vars))
+        if singular.operand["construct_type"] != DataType.EXPRESSION:
+            raise SemanticError(
+                "{0} operation argument must be expression. {1} given."
+                .format(singular.operator, singular.operand["construct_type"])
+            )
+
+        print("DLV from special_singular_logic_expression: " + str(self.data_locator_vars))
+
         # Build clips command
-        clips_command = self.clips_statement_builder.build_special_pattern(self.data_locator_table, self.data_locator_vars, singular.operand[0])
+        clips_command = self.clips_statement_builder.build_special_pattern(
+            self.data_locator_table, 
+            self.data_locator_vars, 
+            singular.operand["content"]
+        )
 
         # Rotate defined variables for next special expression
         self.rotate_used_data_locator_vars()
         self.data_locator_vars = []
 
         # Return CLIPS command
-        return ("(" + singular.operator + " " + clips_command + ")", DataType.SPECIAL)
+        val = "(" + singular.operator + " " + clips_command + ")"
+        return {
+            "content": val, 
+            "content_type": None,
+            "construct_type": DataType.SPECIAL
+        }
 
 
-    # TODO: Here!!
+
     def test_singular_logic_expression(self, test):
         # Because we use return as (value, DataType)
-        if test.operand[1] != DataType.EXPRESSION:
-            raise SemanticError("Test must be statement. {0} given.".format(test.operand[1]))
+        if test.operand["construct_type"] != DataType.EXPRESSION:
+            raise SemanticError(
+                "TEST operation argument must be expression. {0} given."
+                .format(test.operand["construct_type"])
+            )
 
         # Build clips commands
         clips_commands = self.clips_statement_builder.build_regular_dl_patterns(self.data_locator_table)
         self.clips_command_list.extend(clips_commands)
-        self.clips_command_list.append("(test " + test.operand[0] + ")")
+        self.clips_command_list.append("(test " + test.operand["content"] + ")")
+        
+        return 0
 
 
 
@@ -222,7 +255,10 @@ class Transpiler(object):
             return result
 
         if result["content_type"] not in ["INTEGER", "FLOAT", "BOOLEAN"]:
-            raise SemanticError("Operand of type INTEGER, FLOAT or BOOLEAN expected, {0} geven.".format(result["content_type"]))
+            raise SemanticError(
+                "Negation operand of type INTEGER, FLOAT or BOOLEAN expected, {0} geven."
+                .format(result["content_type"])
+            )
 
         operator = neg.operator
 
@@ -257,9 +293,15 @@ class Transpiler(object):
             current = logic.operands[i]
 
             if result["content_type"] not in ["INTEGER", "FLOAT", "BOOLEAN"]:
-                raise SemanticError("Operand of type INTEGER, FLOAT or BOOLEAN expected, {0} geven.".format(result["content_type"]))
+                raise SemanticError(
+                    "Logic operand of type INTEGER, FLOAT or BOOLEAN expected, {0} geven."
+                    .format(result["content_type"])
+                    )
             if current["content_type"] not in ["INTEGER", "FLOAT", "BOOLEAN"]:
-                raise SemanticError("Operand of type INTEGER, FLOAT or BOOLEAN expected, {0} geven.".format(result["content_type"]))
+                raise SemanticError(
+                    "Logic operand of type INTEGER, FLOAT or BOOLEAN expected, {0} geven."
+                    .format(result["content_type"])
+                )
 
             operator = logic.operator[i-1]
 
@@ -304,9 +346,15 @@ class Transpiler(object):
             current = comp.operands[i]
 
             if result["content_type"] not in ["INTEGER", "FLOAT", "STRING"]:
-                raise SemanticError("Operand of type INTEGER, FLOAT or STRING expected, {0} geven.".format(result["content_type"]))
+                raise SemanticError(
+                    "Comparison operand of type INTEGER, FLOAT or STRING expected, {0} geven."
+                    .format(result["content_type"])
+                )
             if current["content_type"] not in ["INTEGER", "FLOAT", "STRING"]:
-                raise SemanticError("Operand of type INTEGER, FLOAT or STRING expected, {0} geven.".format(result["content_type"]))
+                raise SemanticError(
+                    "Comparison operand of type INTEGER, FLOAT or STRING expected, {0} geven."
+                    .format(result["content_type"])
+                )
 
             # Resolve eq operaator
             if comp.operator[i-1] == '==':
@@ -382,9 +430,15 @@ class Transpiler(object):
             current = plus_minus.operands[i]
 
             if result["content_type"] not in ["INTEGER", "FLOAT"]:
-                raise SemanticError("Operand of type INTEGER or FLOAT expected, {0} geven.".format(result["content_type"]))
+                raise SemanticError(
+                    "Addition or subtraction operand of type INTEGER or FLOAT expected, {0} geven."
+                    .format(result["content_type"])
+                )
             if current["content_type"] not in ["INTEGER", "FLOAT"]:
-                raise SemanticError("Operand of type INTEGER or FLOAT expected, {0} geven.".format(result["content_type"]))
+                raise SemanticError(
+                    "Addition or subtraction operand of type INTEGER or FLOAT expected, {0} geven."
+                    .format(result["content_type"])
+                )
 
             operator = plus_minus.operator[i-1]
 
@@ -426,9 +480,15 @@ class Transpiler(object):
             current = mul_div.operands[i]
 
             if result["content_type"] not in ["INTEGER", "FLOAT"]:
-                raise SemanticError("Operand of type INTEGER or FLOAT expected, {0} geven.".format(result["content_type"]))
+                raise SemanticError(
+                    "Multiplication or division operand of type INTEGER or FLOAT expected, {0} geven."
+                    .format(result["content_type"])
+                )
             if current["content_type"] not in ["INTEGER", "FLOAT"]:
-                raise SemanticError("Operand of type INTEGER or FLOAT expected, {0} geven.".format(result["content_type"]))
+                raise SemanticError(
+                    "Multiplication or division operand of type INTEGER or FLOAT expected, {0} geven."
+                    .format(result["content_type"])
+                )
 
             operator = mul_div.operator[i-1]
 
@@ -470,9 +530,15 @@ class Transpiler(object):
             current = sqr.operands[i]
            
             if result["content_type"] not in ["INTEGER", "FLOAT"]:
-                raise SemanticError("Operand of type INTEGER or FLOAT expected, {0} geven.".format(result["content_type"]))
+                raise SemanticError(
+                    "Exponentiation or root extraction operand of type INTEGER or FLOAT expected, {0} geven."
+                    .format(result["content_type"])
+                )
             if current["content_type"] not in ["INTEGER", "FLOAT"]:
-                raise SemanticError("Operand of type INTEGER or FLOAT expected, {0} geven.".format(result["content_type"]))
+                raise SemanticError(
+                    "Exponentiation or root extraction operand of type INTEGER or FLOAT expected, {0} geven."
+                    .format(result["content_type"])
+                )
 
             operator = '**'
 
