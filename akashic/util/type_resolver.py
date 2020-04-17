@@ -18,7 +18,7 @@ def resolve_expr_type(operation_name, o1_type, o2_type):
         else:
             return "INTEGER"
     
-     elif operation_name == 'comp':
+    elif operation_name == 'comp':
         if ((o1_type in ["INTEGER", "FLOAT"] 
         and o2_type in  ["INTEGER", "FLOAT"])
         or  (o1_type == "STRING" 

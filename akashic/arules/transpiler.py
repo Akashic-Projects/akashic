@@ -120,12 +120,16 @@ class Transpiler(object):
             for template_name, template in self.data_locator_table.table.items():
                 for field_name, field in template.fields.items():
                     if field.var_name == var_name:
-                        to_add = ("", DataType.NOTHING)
+                        to_add = {
+                            "content": "",
+                            "content_type": field.dp_field.type,
+                            "construct_type": DataType.NOTHING
+                        }
                         gen_var_name = self.variable_table.add_helper_var(to_add)
                         field.var_name = gen_var_name
 
                         for vn, var_value in self.variable_table.table.items():
-                            var_value.value = (var_value.value[0].replace(var_name, gen_var_name), var_value.value[1])
+                            var_value.value["content"] = var_value.value["content"].replace(var_name, gen_var_name)
 
                             var_value.used_variables = [gen_var_name if uv == var_name else uv for uv in var_value.used_variables]
 
@@ -151,7 +155,11 @@ class Transpiler(object):
 
         if lhss.stat.__class__.__name__ == "VARIABLE_INIT":
             # Check if WORKABLE and string -> add " " and build str-cmp expression
-            self.variable_table.add_named_var(lhss.stat.var_name, self.translate_bool(lhss.stat.expr), self.data_locator_vars)
+            self.variable_table.add_named_var(
+                lhss.stat.var_name, 
+                lhss.stat.expr, 
+                self.data_locator_vars
+            )
             self.data_locator_vars = []
         elif lhss.stat.__class__.__name__ == "ASSERTION":
             print("Assertion done.")
@@ -198,7 +206,7 @@ class Transpiler(object):
 
     def special_singular_logic_expression(self, singular):
         # Exit if operator is not present
-        if not singular.operator 
+        if not singular.operator:
             return singular.operand
 
         if singular.operand["construct_type"] != DataType.EXPRESSION:
@@ -242,7 +250,7 @@ class Transpiler(object):
         clips_commands = self.clips_statement_builder.build_regular_dl_patterns(self.data_locator_table)
         self.clips_command_list.extend(clips_commands)
         self.clips_command_list.append("(test " + test.operand["content"] + ")")
-        
+
         return 0
 
 
@@ -251,7 +259,7 @@ class Transpiler(object):
         result = neg.operand
 
         # Exit if operator is not present
-        if neg.operator and neg.operator != "not":
+        if not neg.operator:
             return result
 
         if result["content_type"] not in ["INTEGER", "FLOAT", "BOOLEAN"]:
@@ -271,14 +279,14 @@ class Transpiler(object):
                 }
 
         else:
-            val = '(' + operator + ' ' + 
+            val = '(' + operator + ' ' + \
                     str(translate_if_c_bool(result["content"])) + ')'
 
             # It is always bool
             resolved_c_type = "BOOLEAN"
             return {
                     "content": val, 
-                    "content_type": py_to_clips_type(val.__class__),
+                    "content_type": resolved_c_type,
                     "construct_type": DataType.EXPRESSION
             }
 
@@ -291,7 +299,7 @@ class Transpiler(object):
         i = 1
         while i < l:
             current = logic.operands[i]
-
+            
             if result["content_type"] not in ["INTEGER", "FLOAT", "BOOLEAN"]:
                 raise SemanticError(
                     "Logic operand of type INTEGER, FLOAT or BOOLEAN expected, {0} geven."
@@ -300,7 +308,7 @@ class Transpiler(object):
             if current["content_type"] not in ["INTEGER", "FLOAT", "BOOLEAN"]:
                 raise SemanticError(
                     "Logic operand of type INTEGER, FLOAT or BOOLEAN expected, {0} geven."
-                    .format(result["content_type"])
+                    .format(current["content_type"])
                 )
 
             operator = logic.operator[i-1]
@@ -319,8 +327,8 @@ class Transpiler(object):
                 }
 
             else:
-                val = '(' + operator + ' ' + 
-                        str(translate_if_c_bool(result["content"])) + ' ' +
+                val = '(' + operator + ' ' + \
+                        str(translate_if_c_bool(result["content"])) + ' ' + \
                         str(translate_if_c_bool(current["content"])) + ')'
 
                 resolved_c_type = resolve_expr_type("logic", result["content_type"], current["content_type"])
@@ -353,7 +361,7 @@ class Transpiler(object):
             if current["content_type"] not in ["INTEGER", "FLOAT", "STRING"]:
                 raise SemanticError(
                     "Comparison operand of type INTEGER, FLOAT or STRING expected, {0} geven."
-                    .format(result["content_type"])
+                    .format(current["content_type"])
                 )
 
             # Resolve eq operaator
@@ -362,10 +370,10 @@ class Transpiler(object):
             else:
                 operator = comp.operator[i-1]
 
-            if (result["construct_type"]  == DataType.WORKABLE 
+            if ((result["construct_type"]  == DataType.WORKABLE 
             and current["construct_type"] == DataType.WORKABLE)
             and ((result["content_type"] in ["INTEGER", "FLOAT"] and current["content_type"] in  ["INTEGER", "FLOAT"])
-            or  (result["content_type"] == "STRING" and current["content_type"] == "STRING")):
+            or  (result["content_type"] == "STRING" and current["content_type"] == "STRING"))):
                    
                 if operator == '<':
                     val = result["content"] < current["content"]
@@ -396,17 +404,20 @@ class Transpiler(object):
 
                 if current["content_type"] == "STRING" and current["construct_type"]  == DataType.WORKABLE:
                     op2 = "\"" + current["content"] + "\""
-                 else:
+                else:
                     op2 = current["content"]
                     
                 op1 = translate_if_c_bool(op1)
                 op2 = translate_if_c_bool(op2)
 
-                val = self.clips_statement_builder.build_string_comparison_expr(op1, op2, operator)
+                op1_type = result["content_type"]
+                op2_type = current["content_type"]
+
+                val = self.clips_statement_builder.build_string_comparison_expr(op1, op1_type, op2, op2_type, operator)
                 resolved_c_type = resolve_expr_type("comp", result["content_type"], current["content_type"])
 
                 # Check if type is resolved correctly
-                if resolved_c_type > 0:
+                if resolved_c_type == 1:
                     raise SemanticError("Incompatible operand types present in comparison expression.")
 
                 result = {
@@ -437,7 +448,7 @@ class Transpiler(object):
             if current["content_type"] not in ["INTEGER", "FLOAT"]:
                 raise SemanticError(
                     "Addition or subtraction operand of type INTEGER or FLOAT expected, {0} geven."
-                    .format(result["content_type"])
+                    .format(current["content_type"])
                 )
 
             operator = plus_minus.operator[i-1]
@@ -487,7 +498,7 @@ class Transpiler(object):
             if current["content_type"] not in ["INTEGER", "FLOAT"]:
                 raise SemanticError(
                     "Multiplication or division operand of type INTEGER or FLOAT expected, {0} geven."
-                    .format(result["content_type"])
+                    .format(current["content_type"])
                 )
 
             operator = mul_div.operator[i-1]
@@ -537,7 +548,7 @@ class Transpiler(object):
             if current["content_type"] not in ["INTEGER", "FLOAT"]:
                 raise SemanticError(
                     "Exponentiation or root extraction operand of type INTEGER or FLOAT expected, {0} geven."
-                    .format(result["content_type"])
+                    .format(current["content_type"])
                 )
 
             operator = '**'
@@ -632,7 +643,11 @@ class Transpiler(object):
                 raise SemanticError("Template field '{0}' is not defined in data provider's template '{1}'".format(field_name, template_name))
 
             # Generate new variable and add new entry to the data locator table
-            gen_var_name = self.variable_table.add_helper_var(("", DataType.NOTHING, found_dp_field.type))
+            gen_var_name = self.variable_table.add_helper_var({
+                "content": "",
+                "content_type": found_dp_field.type,
+                "construct_type": DataType.NOTHING
+            })
             self.data_locator_vars.append(gen_var_name)
             self.data_locator_table.add(template_name, field_name, gen_var_name, found_dp_field)
             

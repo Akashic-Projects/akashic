@@ -54,7 +54,7 @@ def py_to_clips_type(ptype):
 
 
  # TODO: Check what's up with boolean as 1s of 0s in data_provider tempalte type
-def translate_if_c_bool(self, value):
+def translate_if_c_bool(value):
     """ Translates python bool into the CLIPS boolean
 
     Parameters

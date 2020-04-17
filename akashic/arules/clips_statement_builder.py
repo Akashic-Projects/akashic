@@ -94,19 +94,24 @@ class ClipsStatementBuilder(object):
 
     
     
-    def build_string_comparison_expr(self, op1, op2, operation):
-        val = None
-        if operator == '<':
-            val = '(< ' + '(str-compare ' + op1 + ' ' + op2 + ')' + '0)'
-        elif operator == '>':
-            val = '(> ' + '(str-compare ' + op1 + ' ' + op2 + ')' + '0)'
-        elif operator == '<=':
-            val = '(<= ' + '(str-compare ' + op1 + ' ' + op2 + ')' + '0)'
-        elif operator == '>=':
-            val = '(>= ' + '(str-compare ' + op1 + ' ' + op2 + ')' + '0)'
-        elif operator == '=':
-            val = '(= ' + '(str-compare ' + op1 + ' ' + op2 + ')' + '0)'
-        elif operator == '!=':
-            val = '(!= ' + '(str-compare ' + op1 + ' ' + op2 + ')' + '0)'
+    def build_string_comparison_expr(self, op1, op1_type, op2, op2_type, operator):
         
-        return val
+        if op1_type == "STRING" and op2_type == "STRING":
+
+            second_part = '(str-compare ' + str(op1) + ' ' + str(op2) + ')' + '0)'
+            if operator == '<':
+                val = '(< ' + second_part
+            elif operator == '>':
+                val = '(> ' + second_part
+            elif operator == '<=':
+                val = '(<= ' + second_part
+            elif operator == '>=':
+                val = '(>= ' + second_part
+            elif operator == '=':
+                val = '(= ' + second_part
+            elif operator == '!=':
+                val = '(!= ' + second_part
+            
+            return val
+
+        return '(' + operator + ' ' + str(op1) + ' ' + str(op2) + ')'
