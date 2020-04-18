@@ -200,6 +200,7 @@ class Transpiler(object):
             result = "(" + binary.operator[i-1] + " " + result + " " + ops[i] + ")"
 
         self.clips_command_list.append(result)
+        
         return 0
 
 

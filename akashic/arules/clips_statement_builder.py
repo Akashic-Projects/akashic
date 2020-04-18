@@ -92,6 +92,9 @@ class ClipsStatementBuilder(object):
     def build_address_assignment_pattern(self, data_locator_table, used_vars, expression):
         pass
 
+
+    def build_count_pattern(self, expression):
+        pass
     
     
     def build_string_comparison_expr(self, op1, op1_type, op2, op2_type, operator):

@@ -52,6 +52,7 @@ NOT:            'not' ;
 EXISTS:         'exists' ;
 FORALL:         'forall' ;
 TEST:           'test' ;
+COUNT:          'count';
 
 SPECIAL_SINGULAR: NOT | EXISTS | FORALL ;
 
