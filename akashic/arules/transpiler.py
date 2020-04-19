@@ -62,6 +62,7 @@ class Transpiler(object):
             'SpecialBinaryLogicExpression': self.special_binary_logic_expression,
             'SpecialSingularLogicExpression': self.special_singular_logic_expression,
             'TestSingularLogicExpression': self.test_singular_logic_expression,
+            'CountExpression': self.count_expression,
             'NegationExpression': self.negation_expression,
             'LogicExpression': self.logic_expression,
             'CompExpression': self.comp_expression,
@@ -129,7 +130,10 @@ class Transpiler(object):
                         field.var_name = gen_var_name
 
                         for vn, var_value in self.variable_table.table.items():
-                            var_value.value["content"] = var_value.value["content"].replace(var_name, gen_var_name)
+
+                            # This check is important - very!!
+                            if var_value.value["construct_type"] != DataType.WORKABLE:
+                                var_value.value["content"] = var_value.value["content"].replace(var_name, gen_var_name)
 
                             var_value.used_variables = [gen_var_name if uv == var_name else uv for uv in var_value.used_variables]
 
@@ -153,6 +157,8 @@ class Transpiler(object):
         2. Id statement represents assertion function. Then nothing... for now.. 
         """
 
+        print("name: " +  lhss.stat.__class__.__name__)
+
         if lhss.stat.__class__.__name__ == "VARIABLE_INIT":
             # Check if WORKABLE and string -> add " " and build str-cmp expression
             self.variable_table.add_named_var(
@@ -161,9 +167,16 @@ class Transpiler(object):
                 self.data_locator_vars
             )
             self.data_locator_vars = []
+            print("Variable adding done.")
+
         elif lhss.stat.__class__.__name__ == "ASSERTION":
             print("Assertion done.")
-            
+        
+        elif lhss.stat.__class__.__name__ == "FACT_ADDRESS":
+            clips_address_pattern_command = lhss.stat.var_name + " <- " + lhss.stat.expr["content"]
+            self.clips_command_list.append(clips_address_pattern_command)
+            print("Address pattern adding done.")
+
 
 
     def special_binary_logic_expression(self, binary):
@@ -173,22 +186,8 @@ class Transpiler(object):
 
         ops = []
         for i in range(0, len(binary.operands)):
-            if binary.operands[i]["construct_type"] == DataType.EXPRESSION:
-                # Build clips command
-                clips_command = self.clips_statement_builder.build_special_pattern(
-                    self.data_locator_table, 
-                    self.data_locator_vars, 
-                    binary.operands[i]["content"]
-                )
-                ops.append(clips_command) 
-
-                # Rotate defined variables for next special expression
-                self.rotate_used_data_locator_vars()
-                self.data_locator_vars = []
-
-            elif binary.operands[i]["construct_type"] == DataType.SPECIAL:
+            if binary.operands[i]["construct_type"] == DataType.SPECIAL:
                 ops.append(binary.operands[i]["content"])
-            
             else:
                 raise SemanticError(
                     "AND-OR logic operation argument must be either . {1} given."
@@ -200,16 +199,12 @@ class Transpiler(object):
             result = "(" + binary.operator[i-1] + " " + result + " " + ops[i] + ")"
 
         self.clips_command_list.append(result)
-        
+
         return 0
 
 
 
     def special_singular_logic_expression(self, singular):
-        # Exit if operator is not present
-        if not singular.operator:
-            return singular.operand
-
         if singular.operand["construct_type"] != DataType.EXPRESSION:
             raise SemanticError(
                 "{0} operation argument must be expression. {1} given."
@@ -218,7 +213,7 @@ class Transpiler(object):
 
         print("DLV from special_singular_logic_expression: " + str(self.data_locator_vars))
 
-        # Build clips command
+        # Build clips regular command
         clips_command = self.clips_statement_builder.build_special_pattern(
             self.data_locator_table, 
             self.data_locator_vars, 
@@ -230,7 +225,11 @@ class Transpiler(object):
         self.data_locator_vars = []
 
         # Return CLIPS command
-        val = "(" + singular.operator + " " + clips_command + ")"
+        if not singular.operator:
+            val = clips_command
+        else:
+            val = "(" + singular.operator + " " + clips_command + ")"
+
         return {
             "content": val, 
             "content_type": None,
@@ -253,6 +252,38 @@ class Transpiler(object):
         self.clips_command_list.append("(test " + test.operand["content"] + ")")
 
         return 0
+
+
+    def count_expression(self, countt):
+        # Exit if operator is not present
+        if not countt.operator:
+            return countt.operand
+
+        if countt.operand["construct_type"] != DataType.EXPRESSION:
+            raise SemanticError(
+                "{0} operation argument must be expression. {1} given."
+                .format(countt.operator, countt.operand["construct_type"])
+            )
+
+        # Build count command if present
+        clips_command = self.clips_statement_builder.build_count_pattern(
+            self.data_locator_table, 
+            self.data_locator_vars, 
+            countt.operand["content"]
+        )
+    
+        # Rotate defined variables for next special expression
+        self.rotate_used_data_locator_vars()
+        self.data_locator_vars = []
+
+        # Return CLIPS command
+        val = "(" + countt.operator + " " + clips_command + ")"
+        resolved_c_type = "INTEGER"
+        return {
+            "content": val,
+            "content_type": resolved_c_type,
+            "construct_type": DataType.EXPRESSION
+        }
 
 
 

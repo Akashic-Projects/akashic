@@ -82,17 +82,31 @@ def test_rule_transpiler():
     with open(sample_path, 'r') as sample:
         dsd_string = sample.read()
 
-    data_provider = DataProvider()
-    data_provider.load(dsd_string)
-    data_provider.setup()
+    user_data_provider = DataProvider()
+    user_data_provider.load(dsd_string)
+    user_data_provider.setup()
+
+    # Setup Course data provider
+    this_folder = dirname(__file__)
+    sample_path = abspath(join(this_folder, '..', 'test', 'samples', 'ads', 'course_dsd.json'))
+
+    dsd_string = None
+    with open(sample_path, 'r') as sample:
+        dsd_string = sample.read()
+
+    course_data_provider = DataProvider()
+    course_data_provider.load(dsd_string)
+    course_data_provider.setup()
 
 
     # Setup akashic transpiler
-    transpiler = Transpiler([data_provider])
+    transpiler = Transpiler([user_data_provider, course_data_provider])
 
     # Read rule from sample file
     this_folder = dirname(__file__)
-    sample_path = abspath(join(this_folder, '..', 'test', 'samples', 'arules', 'sample1.json'))
+
+    # sample1.json
+    sample_path = abspath(join(this_folder, '..', 'test', 'samples', 'arules', 'address_test.json'))
     with open(sample_path, 'r') as sample:
         akashic_rule = sample.read()
         transpiler.load(akashic_rule)

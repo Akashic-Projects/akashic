@@ -10,6 +10,10 @@ class ClipsStatementBuilder(object):
     We use this class to build complex CLIPS statements. 
     """
 
+    def __init__(self):
+        self.count_operation_var_counter = 0
+
+
     def build_regular_dl_patterns(self, data_locator_table):
         """ Builds CLIPS statement without *Predicate Constraints*
         
@@ -88,14 +92,26 @@ class ClipsStatementBuilder(object):
 
 
 
-    #TODO: Implement build_address_assignment_pattern method
-    def build_address_assignment_pattern(self, data_locator_table, used_vars, expression):
-        pass
+    # TODO: Add support for more templates
+    def build_count_pattern(self, data_locator_table, used_vars, expression):
+        clips_template_refs = []
+
+        """example: (length$ (find-all-facts ((?f student)) (eq ?f:gruppa ?gr)))"""
+        for template_name, template in data_locator_table.table.items():
+            template_var = "?" + template_name.lower() + str(self.count_operation_var_counter)
+            clips_template_refs.append("(" + template_var + " " + template_name + ")")
+
+            field_list = [ (k, v) for k, v in template.fields.items() ]
+            for i in range(0, len(field_list)):
+                field_name = field_list[i][0]
+                field = field_list[i][1]
+                if field.var_name in used_vars:
+                    replacement = template_var + ":" + field_name
+                    expression = expression.replace(field.var_name, replacement)
+
+        return "(length$ (find-all-facts (" + " ".join(clips_template_refs) + ") " + expression + "))"
 
 
-    def build_count_pattern(self, expression):
-        pass
-    
     
     def build_string_comparison_expr(self, op1, op1_type, op2, op2_type, operator):
         

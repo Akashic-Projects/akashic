@@ -1,8 +1,8 @@
 {
-    "data-source-definition-name": "User",
+    "data-source-definition-name": "Course",
     "data-source-definition-group-name": "StudentServiceGroup",
-    "model-name": "User",
-    "model-description": "Holds general user data",
+    "model-name": "Course",
+    "model-description": "Holds general coure data",
     "authentication-header": {
         "auth-header-name": "Authorization",
         "token-prefix": "bearer",
@@ -29,26 +29,6 @@
             "response-multiple-json-path": "$.data[{index}].name",
             "use-for-create": true,
             "use-for-update": true
-        },
-        {
-            "field-name": "email",
-            "type": "STRING",
-            "use-as": "data",
-            "request-json-path": "$.email",
-            "response-one-json-path": "$.data.email",
-            "response-multiple-json-path": "$.data[{index}].email",
-            "use-for-create": true,
-            "use-for-update": true
-        },
-        {
-            "field-name": "age",
-            "type": "INTEGER",
-            "use-as": "data",
-            "request-json-path": "$.age",
-            "response-one-json-path": "$.data.age",
-            "response-multiple-json-path": "$.data[{index}].age",
-            "use-for-create": true,
-            "use-for-update": true
         }
     ],
 
@@ -56,18 +36,18 @@
         {
             "operation": "create",
             "method": "POST",
-            "url-map": "http://localhost:80/api/users"
+            "url-map": "http://localhost:80/api/courses"
         },
         {
             "operation": "read-one",
             "method": "GET",
-            "url-map": "http://localhost:80/api/users/{id}",
+            "url-map": "http://localhost:80/api/courses/{id}",
             "data-indexing-url-placement": "id"
         },
         {
             "operation": "read-multiple",
             "method": "GET",
-            "url-map": "http://localhost:80/api/users?pageIndex={pageIndex}&pageRowCount={pageRowCount}&searchFields={searchFields}&searchStrings={searchStrings}&sortField={sortField}&sortOrder={sortOrder}",
+            "url-map": "http://localhost:80/api/courses?pageIndex={pageIndex}&pageRowCount={pageRowCount}&searchFields={searchFields}&searchStrings={searchStrings}&sortField={sortField}&sortOrder={sortOrder}",
             "page-index-url-placement": "pageIndex",
             "page-row-count-url-placement": "pageRowCount",
 
@@ -83,13 +63,13 @@
         {
             "operation": "update",
             "method": "PUT",
-            "url-map": "http://localhost:80/api/users/{id}",
+            "url-map": "http://localhost:80/api/courses/{id}",
             "data-indexing-url-placement": "id"
         },
         {
             "operation": "delete",
             "method": "DELETE",
-            "url-map": "http://localhost:80/api/users/{id}",
+            "url-map": "http://localhost:80/api/courses/{id}",
             "data-indexing-url-placement": "id"
         }
     ]

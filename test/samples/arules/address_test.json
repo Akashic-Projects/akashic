@@ -1,0 +1,11 @@
+{
+    "rule-name": "Test count rule",
+    "salience": 100,
+    "when": [
+        { "?korisnik=": "[User.id == 45]" },
+        { "assert": "[User.age > 2]"}
+    ],
+    "then": [
+        { "read": "Some value" }
+    ]
+}

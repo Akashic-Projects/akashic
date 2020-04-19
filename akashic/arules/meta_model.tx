@@ -23,11 +23,11 @@ WHEN_KW:    /\"when\"/ ;
 LHSStatement: 
     stat=VARIABLE_INIT | 
     stat=ASSERTION |
-    stat=ASSIGNMENT
+    stat=FACT_ADDRESS
 ;
 
 VARIABLE_INIT:
-    '{' '"' var_name=/\?[^\d\W]\w*\b/ '"' ':' '"' expr=NegationExpression '"' '}'
+    '{' '"' var_name=/\?[^\d\W]\w*\b/ '"' ':' '"' expr=CountExpression '"' '}'
 ;
 
 ASSERTION:
@@ -35,10 +35,10 @@ ASSERTION:
         (expr=SpecialBinaryLogicExpression | expr=TestSingularLogicExpression) '"' '}'
 ;
 
-ASSIGNMENT:
-    '{' '"' var_name=/\?[^\d\W]\w*\b/ '=' '"' ':' '"'
-        (expr=SpecialBinaryLogicExpression | expr=TestSingularLogicExpression) '"' '}'
+FACT_ADDRESS:
+      '{' '"' var_name=/\?[^\d\W]\w*\b/ '=' '"' ':' '"' expr=SpecialSingularLogicExpression '"' '}'
 ;
+
 
 ASSERT_KW:  /\"assert\"/ ;
 
@@ -52,7 +52,7 @@ NOT:            'not' ;
 EXISTS:         'exists' ;
 FORALL:         'forall' ;
 TEST:           'test' ;
-COUNT:          'count';
+COUNT:          'count' ;
 
 SPECIAL_SINGULAR: NOT | EXISTS | FORALL ;
 
@@ -62,14 +62,16 @@ SpecialBinaryLogicExpression:
 ;
 
 SpecialSingularLogicExpression:
-    operator=SPECIAL_SINGULAR? '[' operand=NegationExpression ']'
+    operator=SPECIAL_SINGULAR? '[' operand=CountExpression ']'
 ;
 
 TestSingularLogicExpression:
-    operator=TEST '[' operand=NegationExpression ']'
+    operator=TEST '[' operand=CountExpression ']'
 ;
 
-
+CountExpression:
+    operator=COUNT? operand=NegationExpression
+;
 
 NegationExpression:
     operator=NOT? operand=LogicExpression
@@ -102,7 +104,7 @@ Factor:
     value=VARIABLE | 
     value=DataLocator |
     (lpar=LPAR value=NegationExpression rpar=RPAR) | 
-    value=NegationExpression
+    value=CountExpression
 ;
 
 LPAR:   '(' ;
