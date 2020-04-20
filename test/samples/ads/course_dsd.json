@@ -48,8 +48,12 @@
             "operation": "read-multiple",
             "method": "GET",
             "url-map": "http://localhost:80/api/courses?pageIndex={pageIndex}&pageRowCount={pageRowCount}&searchFields={searchFields}&searchStrings={searchStrings}&sortField={sortField}&sortOrder={sortOrder}",
+            
             "page-index-url-placement": "pageIndex",
+            "default-page-index": 1,
+
             "page-row-count-url-placement": "pageRowCount",
+            "default-page-row-count": 5,
 
             "search-fields-url-placement": "searchFields",
             "search-fields-url-delimiter": ",",

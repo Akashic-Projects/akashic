@@ -136,12 +136,19 @@ ReadMultipleApi:
         (METHOD_KW                 ':'  '"'  method              = Method  '"'                      )
         (URL_MAP_KW                ':'       url_map             = STRING                           )
         (REF_FOREIGN_MODELS_KW     ':'  '['  ref_foreign_models *= ReferencedForeignModel[','] ']'  )?
+        
         (PAGE_INDEX_UP_KW          ':'  '"'  page_index_url_placement       = ID        '"'         )
+        (DEFAULT_PAGE_INDEX_KW     ':'       default_page_index             = NUMBER                )
+
         (PAGE_ROW_COUNT_UP_KW      ':'  '"'  page_row_count_url_placement   = ID        '"'         )
+        (DEFAULT_PAGE_ROW_COUNT_KW ':'       default_page_row_count         = NUMBER             )
+
         (SEARCH_FIELDS_UP_KW       ':'  '"'  search_fields_url_placement    = ID        '"'         )
         (SEARCH_FIELDS_UD_KW       ':'       search_fields_url_delimiter    = STRING                )  
+        
         (SEARCH_STRINGS_UP_KW      ':'  '"'  search_strings_url_placement   = ID        '"'         )
         (SEARCH_STRINGS_UD_KW      ':'       search_strings_url_delimiter   = STRING                )
+        
         (SORT_FIELD_UP_KW          ':'  '"'  sort_field_url_placement       = ID        '"'         )
         (SORT_ORDER_UP_KW          ':'  '"'  sort_order_url_placement       = ID        '"'         ))#[',']
     '}'
@@ -173,7 +180,10 @@ REF_FOREIGN_MODELS_KW:      /\"referenced-foreign-models\"/ ;
 DATA_INDEXING_UP_KW:        /\"data-indexing-url-placement\"/ ;
 
 PAGE_INDEX_UP_KW:           /\"page-index-url-placement\"/ ;
+DEFAULT_PAGE_INDEX_KW:      /\"default-page-index\"/ ;
+
 PAGE_ROW_COUNT_UP_KW:       /\"page-row-count-url-placement\"/ ;
+DEFAULT_PAGE_ROW_COUNT_KW:  /\"default-page-row-count\"/ ;
 
 SEARCH_FIELDS_UP_KW:        /\"search-fields-url-placement\"/ ;
 SEARCH_FIELDS_UD_KW:        /\"search-fields-url-delimiter\"/ ;

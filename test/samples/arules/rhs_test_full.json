@@ -1,0 +1,59 @@
+{
+    "rule-name": "Test count rule full",
+    "salience": 100,
+    "when": [
+        { "?korisnik=": "[User.id == 45]" }
+    ],
+    "then": [
+        {
+            "create": {
+                "model-name": "User",
+                "data": {
+                    "name": "Lazar",
+                    "email": "lazar@gmail.com",
+                    "age": 24
+                }
+            }
+        },
+        {
+            "read-one": {
+                "model-name": "User",
+                "data": {
+                    "id": 12
+                }
+            }
+        },
+        {
+            "read-multiple": {
+                "model-name": "User",
+                "data": {
+                    "page-index": 1,
+                    "page-row-count": 10,
+                    "search-fields": "name, email",
+                    "search-strings": "lazar, lazar@gmail.com",
+                    "sort-field": "id",
+                    "sort-order": "DESC"
+                }
+            }
+        },
+        {
+            "update": {
+                "model-name": "User",
+                "data": {
+                    "id": 3,
+                    "name": "Lazar1",
+                    "email": "lazar@gmail.com",
+                    "age": 24
+                }
+            }
+        },
+        {
+            "delete": {
+                "model-name": "User",
+                "data": {
+                    "id": 3
+                }
+            }
+        }
+    ]
+}

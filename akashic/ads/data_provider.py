@@ -315,7 +315,7 @@ class DataProvider(object):
         Parameters
         ----------
         **kwargs: dict
-            Dictionary of pairs 'search_field: value'
+            Dictionary of pairs 'query_field: value'
 
         Details
         -------
@@ -325,19 +325,34 @@ class DataProvider(object):
         -------
         default_kwargs : dict
             Constructed search query in form of dictionary
+
+        Raises
+        ------
+        SemanticError
+            If query field is not defined in given data source definition
         """
-        # TODO: This must be universal, all default settings in dsd model
+
         default_kwargs = {
-            "pageIndex": 1,
-            "pageRowCount": 5,
-            "searchFields": "",
-            "searchStrings": "",
-            "sortField": "",
-            "sortOrder": ""
+            
+            self.dsd.apis.read_multiple.page_index_url_placement: self.dsd.apis.read_multiple.default_page_index,
+            self.dsd.apis.read_multiple.page_row_count_url_placement: self.dsd.apis.read_multiple.default_page_row_count,
+
+            self.dsd.apis.read_multiple.search_fields_url_placement:    "",
+            self.dsd.apis.read_multiple.search_strings_url_placement:   "",
+            self.dsd.apis.read_multiple.sort_field_url_placement:       "",
+            self.dsd.apis.read_multiple.sort_order_url_placement:       ""
         }
 
+        # Check if field url placement are right
+
+
         for key, value in kwargs.items():
-            default_kwargs[key] = value
+            if key in default_kwargs:
+                default_kwargs[key] = value
+            else:
+                message = f"Query field {key} is not defined in data source definition."
+                raise SemanticError(message)
+
         return default_kwargs
 
 
