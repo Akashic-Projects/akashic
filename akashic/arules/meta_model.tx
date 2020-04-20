@@ -23,7 +23,8 @@ WHEN_KW:    /\"when\"/ ;
 LHSStatement: 
     stat=VARIABLE_INIT | 
     stat=ASSERTION |
-    stat=FACT_ADDRESS
+    stat=FACT_ADDRESS |
+    stat=CLIPS_CODE
 ;
 
 VARIABLE_INIT:
@@ -39,8 +40,13 @@ FACT_ADDRESS:
       '{' '"' var_name=/\?[^\d\W]\w*\b/ '=' '"' ':' '"' expr=SpecialSingularLogicExpression '"' '}'
 ;
 
+CLIPS_CODE:
+     '{' CLIPS_KW ':' clips_code=/(\")(.*)(\")/  '}'
+;
+
 
 ASSERT_KW:  /\"assert\"/ ;
+CLIPS_KW:   /\"clips\"/ ;
 
 PLUS_MINUS:     '+'     | '-'  ;
 MUL_DIV:        '*'     | '/'  ;
@@ -126,28 +132,91 @@ THEN_KW:    /\"then\"/ ;
 
 
 RHSStatement:
-    stat=CreateStatement | stat=UpdateStatement | stat=ReadStatement | stat=DeleteStatement
+    stat=CreateStatement | 
+    stat=ReadOneStatement | 
+    stat=ReadMultipleStatement | 
+    stat=UpdateStatement | 
+    stat=DeleteStatement
 ;
+
 
 CreateStatement:
-    '{' CREATE_KW ':' template_name=STRING '}'
+    '{' 
+        CREATE_KW ':' '{'
+            ((MODEL_NAME_KW     ':'     model_name  = STRING  )
+            ( DATA_KW           ':'     json_string = JSONFile))#[',']
+        '}' 
+    '}'
 ;
-CREATE_KW:  /\"create\"/ ;
+CREATE_KW:       /\"create\"/ ;
+MODEL_NAME_KW:   /\"model-name\"/ ;
+DATA_KW:         /\"data\"/ ;
 
-ReadStatement:
-    '{' READ_KW ':' template_name=STRING '}'
+
+ReadOneStatement:
+    '{' 
+        READONE_KW ':' '{'
+            ((MODEL_NAME_KW     ':'     model_name  = STRING  )
+            ( DATA_KW           ':'     json_string = JSONFile))#[',']
+        '}' 
+    '}'
 ;
-READ_KW:    /\"read\"/ ;
+READONE_KW:    /\"read-one\"/ ;
+
+
+ReadMultipleStatement:
+    '{' 
+        READMULTIPLE_KW ':' '{'
+            ((MODEL_NAME_KW     ':'       model_name   = STRING  )
+            (DATA_KW            ':'       json_string  = JSONFile))#[',']
+        '}' 
+    '}'
+;
+READMULTIPLE_KW:    /\"read-multiple\"/ ;
+
 
 UpdateStatement:
-    '{' UPDATE_KW ':' template_name=STRING '}'
+    '{' 
+        UPDATE_KW ':' '{'
+            ((MODEL_NAME_KW     ':'       model_name   = STRING  )
+            (DATA_KW            ':'       json_string  = JSONFile))#[',']
+        '}' 
+    '}'
 ;
 UPDATE_KW:  /\"update\"/ ;
 
+
 DeleteStatement:
-    '{' DELETE_KW ':' template_name=STRING  '}' 
+    '{' 
+        DELETE_KW ':' '{'
+            ((MODEL_NAME_KW     ':'     model_name  = STRING  )
+            ( DATA_KW           ':'     json_string = JSONFile))#[',']
+        '}' 
+    '}'
 ;
 DELETE_KW:  /\"delete\"/ ;
+
+
+JSONFile:
+    JSONArray | JSONObject
+;
+
+JSONArray:
+    "[" values*=JSONValue[','] "]"
+;
+
+JSONValue:
+    STRING | FLOAT | BOOL | JSONObject | JSONArray | "null"
+;
+
+JSONObject:
+    "{" members*=JSONMember[','] "}"
+;
+
+JSONMember:
+    key=STRING ':' value=JSONValue
+;
+
 
 
 Comment:

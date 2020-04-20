@@ -326,7 +326,7 @@ class DataProvider(object):
         default_kwargs : dict
             Constructed search query in form of dictionary
         """
-
+        # TODO: This must be universal, all default settings in dsd model
         default_kwargs = {
             "pageIndex": 1,
             "pageRowCount": 5,

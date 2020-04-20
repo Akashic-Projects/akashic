@@ -12,6 +12,7 @@ from akashic.exceptions import SemanticError
 
 from akashic.util.type_converter import clips_to_py_type, py_to_clips_type, translate_if_c_bool
 from akashic.util.type_resolver import resolve_expr_type
+from akashic.util.string_util import remove_quotes
 
 
 #TODO: Need to add DataType: STRING_VAR, INT_VAR, FLOAT_VAR, BOOL_VAR 
@@ -177,6 +178,9 @@ class Transpiler(object):
             self.clips_command_list.append(clips_address_pattern_command)
             print("Address pattern adding done.")
 
+        elif lhss.stat.__class__.__name__ == "CLIPS_CODE":
+            clips_address_pattern_command = lhss.stat.clips_code
+            self.clips_command_list.append(remove_quotes(clips_address_pattern_command))
 
 
     def special_binary_logic_expression(self, binary):
@@ -623,7 +627,7 @@ class Transpiler(object):
         elif factor.value.__class__.__name__ == "STRING_C":
             # Remove single quotation marks if factor class is string
             return {
-                "content": factor.value.val.replace("'", ""), 
+                "content": remove_quotes(factor.value.val),
                 "content_type": py_to_clips_type(str),
                 "construct_type": DataType.WORKABLE
             }
