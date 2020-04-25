@@ -101,10 +101,12 @@ class DataProvider(object):
         """ Setup DataChecker and DataFetcher based on loaded data source definition
 
         """
-        self.checker = DataChecker(self.dsd)
-        self.checker.check_url_mappings()
 
-        self.fetcher = DataFetcher(self.dsd.auth_header, self.dsd.additional_headers)
+        if self.dsd.apis: 
+            self.checker = DataChecker(self.dsd)
+            self.checker.check_url_mappings()
+            self.fetcher = DataFetcher(self.dsd.auth_header, self.dsd.additional_headers)
+
         return 0
         
 
@@ -378,6 +380,11 @@ class DataProvider(object):
         parsed JSON object
             Web service response as parsed JSON object
         """
+
+        if not self.dsd.apis:
+            raise SemanticError("This data source does not provide web operations.")
+        if not self.dsd.apis.create:
+            raise SemanticError("This data source does not provide CREATE operation.")
        
         self.checker.check_field_types(use_json_as="request", operation="create", json_object=json_object)
         
@@ -409,6 +416,11 @@ class DataProvider(object):
             Web service response as parsed JSON object
         """
 
+        if not self.dsd.apis:
+            raise SemanticError("This data source does not provide web operations.")
+        if not self.dsd.apis.read_one:
+            raise SemanticError("This data source does not provide READ-ONE operation.")
+
         url_map = self.dsd.apis.read_one.url_map
         url = self.fill_data_map(url_map, **kwargs)
         
@@ -435,6 +447,11 @@ class DataProvider(object):
         parsed JSON object
             Web service response as parsed JSON object
         """
+
+        if not self.dsd.apis:
+            raise SemanticError("This data source does not provide web operations.")
+        if not self.dsd.apis.read_multiple:
+            raise SemanticError("This data source does not provide READ-MULTIPLE operation.")
 
         url_map = self.dsd.apis.read_multiple.url_map
         url = self.fill_data_map(url_map, **self.construct_query(**kwargs))
@@ -465,6 +482,11 @@ class DataProvider(object):
         parsed JSON object
             Web service response as parsed JSON object
         """
+
+        if not self.dsd.apis:
+            raise SemanticError("This data source does not provide web operations.")
+        if not self.dsd.apis.update:
+            raise SemanticError("This data source does not provide UPDATE operation.")
         
         self.checker.check_field_types(use_json_as="request", operation="update", json_object=json_object)
         
@@ -496,6 +518,11 @@ class DataProvider(object):
         parsed JSON object
             Web service response as parsed JSON object
         """
+
+        if not self.dsd.apis:
+            raise SemanticError("This data source does not provide web operations.")
+        if not self.dsd.apis.delete:
+            raise SemanticError("This data source does not provide DELETE operation.")
 
         url_map = self.dsd.apis.delete.url_map
         url = self.fill_data_map(url_map, **kwargs)

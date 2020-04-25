@@ -72,7 +72,14 @@ class Transpiler(object):
             'SqrExpr': self.sqr_expr,
             'Factor': self.factor,
             'DataLocator': self.data_locator,
-            'VARIABLE': self.variable
+            'VARIABLE': self.variable,
+
+            'RHSStatement': self.rhs_statement,
+            'CreateStatement': self.create_statement,
+            'ReadOneStatement': self.read_one_statement,
+            'ReadMultipleStatement': self.read_multiple_statement,
+            'UpdateStatement': self.update_statement,
+            'DeleteStatement': self.delete_statement,
         }
 
         this_folder = dirname(__file__)
@@ -103,6 +110,9 @@ class Transpiler(object):
         self.rule = self.meta_model.model_from_str(akashic_rule)
 
 
+# ----------------------------------------------------------------
+# LEFT HAND SIDE SECTION
+# ----------------------------------------------------------------
 
     def rotate_used_data_locator_vars(self):
         """ Function rotates used data locator variables
@@ -161,7 +171,8 @@ class Transpiler(object):
         print("name: " +  lhss.stat.__class__.__name__)
 
         if lhss.stat.__class__.__name__ == "VARIABLE_INIT":
-            # Check if WORKABLE and string -> add " " and build str-cmp expression
+            if self.variable_table.lookup(lhss.stat.var_name):
+                raise SemanticError(f"Variable '{lhss.stat.var_name}' is already defined.")
             self.variable_table.add_named_var(
                 lhss.stat.var_name, 
                 lhss.stat.expr, 
@@ -174,6 +185,13 @@ class Transpiler(object):
             print("Assertion done.")
         
         elif lhss.stat.__class__.__name__ == "FACT_ADDRESS":
+            if self.variable_table.lookup(lhss.stat.var_name):
+                raise SemanticError(f"Variable '{lhss.stat.var_name}' is already defined.")
+            self.variable_table.add_named_var(
+                lhss.stat.var_name,
+                lhss.stat.expr, 
+                []
+            )
             clips_address_pattern_command = lhss.stat.var_name + " <- " + lhss.stat.expr["content"]
             self.clips_command_list.append(clips_address_pattern_command)
             print("Address pattern adding done.")
@@ -224,6 +242,11 @@ class Transpiler(object):
             singular.operand["content"]
         )
 
+        t_name = None
+        # Extract used template name
+        for template_name, template in data_locator_table.table.items():
+            t_name = template_name
+
         # Rotate defined variables for next special expression
         self.rotate_used_data_locator_vars()
         self.data_locator_vars = []
@@ -238,6 +261,7 @@ class Transpiler(object):
             "content": val, 
             "content_type": None,
             "construct_type": DataType.SPECIAL
+            "model_id": t_name
         }
 
 
@@ -692,3 +716,134 @@ class Transpiler(object):
                 "content_type": found_dp_field.type,
                 "construct_type": DataType.VARIABLE
             }
+
+
+
+# ----------------------------------------------------------------
+# RIGHT HAND SIDE SECTION
+# ----------------------------------------------------------------
+
+    def rhs_statement(self, rhs):
+        pass
+
+
+
+    def find_data_provider(self, model_name):
+        data_provider = None
+        for ds in self.data_providers:
+            if ds.model_id == model_name:
+                data_provider = ds
+        
+        if data_provider == None:
+            raise SemanticError("Model with given name does not exist.")
+
+        return data_provider
+
+
+
+    def check_field_list_for_duplicates(self, field_list, method):
+        sett == set()
+        for m in field_list:
+            sett.add(m.key)
+
+        if (len(sett) != len(field_list)):
+            raise SemanticError(f"Duplicate field names detected in data of {method} method.")
+
+
+
+    def check_fact_address_def(self, json_field, dp_field):
+        # Check if variable is [address variable]
+        var_entry = self.variable_table.lookup(json_field.value.var_name)
+        if not var_entry:
+            raise SemanticError(f"Variable '{json_field.value.var_name}' is not defined.")
+        if not "model_id" in var_entry.value:
+            raise SemanticError(f"Variable '{json_field.value.var_name}' is not fact address.")
+
+        # Extract information 
+        fact_address_template_name = var_entry.value["model_id"]
+        fact_address_field_name = json_field.value.field_name
+        
+        # Check semantics of fact_add_template_name and fact_add_field_name
+        found_data_provider = None
+        for data_provider in self.data_providers:
+            if data_provider.dsd.model_id == fact_address_template_name:
+                found_data_provider = data_provider
+        if found_data_provider == None:
+            raise SemanticError(f"There is no data provider defined for fact address template '{fact_address_template_name}'.")
+        found_dp_field = found_data_provider.field_lookup(fact_address_field_name)
+        if not found_dp_field:
+            raise SemanticError(f"Fact address field '{fact_address_field_name}' is not defined in data provider's template '{fact_address_template_name}'")
+
+        # Check if type of fact accress field is same as field in json object
+        if found_dp_field.type != dp_field.type:
+            raise SemanticError(f"Type missmatch in field '{json_field.name}'. Expected type '{dp_field.type}'. Given type '{found_dp_field.type}'")
+
+
+
+    #TODO: Create value convertor: python to CLIPS and reveresed
+    def check_fields_and_build_clips_func_call_arguments(self, json_field_list, dp_field_list):
+        arg_list = []
+        for json_field in json_field_list:        
+            json_field_ok = False
+
+            for dp_field in dp_field_list:
+                if json_field.name == dp_field.field_name:
+                    json_field_ok = True
+
+                    given_type = py_to_clips_type(json_field.value)
+                    if given_type == None:
+                        self.check_fact_address_def(json_field, dp_field)
+
+                        # Build clips command args
+                        arg_list.append(json_field.name)
+                        arg_list.append('(fact-slot-value ' + json_field.value.var_name + ' ' + json_field.value.field_name + ')')
+                    else:
+                        if given_type != dp_field.type:
+                            raise SemanticError(f"Field with name '{json_field.name}' contains data with wrong type. Expected type is {dp_field.type}. Given type is {given_type}.")
+                        arg_list.append(json_field.name)
+
+                        #TODO: Thisss and referse in 'bridge' function
+                        arg_list.append(str())
+                    break
+                
+            if not json_field_ok:
+                raise SemanticError(f"Field with name '{m.key}' does not belong to model'{cs.model_name}'.")
+
+
+
+    def create_statement(self, create_s):
+        #TODO: Check fields and build web object creation arguments and web function call, 
+        #      also build temp object creation clips command
+
+        # (fact-slot-value ?f changeinfo)
+        # https://clipspy.readthedocs.io/en/latest/#embedding-python
+
+        # Find data provider for given model
+        data_provider = self.find_data_provider(create_s.model_name)
+
+        # Check field list for duplicate fileds
+        self.check_field_list_for_duplicates(cs.json_object.members, "CREATE")
+
+        # Check fields (names and types) and build CLIPS function call
+        arg_list = self.check_fields_and_build_clips_func_call_arguments(
+            cs.json_object.field_list,
+            data_provider.dsd.fields
+        )
+
+        #TODO: Use CLIPS value converter on create_s.reflect (bool) and add it ad 3. arg
+        #      in clips command bellow
+        
+        clips_command = "(create_func " + cs.model_name + " " + " ".join(arg_list) + ")"
+
+
+    def read_one_statement(self, ros):
+        pass
+
+    def read_multiple_statement(self, rms):
+        pass
+    
+    def update_statement(self, us):
+        pass
+
+    def delete_statement(self, ds):
+        pass

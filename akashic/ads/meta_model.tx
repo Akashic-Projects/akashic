@@ -8,7 +8,7 @@ DataSourceDefinition:
         (AUTHENTICATION_HEADER_KW   ':'      auth_header         = AuthenticationHeader       )?
         (ADDITIONAL_HEADERS_KW      ':' '['  additional_headers *= AdditionalHeader[',']  ']' )?
         (FIELDS_KW                  ':' '['  fields             *= Field[',']             ']' )
-        (APIS_KW                    ':' '['  apis                = Apis                   ']' ))#[',']
+        (APIS_KW                    ':' '['  apis                = Apis                   ']' )?)#[',']
     '}'
 ;
 DSD_NAME_KW:                    /\"data-source-definition-name\"/ ;

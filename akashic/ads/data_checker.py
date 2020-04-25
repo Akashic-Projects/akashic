@@ -74,6 +74,9 @@ class DataChecker(object):
             If URL map fields missmatches fileds specified in DSD
         """
 
+        if not self.dsd.apis:
+            return 0
+
         # Check create api, if available
         if self.dsd is not None:
             create = self.dsd.apis.create

@@ -144,12 +144,14 @@ CreateStatement:
     '{' 
         CREATE_KW ':' '{'
             ((MODEL_NAME_KW     ':'     model_name  = STRING  )
-            ( DATA_KW           ':'     json_string = JSONFile))#[',']
+            (REFLECT_ON_WEB     ':'     reflect     = BOOL    )
+            ( DATA_KW           ':'     json_object = JSONObject))#[',']
         '}' 
     '}'
 ;
 CREATE_KW:       /\"create\"/ ;
 MODEL_NAME_KW:   /\"model-name\"/ ;
+REFLECT_ON_WEB:  /\"reflect-on-web\"/ ;
 DATA_KW:         /\"data\"/ ;
 
 
@@ -157,7 +159,7 @@ ReadOneStatement:
     '{' 
         READONE_KW ':' '{'
             ((MODEL_NAME_KW     ':'     model_name  = STRING  )
-            ( DATA_KW           ':'     json_string = JSONFile))#[',']
+            ( DATA_KW           ':'     json_object = JSONObject))#[',']
         '}' 
     '}'
 ;
@@ -168,7 +170,7 @@ ReadMultipleStatement:
     '{' 
         READMULTIPLE_KW ':' '{'
             ((MODEL_NAME_KW     ':'       model_name   = STRING  )
-            (DATA_KW            ':'       json_string  = JSONFile))#[',']
+            (DATA_KW            ':'       json_object  = JSONObject))#[',']
         '}' 
     '}'
 ;
@@ -179,7 +181,8 @@ UpdateStatement:
     '{' 
         UPDATE_KW ':' '{'
             ((MODEL_NAME_KW     ':'       model_name   = STRING  )
-            (DATA_KW            ':'       json_string  = JSONFile))#[',']
+            (REFLECT_ON_WEB     ':'       reflect      = BOOL    )
+            (DATA_KW            ':'       json_object  = JSONObject))#[',']
         '}' 
     '}'
 ;
@@ -190,33 +193,26 @@ DeleteStatement:
     '{' 
         DELETE_KW ':' '{'
             ((MODEL_NAME_KW     ':'     model_name  = STRING  )
-            ( DATA_KW           ':'     json_string = JSONFile))#[',']
-        '}' 
+            (REFLECT_ON_WEB     ':'     reflect     = BOOL    )
+            ( DATA_KW           ':'     json_object = JSONObject))#[',']
+        '}'
     '}'
 ;
 DELETE_KW:  /\"delete\"/ ;
 
 
-JSONFile:
-    JSONArray | JSONObject
-;
-
-JSONArray:
-    "[" values*=JSONValue[','] "]"
-;
-
-JSONValue:
-    STRING | FLOAT | BOOL | JSONObject | JSONArray | "null"
-;
-
 JSONObject:
-    "{" members*=JSONMember[','] "}"
+    "{" field_list*=FieldEntry[','] "}"
+;
+FieldEntry:
+    name=STRING ':' value=FieldValue
+;
+FieldValue:
+    STRING | FLOAT | BOOL | ValueLocator
 ;
 
-JSONMember:
-    key=STRING ':' value=JSONValue
-;
-
+ValueLocator:
+    var_name=/\?[^\d\W]\w*\b/ '.' field_name=ID ;
 
 
 Comment:
