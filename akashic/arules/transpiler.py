@@ -812,12 +812,6 @@ class Transpiler(object):
 
 
     def create_statement(self, create_s):
-        #TODO: Check fields and build web object creation arguments and web function call, 
-        #      also build temp object creation clips command
-
-        # (fact-slot-value ?f changeinfo)
-        # https://clipspy.readthedocs.io/en/latest/#embedding-python
-
         # Find data provider for given model
         data_provider = self.find_data_provider(create_s.model_name)
 
@@ -832,8 +826,10 @@ class Transpiler(object):
 
         #TODO: Use CLIPS value converter on create_s.reflect (bool) and add it ad 3. arg
         #      in clips command bellow
-        
         clips_command = "(create_func " + cs.model_name + " " + " ".join(arg_list) + ")"
+
+        self.clips_command_list.append(clips_command)
+
 
 
     def read_one_statement(self, ros):
