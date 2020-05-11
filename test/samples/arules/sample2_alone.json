@@ -1,6 +1,5 @@
 {
     "rule-name": "Rule 1",
-    "rule-group-name": "Perfect rules",
     "salience": 100,
     "when": [
         { "test": "User~Course.rating > 3"}

@@ -1,6 +1,5 @@
 {
     "data-source-definition-name": "User",
-    "data-source-definition-group-name": "StudentServiceGroup",
     "model-name": "User",
     "model-description": "Holds general user data",
     "authentication-header": {

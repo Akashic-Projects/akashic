@@ -244,7 +244,7 @@ class Transpiler(object):
 
         t_name = None
         # Extract used template name
-        for template_name, template in data_locator_table.table.items():
+        for template_name, template in self.data_locator_table.table.items():
             t_name = template_name
 
         # Rotate defined variables for next special expression
@@ -260,7 +260,7 @@ class Transpiler(object):
         return {
             "content": val, 
             "content_type": None,
-            "construct_type": DataType.SPECIAL
+            "construct_type": DataType.SPECIAL,
             "model_id": t_name
         }
 
@@ -723,6 +723,9 @@ class Transpiler(object):
 # RIGHT HAND SIDE SECTION
 # ----------------------------------------------------------------
 
+### TODO: TEST THIS SECTION!
+
+
     def rhs_statement(self, rhs):
         pass
 
@@ -741,13 +744,13 @@ class Transpiler(object):
 
 
 
-    def check_field_list_for_duplicates(self, field_list, method):
+    def check_field_list_for_duplicates(self, json_field_list, method):
         sett == set()
-        for m in field_list:
-            sett.add(m.key)
+        for json_field in json_field_list:
+            sett.add(json_field.name)
 
         if (len(sett) != len(field_list)):
-            raise SemanticError(f"Duplicate field names detected in data of {method} method.")
+            raise SemanticError(f"Duplicate fields detected in data of {method} method.")
 
 
 
@@ -763,7 +766,7 @@ class Transpiler(object):
         fact_address_template_name = var_entry.value["model_id"]
         fact_address_field_name = json_field.value.field_name
         
-        # Check semantics of fact_add_template_name and fact_add_field_name
+        # Check semantics of fact_address_template_name and fact_address_field_name
         found_data_provider = None
         for data_provider in self.data_providers:
             if data_provider.dsd.model_id == fact_address_template_name:
@@ -781,9 +784,13 @@ class Transpiler(object):
 
 
     #TODO: Create value convertor: python to CLIPS and reveresed
-    def check_fields_and_build_clips_func_call_arguments(self, json_field_list, dp_field_list):
+    def check_fields_and_build_clips_func_call_arguments(
+                                                        self, 
+                                                        json_field_list, 
+                                                        dp_field_list, 
+                                                        model_name):
         arg_list = []
-        for json_field in json_field_list:        
+        for json_field in json_field_list:
             json_field_ok = False
 
             for dp_field in dp_field_list:
@@ -804,10 +811,10 @@ class Transpiler(object):
 
                         #TODO: Thisss and referse in 'bridge' function
                         arg_list.append(str())
-                    break
+                    break 
                 
             if not json_field_ok:
-                raise SemanticError(f"Field with name '{m.key}' does not belong to model'{cs.model_name}'.")
+                raise SemanticError(f"Field with name '{json_field.name}' does not belong to the model'{model_name}'.")
 
 
 
@@ -816,17 +823,20 @@ class Transpiler(object):
         data_provider = self.find_data_provider(create_s.model_name)
 
         # Check field list for duplicate fileds
-        self.check_field_list_for_duplicates(cs.json_object.members, "CREATE")
+        self.check_field_list_for_duplicates(create_s.json_object.field_list, "CREATE")
 
         # Check fields (names and types) and build CLIPS function call
         arg_list = self.check_fields_and_build_clips_func_call_arguments(
-            cs.json_object.field_list,
-            data_provider.dsd.fields
+            create_s.json_object.field_list,
+            data_provider.dsd.fields,
+            create_s.model_name
         )
 
-        #TODO: Use CLIPS value converter on create_s.reflect (bool) and add it ad 3. arg
-        #      in clips command bellow
-        clips_command = "(create_func " + cs.model_name + " " + " ".join(arg_list) + ")"
+        # TODO: Use CLIPS value converter on create_s.reflect (bool) and add it ad 3. arg
+        #       in clips command bellow
+
+        # Bridge is used to store python functions called by clips
+        clips_command = "(create_func " + create_s.model_name + " " + " ".join(arg_list) + ")"
 
         self.clips_command_list.append(clips_command)
 

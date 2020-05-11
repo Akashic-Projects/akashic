@@ -21,4 +21,14 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.6',
+    install_requires = [
+        'textX          >= 2.1.0,  < 2.2.0',
+        'clipspy        >= 0.3.3,  < 0.4.0',
+        'Flask          >= 1.1.2,  < 1.2.0',
+        'Flask-PyMongo  >= 2.3.0,  < 2.4.0',
+        'Flask-Cors     >= 3.0.8,  < 3.1.0',
+        'requests       >= 2.23.0, < 2.24.0',
+        'jsonpath-ng    >= 1.5.1,  < 1.6.0',
+    ]
+    
 )

@@ -1,6 +1,5 @@
 {
     "data-source-definition-name": "UserCourses data source",
-    "data-source-definition-group-name": "StudentServiceGroup",
     "model-name": "UserCourse",
     "model-description": "Holds data concearning individual student and course he is attending",
     

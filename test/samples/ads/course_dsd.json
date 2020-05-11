@@ -1,6 +1,5 @@
 {
     "data-source-definition-name": "Course",
-    "data-source-definition-group-name": "StudentServiceGroup",
     "model-name": "Course",
     "model-description": "Holds general coure data",
     "authentication-header": {
