@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request 
 from flask_pymongo import PyMongo
 from flask_cors import CORS
-import json
+from bson.json_util import dumps
 
 from pymongo.errors import DuplicateKeyError
 
@@ -16,17 +16,40 @@ app.config["MONGO_URI"] = "mongodb://admin:devdevdev@127.0.0.1:27017/akashic?aut
 mongo = PyMongo(app)
 
 
+@app.route('/dsds', methods=['GET'])
+def get_dsds():
+  cursors = mongo.db.dsds.find({})
+  rules = list(cursors)
+  return dumps(rules)
+
+
 @app.route('/dsds', methods=['POST'])
 def create_dsd():
   akashic_dsd = request.json
-  akashic_dsd['_id'] = akashic_dsd['model-name']
 
-  try:
-    mongo.db.dsds.insert_one(akashic_dsd)
-  except DuplicateKeyError as err:
-    return json.dumps({"error": "DSD with given modelname already exists."})
+  # TODO: Syntactic and semnatic check
 
-  return akashic_dsd
+  # Check if DSD with gven model name already exists
+  if mongo.db.dsds.find({'model-name': { '$eq': akashic_dsd['model-name']}}).count() > 0:
+    return dumps({"error": "DSD with given model name already exists."})
+
+  dsd_entry = {}
+  dsd_entry['dsd-name'] = akashic_dsd['data-source-definition-name']
+  dsd_entry['model-name'] = akashic_dsd['model-name']
+  dsd_entry['active'] = False
+  dsd_entry['dsd'] = akashic_dsd
+
+  mongo.db.dsds.insert_one(dsd_entry)
+
+  return dumps(dsd_entry)
+
+
+
+@app.route('/rules', methods=['GET'])
+def get_rules():
+  cursors = mongo.db.rules.find({})
+  rules = list(cursors)
+  return dumps(rules)
 
 
 @app.route('/rules', methods=['POST'])
@@ -37,7 +60,7 @@ def create_rule():
 
   # Check if rule with gven name already exists
   if mongo.db.rules.find({'rule-name': { '$eq': akashic_rule['rule-name']}}).count() > 0:
-    return json.dumps({"error": "Rule with given name already exists."})
+    return dumps({"error": "Rule with given name already exists."})
 
   rule_entry = {}
   rule_entry['rule-name'] = akashic_rule['rule-name']
@@ -46,7 +69,7 @@ def create_rule():
 
   mongo.db.rules.insert_one(rule_entry)
 
-  return akashic_rule
+  return dumps(rule_entry)
 
 
 app.run(debug=True)
