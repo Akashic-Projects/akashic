@@ -24,7 +24,7 @@ def create_dsd():
   try:
     mongo.db.dsds.insert_one(akashic_dsd)
   except DuplicateKeyError as err:
-    return json.dumps({"error": "DSD with given model name already exists."})
+    return json.dumps({"error": "DSD with given modelname already exists."})
 
   return akashic_dsd
 
@@ -32,11 +32,19 @@ def create_dsd():
 @app.route('/rules', methods=['POST'])
 def create_rule():
   akashic_rule = request.json
-  akashic_rule['_id'] = akashic_rule['rule-name']
-  try:
-    mongo.db.rules.insert_one(akashic_rule)
-  except DuplicateKeyError as err:
+
+  # TODO: Syntactic and semnatic check
+
+  # Check if rule with gven name already exists
+  if mongo.db.rules.find({'rule-name': { '$eq': akashic_rule['rule-name']}}).count() > 0:
     return json.dumps({"error": "Rule with given name already exists."})
+
+  rule_entry = {}
+  rule_entry['rule-name'] = akashic_rule['rule-name']
+  rule_entry['active'] = False
+  rule_entry['rule'] = akashic_rule
+
+  mongo.db.rules.insert_one(rule_entry)
 
   return akashic_rule
 
