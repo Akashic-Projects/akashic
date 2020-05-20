@@ -74,69 +74,73 @@ class DataChecker(object):
             If URL map fields missmatches fileds specified in DSD
         """
 
-        if not self.dsd.apis:
+        if not hasattr(self.dsd, 'apis'):
             return 0
 
         # Check create api, if available
         if self.dsd is not None:
-            create = self.dsd.apis.create
-            if create is not None:
-                if create.ref_foreign_models is not None:
-                    field_refs = []
-                    for ref in create.ref_foreign_models:
-                        field_refs.append(ref.url_placement)
-                    
-                    self.check_url_mapping("create", create.url_map, field_refs)
+            if hasattr(self.dsd.apis, 'create'):
+                create = self.dsd.apis.create
+                if create is not None:
+                    if create.ref_foreign_models is not None:
+                        field_refs = []
+                        for ref in create.ref_foreign_models:
+                            field_refs.append(ref.url_placement)
+                        
+                        self.check_url_mapping("create", create.url_map, field_refs)
             
             # Check read_one api, if available
-            read_one = self.dsd.apis.read_one
-            if read_one is not None:
-                if read_one.ref_foreign_models is not None:
-                    field_refs = []
-                    for ref in read_one.ref_foreign_models:
-                        field_refs.append(ref.url_placement)
-                    field_refs.append(read_one.data_indexing_up)
-                    
-                    self.check_url_mapping("read-one", read_one.url_map, field_refs)
+            if hasattr(self.dsd.apis, 'read_one'):
+                read_one = self.dsd.apis.read_one
+                if read_one is not None:
+                    if read_one.ref_foreign_models is not None:
+                        field_refs = []
+                        for ref in read_one.ref_foreign_models:
+                            field_refs.append(ref.url_placement)
+                        field_refs.append(read_one.data_indexing_up)
+                        
+                        self.check_url_mapping("read-one", read_one.url_map, field_refs)
 
             # Check read_multiple api, if available
-            read_mul = self.dsd.apis.read_multiple
-            if read_mul is not None:
-                if read_mul.ref_foreign_models is not None:
-                    field_refs = []
-                    for ref in read_mul.ref_foreign_models:
-                        field_refs.append(ref.url_placement)
-                    field_refs.append(read_mul.page_index_url_placement)
-                    field_refs.append(read_mul.page_row_count_url_placement)
-                    field_refs.append(read_mul.search_fields_url_placement)
-                    field_refs.append(read_mul.search_strings_url_placement)
-                    field_refs.append(read_mul.sort_field_url_placement)
-                    field_refs.append(read_mul.sort_order_url_placement)
-                    
-                    self.check_url_mapping("read-multiple", read_mul.url_map, field_refs)
+            if hasattr(self.dsd.apis, 'read_multiple'):
+                read_mul = self.dsd.apis.read_multiple
+                if read_mul is not None:
+                    if read_mul.ref_foreign_models is not None:
+                        field_refs = []
+                        for ref in read_mul.ref_foreign_models:
+                            field_refs.append(ref.url_placement)
+                        field_refs.append(read_mul.page_index_url_placement)
+                        field_refs.append(read_mul.page_row_count_url_placement)
+                        field_refs.append(read_mul.search_fields_url_placement)
+                        field_refs.append(read_mul.search_strings_url_placement)
+                        field_refs.append(read_mul.sort_field_url_placement)
+                        field_refs.append(read_mul.sort_order_url_placement)
+                        
+                        self.check_url_mapping("read-multiple", read_mul.url_map, field_refs)
                         
             # Check update api, if available
-            update = self.dsd.apis.update
-            if update is not None:
-                if update.ref_foreign_models is not None:
-                    field_refs = []
-                    for ref in update.ref_foreign_models:
-                        field_refs.append(ref.url_placement)
-                    field_refs.append(update.data_indexing_up)
-                    
-                    self.check_url_mapping("update", update.url_map, field_refs)
+            if hasattr(self.dsd.apis, 'update'):
+                update = self.dsd.apis.update
+                if update is not None:
+                    if update.ref_foreign_models is not None:
+                        field_refs = []
+                        for ref in update.ref_foreign_models:
+                            field_refs.append(ref.url_placement)
+                        field_refs.append(update.data_indexing_up)
+                        
+                        self.check_url_mapping("update", update.url_map, field_refs)
 
             # Check delete api, if available
-            delete = self.dsd.apis.delete
-            if delete is not None:
-                if delete.ref_foreign_models is not None:
-                    field_refs = []
-                    for ref in delete.ref_foreign_models:
-                        field_refs.append(ref.url_placement)
-                    field_refs.append(delete.data_indexing_up)
-                    
-                    self.check_url_mapping("delete", delete.url_map, field_refs)
-        return 1
+            if hasattr(self.dsd.apis, 'delete'):
+                delete = self.dsd.apis.delete
+                if delete is not None:
+                    if delete.ref_foreign_models is not None:
+                        field_refs = []
+                        for ref in delete.ref_foreign_models:
+                            field_refs.append(ref.url_placement)
+                        field_refs.append(delete.data_indexing_up)
+                        
+                        self.check_url_mapping("delete", delete.url_map, field_refs)
 
 
 

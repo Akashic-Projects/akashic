@@ -334,6 +334,11 @@ class DataProvider(object):
             If query field is not defined in given data source definition
         """
 
+        if not hasattr(self.dsd, 'apis'):
+            raise SemanticError("This data source does not provide web operations.")
+        if not hasattr(self.dsd.apis, 'read_multiple'):
+            raise SemanticError("This data source does not provide READ-MULTIPLE operation.")
+
         default_kwargs = {
             
             self.dsd.apis.read_multiple.page_index_url_placement: self.dsd.apis.read_multiple.default_page_index,
@@ -381,9 +386,9 @@ class DataProvider(object):
             Web service response as parsed JSON object
         """
 
-        if not self.dsd.apis:
+        if not hasattr(self.dsd, 'apis'):
             raise SemanticError("This data source does not provide web operations.")
-        if not self.dsd.apis.create:
+        if not hasattr(self.dsd.apis, 'create'):
             raise SemanticError("This data source does not provide CREATE operation.")
        
         self.checker.check_field_types(use_json_as="request", operation="create", json_object=json_object)
@@ -416,9 +421,9 @@ class DataProvider(object):
             Web service response as parsed JSON object
         """
 
-        if not self.dsd.apis:
+        if not hasattr(self.dsd, 'apis'):
             raise SemanticError("This data source does not provide web operations.")
-        if not self.dsd.apis.read_one:
+        if not hasattr(self.dsd.apis, 'read_one'):
             raise SemanticError("This data source does not provide READ-ONE operation.")
 
         url_map = self.dsd.apis.read_one.url_map
@@ -448,9 +453,9 @@ class DataProvider(object):
             Web service response as parsed JSON object
         """
 
-        if not self.dsd.apis:
+        if not hasattr(self.dsd, 'apis'):
             raise SemanticError("This data source does not provide web operations.")
-        if not self.dsd.apis.read_multiple:
+        if not hasattr(self.dsd.apis, 'read_multiple'):
             raise SemanticError("This data source does not provide READ-MULTIPLE operation.")
 
         url_map = self.dsd.apis.read_multiple.url_map
@@ -483,9 +488,9 @@ class DataProvider(object):
             Web service response as parsed JSON object
         """
 
-        if not self.dsd.apis:
+        if not hasattr(self.dsd, 'apis'):
             raise SemanticError("This data source does not provide web operations.")
-        if not self.dsd.apis.update:
+        if not hasattr(self.dsd.apis, 'update'):
             raise SemanticError("This data source does not provide UPDATE operation.")
         
         self.checker.check_field_types(use_json_as="request", operation="update", json_object=json_object)
@@ -519,9 +524,9 @@ class DataProvider(object):
             Web service response as parsed JSON object
         """
 
-        if not self.dsd.apis:
+        if not hasattr(self.dsd, 'apis'):
             raise SemanticError("This data source does not provide web operations.")
-        if not self.dsd.apis.delete:
+        if not hasattr(self.dsd.apis, 'delete'):
             raise SemanticError("This data source does not provide DELETE operation.")
 
         url_map = self.dsd.apis.delete.url_map

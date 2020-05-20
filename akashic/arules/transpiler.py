@@ -807,10 +807,17 @@ class Transpiler(object):
                     else:
                         if given_type != dp_field.type:
                             raise SemanticError(f"Field with name '{json_field.name}' contains data with wrong type. Expected type is {dp_field.type}. Given type is {given_type}.")
+                        
+                        # Add field name
                         arg_list.append(json_field.name)
 
-                        #TODO: Thisss and referse in 'bridge' function
+                        # Add field value
+                        #TODO: Thisss and reverse in 'bridge' function
                         arg_list.append(str())
+
+                        #TODO: Use BIND to save count result, to be used on RHS??? Maybe
+                        #TODO: Add variable-value binding
+                        #TODO: Add onetime option for rule execution
                     break 
                 
             if not json_field_ok:
