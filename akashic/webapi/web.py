@@ -10,6 +10,8 @@ from akashic.arules.transpiler import Transpiler
 from akashic.ads.data_provider import DataProvider
 from akashic.ads.env_provider import EnvProvider
 
+from akashic.exceptions import AkashicError, SyntacticError, SemanticError
+
 from enum import Enum
 from datetime import datetime
 
@@ -92,8 +94,12 @@ def create_dsd():
 
     # Create DSD provider -> syntactic and semnatic check
     data_provider = DataProvider()
-    data_provider.load(dumps(akashic_dsd))
-    data_provider.setup()
+
+    try:
+        data_provider.load(dumps(akashic_dsd, indent=True))
+        data_provider.setup()
+    except AkashicError as e:
+        return resp(None, e.message, e.line, e.col, RespType.ERROR)
     
     # Add new DSD provider to dict
     dsd_providers_dict[akashic_dsd['model-name']] = data_provider

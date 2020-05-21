@@ -6,7 +6,7 @@ from textx import metamodel_from_file
 from textx.export import metamodel_export, model_export
 from textx.exceptions import TextXSyntaxError, TextXSemanticError
 
-from akashic.exceptions import SyntacticError, SemanticError
+from akashic.exceptions import AkashicError, SyntacticError, SemanticError
 from akashic.ads.data_checker import DataChecker
 from akashic.ads.data_fetcher import DataFetcher
 
@@ -41,35 +41,6 @@ class DataProvider(object):
 
     # LOADING & SETUP OPERATIONS SECTION 
     ################################################################
-    def transalte_exception(self, ttype, line, col, message):
-        """ Translates the textX exceptions to akashic exceptions
-        
-        Parameters
-        ----------
-        ttype : str
-            Type of exception, possible values: "Syntax" & "Semantic"
-        line : int
-            Line number in data source definition where error was occured
-        col : int
-            Column number in data source definition where error was occured
-        message : str
-            Error message
-
-        Raises
-        ------
-        SyntacticError
-            If syntactic error has occured
-        SemanticError
-            If semantic error has occured
-        """
-
-        message = f"Detected: {ttype} error at line {line} and column {col}. \nMessage: " + message
-        if ttype == "Syntax":
-            raise SyntacticError(message)
-        elif ttype == "Semantic":
-            raise SemanticError(message)
-
-
 
     def load(self, dsd_string):
         """ Loads data-provider specification from given string
@@ -91,9 +62,9 @@ class DataProvider(object):
             self.dsd = self.meta_model.model_from_str(dsd_string)
             return 0
         except TextXSyntaxError as syntaxError:
-            self.transalte_exception("Syntax", syntaxError.line, syntaxError.col, syntaxError.message)
+            raise AkashicError(syntaxError.message, syntaxError.line, syntaxError.col, "syntactic")
         except TextXSemanticError as semanticError:
-            self.transalte_exception("Semantic", syntaxError.line, syntaxError.col, syntaxError.message)
+            raise AkashicError(semanticError.message, semanticError.line, semanticError.col, "semantic")
     
 
 
@@ -102,7 +73,7 @@ class DataProvider(object):
 
         """
 
-        if self.dsd.apis: 
+        if hasattr(self.dsd, 'apis'):
             self.checker = DataChecker(self.dsd)
             self.checker.check_url_mappings()
             self.fetcher = DataFetcher(self.dsd.auth_header, self.dsd.additional_headers)
