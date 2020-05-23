@@ -49,9 +49,9 @@ def get_time():
     now = datetime.now()
     return now.strftime("%m/%d/%Y, %H:%M:%S")
 
-def resp(data, message, ln, col, typee):
+def resp(data, message, ln, col, resp_type):
     status_code = 400
-    if typee in [RespType.SUCCESS, RespType.INFO]:
+    if resp_type in [RespType.SUCCESS, RespType.INFO]:
         status_code = 200
     
     resp_json = dumps({
@@ -60,7 +60,7 @@ def resp(data, message, ln, col, typee):
             "text": message,
             "ln": ln,
             "col": col,
-            "type": str(typee),
+            "type": str(resp_type),
             "timestamp": get_time()
         }
     })

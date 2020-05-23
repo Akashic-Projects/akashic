@@ -1,7 +1,7 @@
 
 from akashic.util.type_converter import clips_to_py_type, py_to_clips_type
 
-from akashic.exceptions import AkashicError, SyntacticError, SemanticError
+from akashic.exceptions import AkashicError, ErrType
 
 import re
 import json
@@ -41,7 +41,7 @@ class DataChecker(object):
 
         Raises
         ------
-        SemanticError
+        AkashicError
             If URL map fields missmatches fileds specified in DSD
         """
 
@@ -53,11 +53,13 @@ class DataChecker(object):
             if ref in url_fields:
                 url_fields.remove(ref)
             else:
-                raise AkashicError(f"Field ({ref}) in operation ({operation}) cannot be found in url-map setting.")
+                message = f"Field ({ref}) in operation ({operation}) cannot be found in url-map setting."
+                raise AkashicError(message)
         
         if len(url_fields) > 0:
             fields_left_string = ", ".join(url_fields)
-            raise AkashicError(f"Following fields ({fields_left_string}) inside of url-map setting ({url_map}) in operation ({operation}) are not referenced in settings.")
+            message = f"Following fields ({fields_left_string}) inside of url-map setting ({url_map}) in operation ({operation}) are not referenced in settings."
+            raise AkashicError(message)
 
 
 
@@ -70,7 +72,7 @@ class DataChecker(object):
 
         Raises
         ------
-        SemanticError
+        AkashicError
             If URL map fields missmatches fileds specified in DSD
         """
 
@@ -91,7 +93,7 @@ class DataChecker(object):
                             self.check_url_mapping("create", create.url_map, field_refs)
                         except AkashicError as e:
                             line, col = self.dsd._tx_parser.pos_to_linecol(create._tx_position)
-                            raise AkashicError(e.message, line, col, "semantic")
+                            raise AkashicError(e.message, line, col, ErrType.SEMANTIC)
             
             # Check read_one api, if available
             if hasattr(self.dsd.apis, 'read_one'):
@@ -107,7 +109,7 @@ class DataChecker(object):
                             self.check_url_mapping("read-one", read_one.url_map, field_refs)
                         except AkashicError as e:
                             line, col = self.dsd._tx_parser.pos_to_linecol(read_one._tx_position)
-                            raise AkashicError(e.message, line, col, "semantic")
+                            raise AkashicError(e.message, line, col, ErrType.SEMANTIC)
 
             # Check read_multiple api, if available
             if hasattr(self.dsd.apis, 'read_multiple'):
@@ -128,7 +130,7 @@ class DataChecker(object):
                             self.check_url_mapping("read-multiple", read_mul.url_map, field_refs)
                         except AkashicError as e:
                             line, col = self.dsd._tx_parser.pos_to_linecol(read_mul._tx_position)
-                            raise AkashicError(e.message, line, col, "semantic")
+                            raise AkashicError(e.message, line, col, ErrType.SEMANTIC)
                         
             # Check update api, if available
             if hasattr(self.dsd.apis, 'update'):
@@ -144,7 +146,7 @@ class DataChecker(object):
                             self.check_url_mapping("update", update.url_map, field_refs)
                         except AkashicError as e:
                             line, col = self.dsd._tx_parser.pos_to_linecol(update._tx_position)
-                            raise AkashicError(e.message, line, col, "semantic")
+                            raise AkashicError(e.message, line, col, ErrType.SEMANTIC)
 
             # Check delete api, if available
             if hasattr(self.dsd.apis, 'delete'):
@@ -160,11 +162,10 @@ class DataChecker(object):
                             self.check_url_mapping("delete", delete.url_map, field_refs)
                         except AkashicError as e:
                             line, col = self.dsd._tx_parser.pos_to_linecol(delete._tx_position)
-                            raise AkashicError(e.message, line, col, "semantic")
+                            raise AkashicError(e.message, line, col, ErrType.SEMANTIC)
 
 
 
-    # TODO: Does this even make senase?
     def check_field_types(self, use_json_as, operation, json_object):
         """ Checks JSON object field types against fields defined in DSD
         
@@ -180,7 +181,7 @@ class DataChecker(object):
 
         Raises
         ------
-        SemanticError
+        AkashicError
             If JSON object field types missmatch fields defined in DSD 
         """
 
@@ -201,12 +202,18 @@ class DataChecker(object):
             result = [match.value for match in jsonpath_expr.find(json_object)]
 
             if len(result) == 0:
-                raise SemanticError(f"Field ({field.field_name}) is not present in json object.")
+                line, col = self.dsd._tx_parser.pos_to_linecol(field._tx_position)
+                message = f"Field ({field.field_name}) is not present in json object."
+                raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
             if len(result) > 1:
-                raise SemanticError(f"More than one field with same name ({field.field_name}) is present in json object.")
+                line, col = self.dsd._tx_parser.pos_to_linecol(field._tx_position)
+                message = f"More than one field with same name ({field.field_name}) is present in json object."
+                raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
             expected_type = clips_to_py_type(field.type)
 
             if not isinstance(result[0], expected_type):
-                raise SemanticError(f"Type of field ({field.field_name}) does not match type from provided data. Expected ({str(field.type)}), but received ({py_to_clips_type(result[0].__class__)}).")
+                line, col = self.dsd._tx_parser.pos_to_linecol(field._tx_position)
+                message = f"Type of field ({field.field_name}) does not match type from provided data. Expected ({str(field.type)}), but received ({py_to_clips_type(result[0].__class__)})."
+                raise AkashicError(message, line, col, ErrType.SEMANTIC)
