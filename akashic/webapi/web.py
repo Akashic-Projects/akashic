@@ -10,7 +10,7 @@ from akashic.arules.transpiler import Transpiler
 from akashic.ads.data_provider import DataProvider
 from akashic.ads.env_provider import EnvProvider
 
-from akashic.exceptions import AkashicError, SyntacticError, SemanticError
+from akashic.exceptions import AkashicError, ErrType
 
 from enum import Enum
 from datetime import datetime

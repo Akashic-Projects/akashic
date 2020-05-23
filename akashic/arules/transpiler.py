@@ -8,7 +8,7 @@ from akashic.arules.variable_table import VariableTable
 from akashic.arules.data_locator_table import DataLocatorTable
 from akashic.arules.clips_statement_builder import ClipsStatementBuilder
 
-from akashic.exceptions import SemanticError
+from akashic.exceptions import AkashicError, ErrType
 
 from akashic.util.type_converter import clips_to_py_type, py_to_clips_type, translate_if_c_bool
 from akashic.util.type_resolver import resolve_expr_type
@@ -26,7 +26,7 @@ class DataType(Enum):
     WORKABLE    = 1
     VARIABLE    = 2
     EXPRESSION  = 3
-    SPECIAL     = 4
+    SPECIAL     = 4 # conditional statement
     NOTHING     = 5
 
 
@@ -172,7 +172,10 @@ class Transpiler(object):
 
         if lhss.stat.__class__.__name__ == "VARIABLE_INIT":
             if self.variable_table.lookup(lhss.stat.var_name):
-                raise SemanticError(f"Variable '{lhss.stat.var_name}' is already defined.")
+                line, col = self.dsd._tx_parser.pos_to_linecol(lhss.stat._tx_position)
+                message = f"Variable '{lhss.stat.var_name}' is already defined."
+                raise AkashicError(message, line, col, ErrType.SEMANTIC)
+            
             self.variable_table.add_named_var(
                 lhss.stat.var_name, 
                 lhss.stat.expr, 
@@ -186,7 +189,10 @@ class Transpiler(object):
         
         elif lhss.stat.__class__.__name__ == "FACT_ADDRESS":
             if self.variable_table.lookup(lhss.stat.var_name):
-                raise SemanticError(f"Variable '{lhss.stat.var_name}' is already defined.")
+                line, col = self.dsd._tx_parser.pos_to_linecol(lhss.stat._tx_position)
+                message = f"Variable '{lhss.stat.var_name}' is already defined."
+                raise AkashicError(message, line, col, ErrType.SEMANTIC)
+
             self.variable_table.add_named_var(
                 lhss.stat.var_name,
                 lhss.stat.expr, 
@@ -211,10 +217,11 @@ class Transpiler(object):
             if binary.operands[i]["construct_type"] == DataType.SPECIAL:
                 ops.append(binary.operands[i]["content"])
             else:
-                raise SemanticError(
-                    "AND-OR logic operation argument must be either . {1} given."
-                    .format(singular.operator, singular.operand["construct_type"])
-                )
+                line, col = self.dsd._tx_parser.pos_to_linecol(binary.operands[i]["_tx_position"])
+                message = "AND-OR logic operation arguments must be of SPECIAL conditional statement type. {0} given."
+                            .format(binary.operands[i]["construct_type"])
+                raise AkashicError(message, line, col, ErrType.SEMANTIC)
+                
 
         result = ops[0]
         for i in range(1, len(binary.operands)):
@@ -228,10 +235,10 @@ class Transpiler(object):
 
     def special_singular_logic_expression(self, singular):
         if singular.operand["construct_type"] != DataType.EXPRESSION:
-            raise SemanticError(
-                "{0} operation argument must be expression. {1} given."
+            line, col = self.dsd._tx_parser.pos_to_linecol(singular.operand["_tx_position"])
+            message = "{0} operation argument must be expression. {1} given."
                 .format(singular.operator, singular.operand["construct_type"])
-            )
+            raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
         print("DLV from special_singular_logic_expression: " + str(self.data_locator_vars))
 
@@ -268,12 +275,11 @@ class Transpiler(object):
 
 
     def test_singular_logic_expression(self, test):
-        # Because we use return as (value, DataType)
         if test.operand["construct_type"] != DataType.EXPRESSION:
-            raise SemanticError(
-                "TEST operation argument must be expression. {0} given."
+            line, col = self.dsd._tx_parser.pos_to_linecol(test.operand["_tx_position"])
+            message = "TEST operation argument must be an EXPRESSION. {0} given."
                 .format(test.operand["construct_type"])
-            )
+            raise AkashicError(message, line, col, ErrType.SEMANTIC))
 
         # Build clips commands
         clips_commands = self.clips_statement_builder.build_regular_dl_patterns(self.data_locator_table)
@@ -289,10 +295,10 @@ class Transpiler(object):
             return countt.operand
 
         if countt.operand["construct_type"] != DataType.EXPRESSION:
-            raise SemanticError(
-                "{0} operation argument must be expression. {1} given."
+            line, col = self.dsd._tx_parser.pos_to_linecol(countt.operand["_tx_position"])
+            message =  "{0} operation argument must be expression. {1} given."
                 .format(countt.operator, countt.operand["construct_type"])
-            )
+            raise AkashicError(message, line, col, ErrType.SEMANTIC))
 
         # Build count command if present
         clips_command = self.clips_statement_builder.build_count_pattern(
@@ -324,10 +330,10 @@ class Transpiler(object):
             return result
 
         if result["content_type"] not in ["INTEGER", "FLOAT", "BOOLEAN"]:
-            raise SemanticError(
-                "Negation operand of type INTEGER, FLOAT or BOOLEAN expected, {0} geven."
+            line, col = self.dsd._tx_parser.pos_to_linecol(result["_tx_position"])
+            message = "Negation operand of type INTEGER, FLOAT or BOOLEAN expected, {0} geven."
                 .format(result["content_type"])
-            )
+            raise AkashicError(message, line, col, ErrType.SEMANTIC))
 
         operator = neg.operator
 
@@ -362,15 +368,16 @@ class Transpiler(object):
             current = logic.operands[i]
             
             if result["content_type"] not in ["INTEGER", "FLOAT", "BOOLEAN"]:
-                raise SemanticError(
-                    "Logic operand of type INTEGER, FLOAT or BOOLEAN expected, {0} geven."
+                line, col = self.dsd._tx_parser.pos_to_linecol(result["_tx_position"])
+                message = "Logic operand of type INTEGER, FLOAT or BOOLEAN expected, {0} geven."
                     .format(result["content_type"])
-                    )
+                raise AkashicError(message, line, col, ErrType.SEMANTIC))
+
             if current["content_type"] not in ["INTEGER", "FLOAT", "BOOLEAN"]:
-                raise SemanticError(
-                    "Logic operand of type INTEGER, FLOAT or BOOLEAN expected, {0} geven."
+                line, col = self.dsd._tx_parser.pos_to_linecol(current["_tx_position"])
+                message = "Logic operand of type INTEGER, FLOAT or BOOLEAN expected, {0} geven."
                     .format(current["content_type"])
-                )
+                raise AkashicError(message, line, col, ErrType.SEMANTIC))
 
             operator = logic.operator[i-1]
 
@@ -415,15 +422,16 @@ class Transpiler(object):
             current = comp.operands[i]
 
             if result["content_type"] not in ["INTEGER", "FLOAT", "STRING"]:
-                raise SemanticError(
-                    "Comparison operand of type INTEGER, FLOAT or STRING expected, {0} geven."
+                line, col = self.dsd._tx_parser.pos_to_linecol(result["_tx_position"])
+                message = "Comparison operand of type INTEGER, FLOAT or STRING expected, {0} geven."
                     .format(result["content_type"])
-                )
+                raise AkashicError(message, line, col, ErrType.SEMANTIC))
+
             if current["content_type"] not in ["INTEGER", "FLOAT", "STRING"]:
-                raise SemanticError(
-                    "Comparison operand of type INTEGER, FLOAT or STRING expected, {0} geven."
+                line, col = self.dsd._tx_parser.pos_to_linecol(current["_tx_position"])
+                message = "Comparison operand of type INTEGER, FLOAT or STRING expected, {0} geven."
                     .format(current["content_type"])
-                )
+                raise AkashicError(message, line, col, ErrType.SEMANTIC))
 
             # Resolve eq operaator
             if comp.operator[i-1] == '==':
@@ -479,7 +487,9 @@ class Transpiler(object):
 
                 # Check if type is resolved correctly
                 if resolved_c_type == 1:
-                    raise SemanticError("Incompatible operand types present in comparison expression.")
+                    line, col = self.dsd._tx_parser.pos_to_linecol(result["_tx_position"])
+                    message = "Incompatible operand types present in comparison expression."
+                    raise AkashicError(message, line, col, ErrType.SEMANTIC))
 
                 result = {
                     "content": val,
@@ -502,15 +512,16 @@ class Transpiler(object):
             current = plus_minus.operands[i]
 
             if result["content_type"] not in ["INTEGER", "FLOAT"]:
-                raise SemanticError(
-                    "Addition or subtraction operand of type INTEGER or FLOAT expected, {0} geven."
+                line, col = self.dsd._tx_parser.pos_to_linecol(result["_tx_position"])
+                message = "Addition or subtraction operand of type INTEGER or FLOAT expected, {0} geven."
                     .format(result["content_type"])
-                )
+                raise AkashicError(message, line, col, ErrType.SEMANTIC))
+               
             if current["content_type"] not in ["INTEGER", "FLOAT"]:
-                raise SemanticError(
-                    "Addition or subtraction operand of type INTEGER or FLOAT expected, {0} geven."
+                line, col = self.dsd._tx_parser.pos_to_linecol(current["_tx_position"])
+                message = "Addition or subtraction operand of type INTEGER or FLOAT expected, {0} geven."
                     .format(current["content_type"])
-                )
+                raise AkashicError(message, line, col, ErrType.SEMANTIC))
 
             operator = plus_minus.operator[i-1]
 
@@ -552,15 +563,16 @@ class Transpiler(object):
             current = mul_div.operands[i]
 
             if result["content_type"] not in ["INTEGER", "FLOAT"]:
-                raise SemanticError(
-                    "Multiplication or division operand of type INTEGER or FLOAT expected, {0} geven."
+                line, col = self.dsd._tx_parser.pos_to_linecol(result["_tx_position"])
+                message = "Multiplication or division operand of type INTEGER or FLOAT expected, {0} geven."
                     .format(result["content_type"])
-                )
+                raise AkashicError(message, line, col, ErrType.SEMANTIC))
+
             if current["content_type"] not in ["INTEGER", "FLOAT"]:
-                raise SemanticError(
-                    "Multiplication or division operand of type INTEGER or FLOAT expected, {0} geven."
+                line, col = self.dsd._tx_parser.pos_to_linecol(current["_tx_position"])
+                message = "Multiplication or division operand of type INTEGER or FLOAT expected, {0} geven."
                     .format(current["content_type"])
-                )
+                raise AkashicError(message, line, col, ErrType.SEMANTIC))
 
             operator = mul_div.operator[i-1]
 
@@ -602,15 +614,16 @@ class Transpiler(object):
             current = sqr.operands[i]
            
             if result["content_type"] not in ["INTEGER", "FLOAT"]:
-                raise SemanticError(
-                    "Exponentiation or root extraction operand of type INTEGER or FLOAT expected, {0} geven."
+                line, col = self.dsd._tx_parser.pos_to_linecol(result["_tx_position"])
+                message = "Exponentiation or root extraction operand of type INTEGER or FLOAT expected, {0} geven."
                     .format(result["content_type"])
-                )
+                raise AkashicError(message, line, col, ErrType.SEMANTIC))
+
             if current["content_type"] not in ["INTEGER", "FLOAT"]:
-                raise SemanticError(
-                    "Exponentiation or root extraction operand of type INTEGER or FLOAT expected, {0} geven."
+                line, col = self.dsd._tx_parser.pos_to_linecol(current["_tx_position"])
+                message = "Exponentiation or root extraction operand of type INTEGER or FLOAT expected, {0} geven."
                     .format(current["content_type"])
-                )
+                raise AkashicError(message, line, col, ErrType.SEMANTIC))
 
             operator = '**'
 
@@ -646,7 +659,8 @@ class Transpiler(object):
             return {
                 "content": factor.value, 
                 "content_type": py_to_clips_type(factor.value.__class__),
-                "construct_type": DataType.WORKABLE
+                "construct_type": DataType.WORKABLE,
+                "_tx_position": factor._tx_position
             }
 
         elif factor.value.__class__.__name__ == "STRING_C":
@@ -654,7 +668,8 @@ class Transpiler(object):
             return {
                 "content": remove_quotes(factor.value.val),
                 "content_type": py_to_clips_type(str),
-                "construct_type": DataType.WORKABLE
+                "construct_type": DataType.WORKABLE,
+                "_tx_position": factor._tx_position
             }
 
         else:
@@ -666,7 +681,9 @@ class Transpiler(object):
     def variable(self, var):
         var_entry = self.variable_table.lookup(var.var_name)
         if var_entry == None:
-            raise SemanticError("Undefined variable {0}.".format(var.var_name))
+            line, col = self.dsd._tx_parser.pos_to_linecol(var._tx_position)
+            message = "Undefined variable {0}.".format(var.var_name)
+            raise AkashicError(message, line, col, ErrType.SEMANTIC))
         else:
             # Add used variables from current variable to the list of globally used variables
             self.data_locator_vars = list(set(self.data_locator_vars) | set(var_entry.used_variables))
@@ -685,7 +702,8 @@ class Transpiler(object):
             return {
                 "content": field.var_name, 
                 "content_type": field.dp_field.type,
-                "construct_type": DataType.VARIABLE
+                "construct_type": DataType.VARIABLE,
+                "_tx_position": data_locator._tx_position
             }
 
         else:
@@ -696,18 +714,22 @@ class Transpiler(object):
                     found_data_provider = data_provider
 
             if found_data_provider == None:
-                raise SemanticError("There is no data provider defined for template connection '{0}'.".format(template_name))
+                line, col = self.dsd._tx_parser.pos_to_linecol(data_locator._tx_position)
+                message = "There is no data provider defined for template connection '{0}'.".format(template_name)
+                raise AkashicError(message, line, col, ErrType.SEMANTIC))
             
             found_dp_field = found_data_provider.field_lookup(field_name)
 
             if not found_dp_field:
-                raise SemanticError("Template field '{0}' is not defined in data provider's template '{1}'".format(field_name, template_name))
+                line, col = self.dsd._tx_parser.pos_to_linecol(data_locator._tx_position)
+                message = "Template field '{0}' is not defined in data provider's template '{1}'".format(field_name, template_name)
+                raise AkashicError(message, line, col, ErrType.SEMANTIC))
 
             # Generate new variable and add new entry to the data locator table
             gen_var_name = self.variable_table.add_helper_var({
                 "content": "",
                 "content_type": found_dp_field.type,
-                "construct_type": DataType.NOTHING
+                "construct_type": DataType.NOTHING,
             })
             self.data_locator_vars.append(gen_var_name)
             self.data_locator_table.add(template_name, field_name, gen_var_name, found_dp_field)
@@ -732,26 +754,30 @@ class Transpiler(object):
 
 
 
-    def find_data_provider(self, model_name):
+    def find_data_provider(self, model_name, method_object):
         data_provider = None
         for ds in self.data_providers:
             if ds.model_id == model_name:
                 data_provider = ds
-        
-        if data_provider == None:
-            raise SemanticError("Model with given name does not exist.")
+
+        if not data_provider:
+            line, col = self.dsd._tx_parser.pos_to_linecol(method_object._tx_position)
+            message = "Model with name '{0}' does not exist.".format(model_name)
+            raise AkashicError(message, line, col, ErrType.SEMANTIC))
 
         return data_provider
 
 
 
-    def check_field_list_for_duplicates(self, json_field_list, method):
+    def check_field_list_for_duplicates(self, json_field_list, method, method_object):
         sett == set()
         for json_field in json_field_list:
             sett.add(json_field.name)
 
         if (len(sett) != len(field_list)):
-            raise SemanticError(f"Duplicate fields detected in data of {method} method.")
+            line, col = self.dsd._tx_parser.pos_to_linecol(method_object._tx_position)
+            message = f"Duplicate fields detected in data of {method} method."
+            raise AkashicError(message, line, col, ErrType.SEMANTIC))
 
 
 
@@ -759,9 +785,14 @@ class Transpiler(object):
         # Check if variable is [address variable]
         var_entry = self.variable_table.lookup(json_field.value.var_name)
         if not var_entry:
-            raise SemanticError(f"Variable '{json_field.value.var_name}' is not defined.")
+            line, col = self.dsd._tx_parser.pos_to_linecol(json_field.value._tx_position)
+            message = f"Variable '{json_field.value.var_name}' is not defined."
+            raise AkashicError(message, line, col, ErrType.SEMANTIC))
+
         if not "model_id" in var_entry.value:
-            raise SemanticError(f"Variable '{json_field.value.var_name}' is not fact address.")
+            line, col = self.dsd._tx_parser.pos_to_linecol(json_field.value._tx_position)
+            message = f"Variable '{json_field.value.var_name}' is not fact address."
+            raise AkashicError(message, line, col, ErrType.SEMANTIC))
 
         # Extract information 
         fact_address_template_name = var_entry.value["model_id"]
@@ -773,18 +804,24 @@ class Transpiler(object):
             if data_provider.dsd.model_id == fact_address_template_name:
                 found_data_provider = data_provider
         if found_data_provider == None:
-            raise SemanticError(f"There is no data provider defined for fact address template '{fact_address_template_name}'.")
+            line, col = self.dsd._tx_parser.pos_to_linecol(json_field.value._tx_position)
+            message = f"There is no data provider defined for fact address template '{fact_address_template_name}'."
+            raise AkashicError(message, line, col, ErrType.SEMANTIC))
+
         found_dp_field = found_data_provider.field_lookup(fact_address_field_name)
         if not found_dp_field:
-            raise SemanticError(f"Fact address field '{fact_address_field_name}' is not defined in data provider's template '{fact_address_template_name}'")
+            line, col = self.dsd._tx_parser.pos_to_linecol(json_field.value._tx_position)
+            message = f"Fact address field '{fact_address_field_name}' is not defined in data provider's template '{fact_address_template_name}'"
+            raise AkashicError(message, line, col, ErrType.SEMANTIC))
 
         # Check if type of fact accress field is same as field in json object
         if found_dp_field.type != dp_field.type:
-            raise SemanticError(f"Type missmatch in field '{json_field.name}'. Expected type '{dp_field.type}'. Given type '{found_dp_field.type}'")
+            line, col = self.dsd._tx_parser.pos_to_linecol(json_field.value._tx_position)
+            message = f"Type missmatch in field '{json_field.name}'. Expected type '{dp_field.type}'. Given type '{found_dp_field.type}'"
+            raise AkashicError(message, line, col, ErrType.SEMANTIC))
+  
 
 
-
-    #TODO: Create value convertor: python to CLIPS and reveresed
     def check_fields_and_build_clips_func_call_arguments(
                                                         self, 
                                                         json_field_list, 
@@ -807,7 +844,9 @@ class Transpiler(object):
                         arg_list.append('(fact-slot-value ' + json_field.value.var_name + ' ' + json_field.value.field_name + ')')
                     else:
                         if given_type != dp_field.type:
-                            raise SemanticError(f"Field with name '{json_field.name}' contains data with wrong type. Expected type is {dp_field.type}. Given type is {given_type}.")
+                            line, col = self.dsd._tx_parser.pos_to_linecol(json_field.value._tx_position)
+                            message = f"Field with name '{json_field.name}' contains data with wrong type. Expected type is {dp_field.type}. Given type is {given_type}."
+                            raise AkashicError(message, line, col, ErrType.SEMANTIC))
                         
                         # Add field name
                         arg_list.append(json_field.name)
@@ -822,16 +861,18 @@ class Transpiler(object):
                     break 
                 
             if not json_field_ok:
-                raise SemanticError(f"Field with name '{json_field.name}' does not belong to the model'{model_name}'.")
+                line, col = self.dsd._tx_parser.pos_to_linecol(json_field.value._tx_position)
+                message = f"Field with name '{json_field.name}' does not belong to the model'{model_name}'."
+                raise AkashicError(message, line, col, ErrType.SEMANTIC))
 
 
 
     def create_statement(self, create_s):
         # Find data provider for given model
-        data_provider = self.find_data_provider(create_s.model_name)
+        data_provider = self.find_data_provider(create_s.model_name, oepration)
 
         # Check field list for duplicate fileds
-        self.check_field_list_for_duplicates(create_s.json_object.field_list, "CREATE")
+        self.check_field_list_for_duplicates(create_s.json_object.field_list, "CREATE", create_s)
 
         # Check fields (names and types) and build CLIPS function call
         arg_list = self.check_fields_and_build_clips_func_call_arguments(

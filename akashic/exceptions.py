@@ -26,11 +26,3 @@ class AkashicError(Exception):
             )
         else:
             return super(AkashicError, self).__str__()
-
-
-class SyntacticError(Exception):
-    pass
-
-
-class SemanticError(Exception):
-    pass
