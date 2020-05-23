@@ -6,7 +6,7 @@ from textx import metamodel_from_file
 from textx.export import metamodel_export, model_export
 from textx.exceptions import TextXSyntaxError, TextXSemanticError
 
-from akashic.exceptions import AkashicError, SyntacticError, SemanticError
+from akashic.exceptions import AkashicError, ErrType
 from akashic.ads.data_checker import DataChecker
 from akashic.ads.data_fetcher import DataFetcher
 
@@ -52,10 +52,7 @@ class DataProvider(object):
 
         Raises
         ------
-        SyntacticError
-            If syntactic error has occured
-        SemanticError
-            If semantic error has occured
+        AkashicError
         """
 
         try:
@@ -280,6 +277,16 @@ class DataProvider(object):
         
         return url_map
 
+    def check_if_dsd_provides_web_op(self, operation):
+        if not hasattr(self.dsd, 'apis'):
+            line, col = self.dsd._tx_parser.pos_to_linecol(self.dsd._tx_position)
+            message = f"Data source '{self.dsd.model_id}' does not provide web operations."
+            raise AkashicError(message, line, col, ErrType.SEMANTIC)
+
+        if not hasattr(self.dsd.apis, operation):
+            line, col = self.dsd._tx_parser.pos_to_linecol(self.dsd.apis._tx_position)
+            message = f"Data source '{self.dsd.model_id}' does not provide '{operation}' operation."
+            raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
 
     def construct_query(self, **kwargs):
@@ -301,14 +308,11 @@ class DataProvider(object):
 
         Raises
         ------
-        SemanticError
+        AkashicError
             If query field is not defined in given data source definition
         """
 
-        if not hasattr(self.dsd, 'apis'):
-            raise SemanticError("This data source does not provide web operations.")
-        if not hasattr(self.dsd.apis, 'read_multiple'):
-            raise SemanticError("This data source does not provide READ-MULTIPLE operation.")
+        self.check_if_dsd_provides_web_op("read_multiple")
 
         default_kwargs = {
             
@@ -321,15 +325,14 @@ class DataProvider(object):
             self.dsd.apis.read_multiple.sort_order_url_placement:       ""
         }
 
-        # Check if field url placement are right
-
-
+        # Check if field url placements are right
         for key, value in kwargs.items():
             if key in default_kwargs:
                 default_kwargs[key] = value
             else:
+                line, col = self.dsd._tx_parser.pos_to_linecol(self.dsd.apis.read_multiple._tx_position)
                 message = f"Query field {key} is not defined in data source definition."
-                raise SemanticError(message)
+                raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
         return default_kwargs
 
@@ -355,12 +358,14 @@ class DataProvider(object):
         -------
         parsed JSON object
             Web service response as parsed JSON object
+        
+        Raises
+        ------
+        AkashicError
+            If DSD does not provide this web operations
         """
 
-        if not hasattr(self.dsd, 'apis'):
-            raise SemanticError("This data source does not provide web operations.")
-        if not hasattr(self.dsd.apis, 'create'):
-            raise SemanticError("This data source does not provide CREATE operation.")
+        self.check_if_dsd_provides_web_op("create")
        
         self.checker.check_field_types(use_json_as="request", operation="create", json_object=json_object)
         
@@ -390,12 +395,14 @@ class DataProvider(object):
         -------
         parsed JSON object
             Web service response as parsed JSON object
+        
+        Raises
+        ------
+        AkashicError
+            If DSD does not provide this web operations
         """
 
-        if not hasattr(self.dsd, 'apis'):
-            raise SemanticError("This data source does not provide web operations.")
-        if not hasattr(self.dsd.apis, 'read_one'):
-            raise SemanticError("This data source does not provide READ-ONE operation.")
+        self.check_if_dsd_provides_web_op("read_one")
 
         url_map = self.dsd.apis.read_one.url_map
         url = self.fill_data_map(url_map, **kwargs)
@@ -422,12 +429,14 @@ class DataProvider(object):
         -------
         parsed JSON object
             Web service response as parsed JSON object
+        
+        Raises
+        ------
+        AkashicError
+            If DSD does not provide this web operations
         """
 
-        if not hasattr(self.dsd, 'apis'):
-            raise SemanticError("This data source does not provide web operations.")
-        if not hasattr(self.dsd.apis, 'read_multiple'):
-            raise SemanticError("This data source does not provide READ-MULTIPLE operation.")
+        self.check_if_dsd_provides_web_op("read_multiple")
 
         url_map = self.dsd.apis.read_multiple.url_map
         url = self.fill_data_map(url_map, **self.construct_query(**kwargs))
@@ -457,12 +466,14 @@ class DataProvider(object):
         -------
         parsed JSON object
             Web service response as parsed JSON object
+        
+        Raises
+        ------
+        AkashicError
+            If DSD does not provide this web operations
         """
 
-        if not hasattr(self.dsd, 'apis'):
-            raise SemanticError("This data source does not provide web operations.")
-        if not hasattr(self.dsd.apis, 'update'):
-            raise SemanticError("This data source does not provide UPDATE operation.")
+        self.check_if_dsd_provides_web_op("update")
         
         self.checker.check_field_types(use_json_as="request", operation="update", json_object=json_object)
         
@@ -493,12 +504,14 @@ class DataProvider(object):
         -------
         parsed JSON object
             Web service response as parsed JSON object
+        
+        Raises
+        ------
+        AkashicError
+            If DSD does not provide this web operations
         """
 
-        if not hasattr(self.dsd, 'apis'):
-            raise SemanticError("This data source does not provide web operations.")
-        if not hasattr(self.dsd.apis, 'delete'):
-            raise SemanticError("This data source does not provide DELETE operation.")
+        self.check_if_dsd_provides_web_op("delete")
 
         url_map = self.dsd.apis.delete.url_map
         url = self.fill_data_map(url_map, **kwargs)
