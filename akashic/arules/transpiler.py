@@ -239,7 +239,8 @@ class Transpiler(object):
         clips_command = self.clips_statement_builder.build_special_pattern(
             self.data_locator_table, 
             self.data_locator_vars, 
-            singular.operand["content"]
+            singular.operand["content"],
+            singular
         )
 
         t_name = None

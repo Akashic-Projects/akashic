@@ -1,7 +1,7 @@
 
 from akashic.arules.data_locator_table import DataLocatorTable
 
-from akashic.exceptions import SemanticError
+from akashic.exceptions import AkashicError, ErrType
 
 
 class ClipsStatementBuilder(object):
@@ -57,13 +57,15 @@ class ClipsStatementBuilder(object):
     
     
     #TODO: What happens when empty statement is given?
-    def build_special_pattern(self, data_locator_table, used_vars, expression):
+    def build_special_pattern(self, data_locator_table, used_vars, expression, expression_object):
         l = self.count_different_templates(data_locator_table, used_vars)
         print("NUM of used vars for DLs: " + str(len(used_vars)))
         print("NUM of diff templates: " + str(l))
         print("NUM of reg tempaltes: " + str(len(data_locator_table.table.items())))
         if self.count_different_templates(data_locator_table, used_vars) > 1:
-            raise SemanticError("Total number of different templates referenced inside of single conditional statement(except for 'test') must be 1. {0} given.".format(l))
+            line, col = self.dsd._tx_parser.pos_to_linecol(expression_object._tx_position)
+            message = f"Total number of different templates referenced inside of single conditional statement(except for 'test') must be 1. {l} given."
+            raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
         clips_statement_list = []
 
