@@ -164,7 +164,14 @@ class DataProvider(object):
 
         for field in self.dsd.fields:
             jsonpath_expr = parse(str(json_path_func(field)))
-            result = [match.value for match in jsonpath_expr.find(json_object)][0]
+            field_loc = [match.value for match in jsonpath_expr.find(json_object)]
+
+            if not field_loc or len(field_loc) < 1:
+                line, col = self.dsd._tx_parser.pos_to_linecol(field._tx_position)
+                message = f"Field '{field.field_name}' in DSD is not matched in provided JSON data."
+                raise AkashicError(message, line, col, ErrType.SEMANTIC)
+
+            result = field_loc[0]
 
             # Resolve field value
             resolved_value = None

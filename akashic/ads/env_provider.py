@@ -1,5 +1,8 @@
 
 import clips
+from clips.agenda import Agenda
+
+from akashic.ads.bridge import create_func
 
 
 class EnvProvider(object):
@@ -20,6 +23,7 @@ class EnvProvider(object):
         """
 
         self.env = clips.Environment()
+        self.env.define_function(create_func)
 
        
 
@@ -75,6 +79,25 @@ class EnvProvider(object):
         """
 
         pass
+
+    
+    def insert_rule(self, rule):
+        """ Inserts new CLIPS rule into the enviroment
+        
+        Parameters
+        ----------
+        rule : str
+            CLIPS rule in string form
+        """
+        
+        self.env.build(rule)
+
+    
+    def run(self):
+        #agenda = Agenda(self.env)
+        self.env.run()
+
+    
 
 
     

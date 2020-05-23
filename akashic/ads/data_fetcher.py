@@ -24,7 +24,7 @@ class DataFetcher(object):
         self.headers = {}
         if (auth_header != None):
             self.headers[auth_header.auth_header_name] = auth_header.token_prefix + " " + auth_header.token
-        
+
         if (headers != None):
             for h in headers:
                 self.headers[h.header_name] = h.header_value
@@ -49,7 +49,8 @@ class DataFetcher(object):
             JSON string representing created entity
         """
 
-        response = requests.post(url, data=json.dumps(payload), headers=headers.update(self.headers))
+        headers.update(self.headers)
+        response = requests.post(url, data=json.dumps(payload), headers=headers)
         response.raise_for_status()
         return response.text
 
@@ -71,7 +72,8 @@ class DataFetcher(object):
             JSON string representing read entity
         """
 
-        response = requests.get(url, headers=headers.update(self.headers))
+        headers.update(self.headers)
+        response = requests.get(url, headers=headers)
         response.raise_for_status()
         return response.text
 
@@ -92,7 +94,9 @@ class DataFetcher(object):
         str
             JSON string representing read array of entities
         """
-        response = requests.get(url, headers=headers.update(self.headers))
+       
+        headers.update(self.headers)
+        response = requests.get(url, headers=headers)
         response.raise_for_status()
         return response.text
 
@@ -116,7 +120,8 @@ class DataFetcher(object):
             JSON string representing created entity
         """
 
-        response = requests.put(url, data=json.dumps(payload), headers=headers.update(self.headers))
+        headers.update(self.headers)
+        response = requests.put(url, data=json.dumps(payload), headers=headers)
         response.raise_for_status()
         return response.text
     
@@ -137,7 +142,8 @@ class DataFetcher(object):
             Empty.
         """
 
-        response = requests.delete(url, headers=headers.update(self.headers))
+        headers.update(self.headers)
+        response = requests.delete(url, headers=headers)
         response.raise_for_status()
         return response.text
     

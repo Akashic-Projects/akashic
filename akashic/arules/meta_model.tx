@@ -1,10 +1,10 @@
 
 Rule:
     '{'
-        ((RULE_NAME_KW        ':'     rule_name=STRING  )
-        (RULE_SALIENCE_KW     ':'     salience=INT      )?
-        (lhs=LHS                                        )
-        (rhs=RHS                                        ))#[',']
+        ((RULE_NAME_KW        ':'   '"'  rule_name=ID  '"'  )
+        (RULE_SALIENCE_KW     ':'        salience=INT       )?
+        (lhs=LHS                                            )
+        (rhs=RHS                                            ))#[',']
     '}'
 ;
 
@@ -104,7 +104,8 @@ SqrExpr:
 ;
 
 Factor:
-    value=NUMBER | 
+    value=INT | 
+    value=FLOAT | 
     value=BOOL | 
     value=STRING_C | 
     value=VARIABLE | 
@@ -208,11 +209,11 @@ FieldEntry:
     name=STRING ':' value=FieldValue
 ;
 FieldValue:
-    STRING | FLOAT | BOOL | ValueLocator
+   ValueLocator | STRING | INT| FLOAT | BOOL
 ;
 
 ValueLocator:
-    var_name=/\?[^\d\W]\w*\b/ '.' field_name=ID ;
+    '"' var_name=/\?[^\d\W]\w*\b/ '.' field_name=ID  '"';
 
 
 Comment:

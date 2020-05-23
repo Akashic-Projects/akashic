@@ -1,18 +1,18 @@
 {
-    "rule-name": "Test count rule",
+    "rule-name": "Test_count_rule",
     "salience": 100,
     "when": [
-        { "?korisnik=": "[User.id == 45]" }
+        { "?korisnik=": "[User.id == 1]" }
     ],
     "then": [
         {
-            "update": {
+            "create": {
                 "model-name": "User",
                 "reflect-on-web": false,
                 "data": {
                     "id": "?korisnik.id",
                     "name": "Lazar1",
-                    "email": "lazar@gmail.com",
+                    "email": "?korisnik.email",
                     "age": 24
                 }
             }

@@ -98,31 +98,50 @@ def test_rule_transpiler():
     course_data_provider.load(dsd_string)
     course_data_provider.setup()
 
+    # Create CLIPS env
+    env = EnvProvider()
 
     # Setup akashic transpiler
-    transpiler = Transpiler([user_data_provider, course_data_provider])
+    transpiler = Transpiler([user_data_provider, course_data_provider], env)
 
     # Read rule from sample file
     this_folder = dirname(__file__)
 
-    # sample1.json
+
     sample_path = abspath(join(this_folder, '..', 'test', 'samples', 'arules', 'rhs_test.json'))
     with open(sample_path, 'r') as sample:
         akashic_rule = sample.read()
         transpiler.load(akashic_rule)
 
-        # Print transpiled commands
-        print("\n\nCLIPS Commands:")
-        print()
-        for c in transpiler.clips_command_list:
-            print(str(c))
-        
-        print()
+    # Print transpiled LHS commands
+    print("\n----------------")
+    print("Transpiled Rule:")
+    print()
+    print(transpiler.tranpiled_rule)        
+    print()
+
+
+    # 1. TEST OF THE SYSTEM
+
+    # Insert user tempalte
+    user_template = user_data_provider.generate_clips_template() 
+    env.define_template(user_template)
+    print(user_template)
+
+    # Read users from DS
+    multiple_users = user_data_provider.read_multiple()
+    # Generate CLIPS facts from JSON objects
+    user_clips_facts = user_data_provider.generate_multiple_clips_facts(multiple_users, 5)
+    # Insert CLIPS facts into ENV
+    for u in user_clips_facts:
+        env.insert_fact(u)
+
+    # Insert transpiled rule intu the ENV
+    env.insert_rule(transpiler.tranpiled_rule)
+    env.run()
        
 
 if __name__ == "__main__":
     #test_data_provider()
 
     test_rule_transpiler()
-   
-
