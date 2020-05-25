@@ -128,16 +128,16 @@ def test_rule_transpiler():
     # 1. TEST OF THE SYSTEM
 
     # Insert user tempalte
-    user_template = user_data_provider.generate_clips_template() 
-    env.define_template(user_template)
-    print(user_template)
+    course_template = course_data_provider.generate_clips_template() 
+    env.define_template(course_template)
+    print(course_template)
 
     # Read users from DS
-    multiple_users = user_data_provider.read_multiple()
+    multiple_courses = course_data_provider.read_multiple()
     # Generate CLIPS facts from JSON objects
-    user_clips_facts = user_data_provider.generate_multiple_clips_facts(multiple_users, 5)
+    course_clips_facts = course_data_provider.generate_multiple_clips_facts(multiple_courses, 5)
     # Insert CLIPS facts into ENV
-    for u in user_clips_facts:
+    for u in course_clips_facts:
         env.insert_fact(u)
 
     # Insert transpiled rule intu the ENV

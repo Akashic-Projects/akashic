@@ -6,7 +6,7 @@
     "authentication-header": {
         "auth-header-name": "Authorization",
         "token-prefix": "bearer",
-        "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOlwvXC9sb2NhbGhvc3RcL2FwaVwvYXV0aFwvbG9naW4iLCJpYXQiOjE1OTA0NDA4MTUsImV4cCI6MTU5MDQ0NDQxNSwibmJmIjoxNTkwNDQwODE1LCJqdGkiOiJBSHJ2YzFrNTVLNUt6bkJDIiwic3ViIjoyLCJwcnYiOiIyM2JkNWM4OTQ5ZjYwMGFkYjM5ZTcwMWM0MDA4NzJkYjdhNTk3NmY3In0.FfrNSWR5IkDRW504W7Ru631x5nhnYVviW6mVFrkw3ZI"
+        "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOlwvXC9sb2NhbGhvc3RcL2FwaVwvYXV0aFwvbG9naW4iLCJpYXQiOjE1OTA0NDQ1MjMsImV4cCI6MTU5MDQ0ODEyMywibmJmIjoxNTkwNDQ0NTIzLCJqdGkiOiJpVTBhV0ZCTVU2cVpFeEJyIiwic3ViIjoyLCJwcnYiOiIyM2JkNWM4OTQ5ZjYwMGFkYjM5ZTcwMWM0MDA4NzJkYjdhNTk3NmY3In0.SeX5Rarod1Y2Xt9kTepE2Ci8WxZcI0um4SscPRDggiE"
     },
 
     "fields": [

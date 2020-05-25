@@ -2,20 +2,20 @@
     "rule-name": "Test_count_rule",
     "salience": 100,
     "when": [
-        { "?korisnik=": "[User.id == 1]" }
+        { "?kurs=": "[Course.id == 1]" }
     ],
     "then": [
         {
             "create": {
-                "model-name": "User",
-                "reflect-on-web": false,
+                "model-name": "Course",
+                "reflect-on-web": true,
                 "data": {
-                    "id": "?korisnik.id",
-                    "name": "Lazar1",
-                    "email": "?korisnik.email",
-                    "age": 24
+                    "name": "Moj kursss Pan",
+	                "start_date": "14.11.2021.",
+                    "end_date": "13.11.2021."
                 }
             }
-        }
+        },
+        { "clips": "(printout t 345 crlf))" }
     ]
 }

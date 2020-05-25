@@ -51,6 +51,7 @@ class Transpiler(object):
         6. Loads CLIPS Pattern Builder module.
         """
 
+        self.enviroment = enviroment
         self.data_providers = enviroment.bridge.data_providers
 
         self.variable_table = VariableTable()
@@ -982,7 +983,9 @@ class Transpiler(object):
 
 
     def rhs_statement(self, rhs):
-        pass
+        if rhs.stat.__class__.__name__ == "CLIPS_CODE":
+            clips_command = rhs.stat.clips_code
+            self.rhs_clips_command_list.append(remove_quotes(clips_command))
 
 
 
@@ -1037,18 +1040,37 @@ class Transpiler(object):
                     create_s.model_name)
 
         # Bridge is used to store python functions called by clips
-        clips_command = "(create_func " + \
-                        '"' + create_s.model_name + '"' + " " + \
-                        '"reflect"' + " " + \
-                        '"' + str(create_s.reflect) + '"' + " " + \
-                        '"data-len"' + " " + \
-                        '"' + str(int(len(data_arg_list)/2)) + '"' + " " + \
-                        " ".join(data_arg_list) + " " + \
-                        '"ref-len"' + " " + \
-                        '"' + str(int(len(ref_arg_list)/2)) + '"' + " " + \
-                        " ".join(ref_arg_list) + ")"
+        # clips_command = "(create_func " + \
+        #                 '"' + create_s.model_name + '"' + " " + \
+        #                 '"reflect"' + " " + \
+        #                 '"' + str(create_s.reflect) + '"' + " " + \
+        #                 '"data-len"' + " " + \
+        #                 '"' + str(int(len(data_arg_list)/2)) + '"' + " " + \
+        #                 " ".join(data_arg_list) + " " + \
+        #                 '"ref-len"' + " " + \
+        #                 '"' + str(int(len(ref_arg_list)/2)) + '"' + " " + \
+        #                 " ".join(ref_arg_list) + ")"
 
-        self.rhs_clips_command_list.append(clips_command)
+        arg_array = list([
+            create_s.model_name,
+            "reflect",
+            str(create_s.reflect),
+            "data-len",
+            str(len(data_arg_list)),
+            *data_arg_list,
+            "ref-len",
+            str(len(ref_arg_list)),
+            *ref_arg_list
+        ])
+
+        clips_command = "(create_func " + " ".join(arg_array) + ")"
+
+        #self.rhs_clips_command_list.append(clips_command)
+
+        # Direct call of function to test is
+
+        self.enviroment.bridge.create_func(arg_array)
+
 
 
 

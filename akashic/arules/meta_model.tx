@@ -137,7 +137,8 @@ RHSStatement:
     stat=ReadOneStatement | 
     stat=ReadMultipleStatement | 
     stat=UpdateStatement | 
-    stat=DeleteStatement
+    stat=DeleteStatement |
+    stat=CLIPS_CODE
 ;
 
 

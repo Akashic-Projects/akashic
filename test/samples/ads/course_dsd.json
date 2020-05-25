@@ -6,7 +6,7 @@
     "authentication-header": {
         "auth-header-name": "Authorization",
         "token-prefix": "bearer",
-        "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOlwvXC9sb2NhbGhvc3RcL2FwaVwvYXV0aFwvbG9naW4iLCJpYXQiOjE1OTA0MTUxNDYsImV4cCI6MTU5MDQxODc0NiwibmJmIjoxNTkwNDE1MTQ2LCJqdGkiOiI4OFZYTWRjZ0tGZTdUMmg0Iiwic3ViIjoyLCJwcnYiOiIyM2JkNWM4OTQ5ZjYwMGFkYjM5ZTcwMWM0MDA4NzJkYjdhNTk3NmY3In0.TdopHKMsWVFARSyzfMyQ5DoB6HmFC0cFQ8rGPe8T4DY"
+        "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOlwvXC9sb2NhbGhvc3RcL2FwaVwvYXV0aFwvbG9naW4iLCJpYXQiOjE1OTA0NDUwMjEsImV4cCI6MTU5MDQ0ODYyMSwibmJmIjoxNTkwNDQ1MDIxLCJqdGkiOiJVbHhBY2pUcEJRQTI2aWNDIiwic3ViIjoyLCJwcnYiOiIyM2JkNWM4OTQ5ZjYwMGFkYjM5ZTcwMWM0MDA4NzJkYjdhNTk3NmY3In0.HgQYxibDaA1lV2-qAO-MBcEZNRIUoTbN4lPCIWXKPQ4"
     },
 
     "fields": [
@@ -27,6 +27,26 @@
             "request-json-path": "$.name",
             "response-one-json-path": "$.data.name",
             "response-multiple-json-path": "$.data[{index}].name",
+            "use-for-create": true,
+            "use-for-update": true
+        },
+        {
+            "field-name": "start_date",
+            "type": "STRING",
+            "use-as": "data",
+            "request-json-path": "$.start_date",
+            "response-one-json-path": "$.data.start_date",
+            "response-multiple-json-path": "$.data[{index}].start_date",
+            "use-for-create": true,
+            "use-for-update": true
+        },
+        {
+            "field-name": "end_date",
+            "type": "STRING",
+            "use-as": "data",
+            "request-json-path": "$.end_date",
+            "response-one-json-path": "$.data.end_date",
+            "response-multiple-json-path": "$.data[{index}].end_date",
             "use-for-create": true,
             "use-for-update": true
         }
