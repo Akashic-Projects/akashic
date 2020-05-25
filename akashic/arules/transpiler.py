@@ -907,7 +907,7 @@ class Transpiler(object):
             if not ref_ok:
                 line, col = get_model(json_object)._tx_parser \
                             .pos_to_linecol(json_object._tx_position)
-                message = f"Foreign model reference field with name "\
+                message = f"Foreign model reference field "\
                           f"'{ref.field_name}' is omitted from the "\
                           f"operation request for model '{model_name}'."
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
@@ -922,17 +922,17 @@ class Transpiler(object):
 
 
     def check_fields_and_build_clips_func_call_args(self, 
-                                                         json_field_list, 
-                                                         dp_field_list,
-                                                         can_reflect,
-                                                         model_name,
-                                                         web_op_name):
+                                                    data_json_fields, 
+                                                    dp_field_list,
+                                                    can_reflect,
+                                                    model_name,
+                                                    web_op_name):
         # Check types and create args
         arg_list = []
         for dp_field in dp_field_list:
             json_field_ok = False
 
-            for json_field in json_field_list:
+            for json_field in data_json_fields:
                 if json_field.name == dp_field.field_name:
                     json_field_ok = True
 
@@ -952,7 +952,7 @@ class Transpiler(object):
                             line, col = get_model(json_field)._tx_parser \
                                     .pos_to_linecol(json_field._tx_position)
 
-                            message = f"Field with name '{json_field.name}' "\
+                            message = f"Field '{json_field.name}' "\
                                       f"contains data with wrong type. "\
                                       f"Expected type is {dp_field.type}. "\
                                       f"Given type is {given_type}."
@@ -966,21 +966,18 @@ class Transpiler(object):
                     break 
 
             if (((dp_field.use_for_create and web_op_name == "CREATE") or \
-                (dp_field.use_for_update and web_op_name == "UPDATE")) and \
-                (not json_field_ok) and can_reflect) or \
-                ((not json_field_ok) and not can_reflect):
+            (dp_field.use_for_update and web_op_name == "UPDATE")) and \
+            (not json_field_ok) and can_reflect) or \
+            ((not json_field_ok) and not can_reflect):
+
                 line, col = get_model(json_field)._tx_parser \
                 .pos_to_linecol(json_field._tx_position)
-                message = f"Field with name '{json_field.name}' "\
-                            f"is omitted from the operation request "\
-                            f"on model '{model_name}'."
+                message = f"Field '{dp_field.field_name}' "\
+                          f"is omitted from the operation request "\
+                          f"on model '{model_name}'."
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
-                
-                
-
 
         return arg_list
-
 
 
 
@@ -1018,11 +1015,14 @@ class Transpiler(object):
             self.separate_data_from_other_fields(create_s.json_object,
                                              data_provider.dsd.fields)
 
+        for a in data_json_fields:
+            print("-- " + a.name)
+
         # Check DATA field names and types and build DATA argument list
         data_arg_list = self.check_fields_and_build_clips_func_call_args(
             data_json_fields,
             data_provider.dsd.fields,
-            data_provider.dsd.can_reflect,
+            create_s.reflect,
             create_s.model_name,
             "CREATE")
 
