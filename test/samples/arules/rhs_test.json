@@ -8,7 +8,7 @@
         {
             "create": {
                 "model-name": "User",
-                "reflect-on-web": false,
+                "reflect-on-web": true,
                 "data": {
                     "id": "?korisnik.id",
                     "name": "Lazar1",

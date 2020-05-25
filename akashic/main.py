@@ -1,6 +1,7 @@
 from akashic.arules.transpiler import Transpiler
 from akashic.ads.data_provider import DataProvider
 from akashic.ads.env_provider import EnvProvider
+from akashic.ads.bridge import Bridge
 
 from os.path import join, dirname, abspath
 import json
@@ -98,11 +99,14 @@ def test_rule_transpiler():
     course_data_provider.load(dsd_string)
     course_data_provider.setup()
 
+    # Create new Akashic-CLIPS bridge
+    bridge = Bridge([user_data_provider, course_data_provider])
+
     # Create CLIPS env
-    env = EnvProvider()
+    env = EnvProvider(bridge)
 
     # Setup akashic transpiler
-    transpiler = Transpiler([user_data_provider, course_data_provider], env)
+    transpiler = Transpiler(env)
 
     # Read rule from sample file
     this_folder = dirname(__file__)

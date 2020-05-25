@@ -26,6 +26,26 @@ class DataChecker(object):
 
 
 
+    def check_web_reflection_data(self):
+        if not hasattr(self.dsd, 'apis'):
+            line, col = self.dsd._tx_parser \
+            .pos_to_linecol(self.dsd._tx_position)
+            message = f"Web reflection is turned on. There must "\
+                        f"be at least one defined api in DSD."
+            raise AkashicError(message, line, col, ErrType.SEMANTIC)
+
+        for field in self.dsd.fields:
+            if not hasattr(field, 'use_for_create') or not \
+                hasattr(field, 'use_for_update'):
+                    line, col = self.dsd._tx_parser \
+                    .pos_to_linecol(field._tx_position)
+                    message = "Web reflection is turned on. Every "\
+                                "field must contain 'use_for_create'"\
+                                "and 'use_for_update' data."
+                    raise AkashicError(message, line, col, ErrType.SEMANTIC)
+
+
+
     def check_url_mapping(self, operation, url_map, field_refs):
         """ Checks single URL mapping
         

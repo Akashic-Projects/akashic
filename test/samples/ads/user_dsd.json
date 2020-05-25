@@ -2,10 +2,11 @@
     "data-source-definition-name": "User",
     "model-name": "User",
     "model-description": "Holds general user data",
+    "can-reflect-on-web": true,
     "authentication-header": {
         "auth-header-name": "Authorization",
         "token-prefix": "bearer",
-        "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOlwvXC9sb2NhbGhvc3RcL2FwaVwvYXV0aFwvbG9naW4iLCJpYXQiOjE1OTAyNzA0MTYsImV4cCI6MTU5MDI3NDAxNiwibmJmIjoxNTkwMjcwNDE2LCJqdGkiOiJFdEFhZHMwY01rVDZTTlI1Iiwic3ViIjoyLCJwcnYiOiIyM2JkNWM4OTQ5ZjYwMGFkYjM5ZTcwMWM0MDA4NzJkYjdhNTk3NmY3In0.6GBvcTFCQC_mq5vGlwGqm4YpJ4mp0S47NNdNM-XTLmg"
+        "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOlwvXC9sb2NhbGhvc3RcL2FwaVwvYXV0aFwvbG9naW4iLCJpYXQiOjE1OTA0NDA4MTUsImV4cCI6MTU5MDQ0NDQxNSwibmJmIjoxNTkwNDQwODE1LCJqdGkiOiJBSHJ2YzFrNTVLNUt6bkJDIiwic3ViIjoyLCJwcnYiOiIyM2JkNWM4OTQ5ZjYwMGFkYjM5ZTcwMWM0MDA4NzJkYjdhNTk3NmY3In0.FfrNSWR5IkDRW504W7Ru631x5nhnYVviW6mVFrkw3ZI"
     },
 
     "fields": [

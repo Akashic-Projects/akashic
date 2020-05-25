@@ -69,9 +69,10 @@ class DataProvider(object):
         """ Setup DataChecker and DataFetcher based on loaded data source definition
 
         """
-
-        if hasattr(self.dsd, 'apis'):
-            self.checker = DataChecker(self.dsd)
+        self.checker = DataChecker(self.dsd)
+        
+        if self.dsd.can_reflect:
+            self.checker.check_web_reflection_data()
             self.checker.check_url_mappings()
             self.fetcher = DataFetcher(self.dsd.auth_header, self.dsd.additional_headers)
 

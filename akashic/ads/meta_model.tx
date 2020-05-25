@@ -4,15 +4,17 @@ DataSourceDefinition:
         ((DSD_NAME_KW               ':'      def_name            = STRING                     )
         (MODEL_NAME_KW              ':' '"'  model_id            = ID            '"'          )
         (MODEL_DESCRIPTION_KW       ':'      model_description   = STRING                     )
+        (CAN_REFLECT_ON_WEB         ':'      can_reflect         = BOOL                       )
         (AUTHENTICATION_HEADER_KW   ':'      auth_header         = AuthenticationHeader       )?
         (ADDITIONAL_HEADERS_KW      ':' '['  additional_headers *= AdditionalHeader[',']  ']' )?
-        (FIELDS_KW                  ':' '['  fields             *= Field[',']             ']' )
+        (FIELDS_KW                  ':' '['  fields             += Field[',']             ']' )
         (APIS_KW                    ':' '['  apis                = Apis                   ']' )?)#[',']
     '}'
 ;
 DSD_NAME_KW:                    /\"data-source-definition-name\"/ ;
 MODEL_NAME_KW:                  /\"model-name\"/ ;
 MODEL_DESCRIPTION_KW:           /\"model-description\"/ ;
+CAN_REFLECT_ON_WEB:             /\"can-reflect-on-web\"/ ;
 FIELDS_KW:                      /\"fields\"/ ;
 APIS_KW:                        /\"apis\"/ ;
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -53,8 +55,8 @@ PrimaryKeyField:
         (REQUEST_JSON_PATH_KW       ':'     request_json_path       = STRING        )
         (RESPONSE_ONE_JSON_PATH_KW  ':'     response_one_json_path  = STRING        )
         (RESPONSE_MUL_JSON_PATH_KW  ':'     response_mul_json_path  = STRING        )
-        (USE_FOR_CREATE_KW          ':'     use_for_create          = BOOL          )
-        (USE_FOR_UPDATE_KW          ':'     use_for_update          = BOOL          ))#[',']
+        (USE_FOR_CREATE_KW          ':'     use_for_create          = BOOL          )?
+        (USE_FOR_UPDATE_KW          ':'     use_for_update          = BOOL          )?)#[',']
     '}'
 ;
 ForeignKeyField:
@@ -67,8 +69,8 @@ ForeignKeyField:
         (REQUEST_JSON_PATH_KW        ':'     request_json_path       = STRING        )
         (RESPONSE_ONE_JSON_PATH_KW   ':'     response_one_json_path  = STRING        )
         (RESPONSE_MUL_JSON_PATH_KW   ':'     response_mul_json_path  = STRING        )
-        (USE_FOR_CREATE_KW           ':'     use_for_create          = BOOL          )
-        (USE_FOR_UPDATE_KW           ':'     use_for_update          = BOOL          ))#[',']
+        (USE_FOR_CREATE_KW           ':'     use_for_create          = BOOL          )?
+        (USE_FOR_UPDATE_KW           ':'     use_for_update          = BOOL          )?)#[',']
     '}'
 ;
 DataField:
@@ -79,8 +81,8 @@ DataField:
         (REQUEST_JSON_PATH_KW       ':'     request_json_path       = STRING        )
         (RESPONSE_ONE_JSON_PATH_KW  ':'     response_one_json_path  = STRING        )
         (RESPONSE_MUL_JSON_PATH_KW  ':'     response_mul_json_path  = STRING        )
-        (USE_FOR_CREATE_KW          ':'     use_for_create          = BOOL          )
-        (USE_FOR_UPDATE_KW          ':'     use_for_update          = BOOL          ))#[',']
+        (USE_FOR_CREATE_KW          ':'     use_for_create          = BOOL          )?
+        (USE_FOR_UPDATE_KW          ':'     use_for_update          = BOOL          )?)#[',']
     '}'
 ;
 FIELD_NAME_KW:                  /\"field-name\"/ ;

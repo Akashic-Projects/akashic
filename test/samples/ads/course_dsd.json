@@ -2,10 +2,11 @@
     "data-source-definition-name": "Course",
     "model-name": "Course",
     "model-description": "Holds general coure data",
+    "can-reflect-on-web": true,
     "authentication-header": {
         "auth-header-name": "Authorization",
         "token-prefix": "bearer",
-        "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOlwvXC9sb2NhbGhvc3RcL2FwaVwvYXV0aFwvbG9naW4iLCJpYXQiOjE1OTAyNjY3ODEsImV4cCI6MTU5MDI3MDM4MSwibmJmIjoxNTkwMjY2NzgxLCJqdGkiOiIzM0RiQ2tNVTlHWFZUU2J1Iiwic3ViIjoyLCJwcnYiOiIyM2JkNWM4OTQ5ZjYwMGFkYjM5ZTcwMWM0MDA4NzJkYjdhNTk3NmY3In0.nt4ZSxz6K9KSgw0xsaicN85oie8sqcQH8sBa3UU6rh8"
+        "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOlwvXC9sb2NhbGhvc3RcL2FwaVwvYXV0aFwvbG9naW4iLCJpYXQiOjE1OTA0MTUxNDYsImV4cCI6MTU5MDQxODc0NiwibmJmIjoxNTkwNDE1MTQ2LCJqdGkiOiI4OFZYTWRjZ0tGZTdUMmg0Iiwic3ViIjoyLCJwcnYiOiIyM2JkNWM4OTQ5ZjYwMGFkYjM5ZTcwMWM0MDA4NzJkYjdhNTk3NmY3In0.TdopHKMsWVFARSyzfMyQ5DoB6HmFC0cFQ8rGPe8T4DY"
     },
 
     "fields": [

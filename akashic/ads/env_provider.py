@@ -2,7 +2,6 @@
 import clips
 from clips.agenda import Agenda
 
-from akashic.ads.bridge import create_func
 
 
 class EnvProvider(object):
@@ -16,14 +15,16 @@ class EnvProvider(object):
     # TODO: Request to add data (by the rule)
     # TODO: Request to remove data after it has expired (by the rule)
     # TODO: Implement live security system using akashic
-    def __init__(self):
+    def __init__(self, bridge):
         """ EnvProvider constructor method
 
         Create new CLIPS enviroment
         """
 
         self.env = clips.Environment()
-        self.env.define_function(create_func)
+        self.bridge = bridge
+
+        self.env.define_function(bridge.create_func)
 
        
 

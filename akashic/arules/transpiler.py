@@ -38,7 +38,7 @@ class Transpiler(object):
     We use this class to transpile Akashic rule into the CLIPS rule.
     """
 
-    def __init__(self, data_providers, enviroment):
+    def __init__(self, enviroment):
         """ Transpiler constructor method
         
         Details
@@ -51,8 +51,7 @@ class Transpiler(object):
         6. Loads CLIPS Pattern Builder module.
         """
 
-        self.data_providers = data_providers
-        self.enviroment = enviroment
+        self.data_providers = enviroment.bridge.data_providers
 
         self.variable_table = VariableTable()
         self.data_locator_table = DataLocatorTable()
@@ -802,30 +801,28 @@ class Transpiler(object):
 
 ### TODO: TEST THIS SECTION!
 
-    def find_data_provider(self, model_name, method_object):
+    def find_data_provider(self, model_name, web_op_object):
         data_provider = None
         for ds in self.data_providers:
             if ds.dsd.model_id == model_name:
                 data_provider = ds
 
         if not data_provider:
-            line, col = get_model(method_object)._tx_parser.pos_to_linecol(method_object._tx_position)
-            message = "Model with name '{0}' does not exist.".format(model_name)
+            line, col = get_model(web_op_object)._tx_parser.pos_to_linecol(web_op_object._tx_position)
+            message = "DSD model with name '{0}' does not exist.".format(model_name)
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
         return data_provider
 
 
 
-    def check_field_list_for_duplicates(self, json_field_list, method, method_object):
-        sett = set()
-        for json_field in json_field_list:
-            sett.add(json_field.name)
-
-        if (len(sett) != len(json_field_list)):
-            line, col = get_model(method_object)._tx_parser.pos_to_linecol(method_object._tx_position)
-            message = f"Duplicate fields detected in data of {method} method."
-            raise AkashicError(message, line, col, ErrType.SEMANTIC)
+    def check_field_list_for_duplicates(self, json_field_list, web_op_object):
+        for i in range(0, len(json_field_list)):
+            for j in range(i+1, len(json_field_list)):
+                if json_field_list[i].name == json_field_list[j].name:
+                    line, col = get_model(web_op_object)._tx_parser.pos_to_linecol(web_op_object._tx_position)
+                    message = f"Duplicate fields '{json_field_list[i].name}' detected."
+                    raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
 
 
@@ -868,44 +865,122 @@ class Transpiler(object):
   
 
 
-    def check_fields_and_build_clips_func_call_arguments(
-                                                        self, 
-                                                        json_field_list, 
-                                                        dp_field_list, 
-                                                        model_name):
-        arg_list = []
-        for json_field in json_field_list:
-            json_field_ok = False
 
+    def separate_data_from_other_fields(self, json_object, dp_field_list):
+        # Collect all non-data fields
+        other_json_fields = []
+        for json_field in json_object.field_list:
+            json_field_ok = False
             for dp_field in dp_field_list:
                 if json_field.name == dp_field.field_name:
                     json_field_ok = True
+                    break
+            if not json_field_ok:
+                other_json_fields.append(json_field)
 
-                    given_type = py_to_clips_type(json_field.value.__class__)
+        # Create json_field_list without 'other-json-fields'
+        data_json_fields = []
+        for json_field in json_object.field_list:
+            if not json_field in other_json_fields:
+                data_json_fields.append(json_field)
+
+        return (data_json_fields, other_json_fields)
+
+
+
+    def check_model_refs_and_build_clips_func_call_args(self, 
+                                                        other_json_fields,
+                                                        dp_ref_foreign_models,
+                                                        json_object, 
+                                                        model_name):
+        # Check refs and collect actual refs from non-data fields
+        json_refs = []
+        for ref in dp_ref_foreign_models:
+            ref_ok = False
+
+            for o_json_field in other_json_fields:
+                if ref.field_name == o_json_field.name:
+                    ref_ok = True
+                    json_refs.append(o_json_field)
+                    break
+            
+            if not ref_ok:
+                line, col = get_model(json_object)._tx_parser \
+                            .pos_to_linecol(json_object._tx_position)
+                message = f"Foreign model reference field with name "\
+                          f"'{ref.field_name}' is omitted from the "\
+                          f"operation request for model '{model_name}'."
+                raise AkashicError(message, line, col, ErrType.SEMANTIC)
+
+        arg_list = []
+        for ref in json_refs:
+            arg_list.append('"' + json_field.name + '"')
+            arg_list.append('"' + str(json_field.value) + '"')
+
+        return arg_list
+
+
+
+    def check_fields_and_build_clips_func_call_args(self, 
+                                                         json_field_list, 
+                                                         dp_field_list,
+                                                         can_reflect,
+                                                         model_name,
+                                                         web_op_name):
+        # Check types and create args
+        arg_list = []
+        for dp_field in dp_field_list:
+            json_field_ok = False
+
+            for json_field in json_field_list:
+                if json_field.name == dp_field.field_name:
+                    json_field_ok = True
+
+                    given_type = py_to_clips_type(
+                                    json_field.value.__class__)
+
                     if given_type == None:
                         self.check_fact_address_def(json_field, dp_field)
 
                         # Build clips command args
                         arg_list.append('"' + json_field.name + '"')
-                        arg_list.append('(fact-slot-value ' + json_field.value.var_name + ' ' + json_field.value.field_name + ')')
+                        arg_list.append('(fact-slot-value ' + 
+                                        json_field.value.var_name + ' ' + 
+                                        json_field.value.field_name + ')')
                     else:
                         if given_type != dp_field.type:
-                            line, col = get_model(json_field)._tx_parser.pos_to_linecol(json_field._tx_position)
-                            message = f"Field with name '{json_field.name}' contains data with wrong type. Expected type is {dp_field.type}. Given type is {given_type}."
-                            raise AkashicError(message, line, col, ErrType.SEMANTIC)
+                            line, col = get_model(json_field)._tx_parser \
+                                    .pos_to_linecol(json_field._tx_position)
+
+                            message = f"Field with name '{json_field.name}' "\
+                                      f"contains data with wrong type. "\
+                                      f"Expected type is {dp_field.type}. "\
+                                      f"Given type is {given_type}."
+                            raise AkashicError(message, line, col, 
+                                               ErrType.SEMANTIC)
                         
                         # Add field name
                         arg_list.append('"' + json_field.name + '"')
                         # Add field value
                         arg_list.append('"' + str(json_field.value) + '"')
                     break 
-                
-            if not json_field_ok:
-                line, col = get_model(json_field)._tx_parser.pos_to_linecol(json_field._tx_position)
-                message = f"Field with name '{json_field.name}' does not belong to the model'{model_name}'."
+
+            if (((dp_field.use_for_create and web_op_name == "CREATE") or \
+                (dp_field.use_for_update and web_op_name == "UPDATE")) and \
+                (not json_field_ok) and can_reflect) or \
+                ((not json_field_ok) and not can_reflect):
+                line, col = get_model(json_field)._tx_parser \
+                .pos_to_linecol(json_field._tx_position)
+                message = f"Field with name '{json_field.name}' "\
+                            f"is omitted from the operation request "\
+                            f"on model '{model_name}'."
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
+                
+                
+
 
         return arg_list
+
 
 
 
@@ -918,22 +993,60 @@ class Transpiler(object):
         # Find data provider for given model
         data_provider = self.find_data_provider(create_s.model_name, create_s)
 
-        # Check field list for duplicate fileds
-        self.check_field_list_for_duplicates(create_s.json_object.field_list, "CREATE", create_s)
+        # Exit if reflection is needed, but DSD cannot reflect
+        if create_s.reflect and not data_provider.dsd.can_reflect:
+            line, col = get_model(create_s)._tx_parser \
+            .pos_to_linecol(create_s._tx_position)
+            message = f"Model '{create_s.model_name}' does not support "\
+                      f"web reflection."
+            raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
-        # Check fields (names and types) and build CLIPS function call
-        arg_list = self.check_fields_and_build_clips_func_call_arguments(
-            create_s.json_object.field_list,
+        # Exit if reflects on web, but does not have createApi
+        if (create_s.reflect) and not hasattr(data_provider.dsd.apis, 'create'):
+            line, col = get_model(create_s)._tx_parser \
+            .pos_to_linecol(create_s._tx_position)
+            message = f"Model '{create_s.model_name}' does not support "\
+                      f"CREATE operation."
+            raise AkashicError(message, line, col, ErrType.SEMANTIC)
+
+        # Check field list for duplicate fileds
+        self.check_field_list_for_duplicates(create_s.json_object.field_list, 
+                                             create_s)
+
+        # Split data into data fields and other fields
+        data_json_fields, other_json_fields = \
+            self.separate_data_from_other_fields(create_s.json_object,
+                                             data_provider.dsd.fields)
+
+        # Check DATA field names and types and build DATA argument list
+        data_arg_list = self.check_fields_and_build_clips_func_call_args(
+            data_json_fields,
             data_provider.dsd.fields,
-            create_s.model_name
-        )
+            data_provider.dsd.can_reflect,
+            create_s.model_name,
+            "CREATE")
+
+        ref_arg_list = []
+        if (data_provider.dsd.can_reflect and \
+            hasattr(data_provider.dsd.apis.create, 'ref_foreign_models')):
+            ref_arg_list = \
+                self.check_model_refs_and_build_clips_func_call_args(
+                    other_json_fields, 
+                    data_provider.dsd.apis.create.ref_foreign_models,
+                    create_s.json_object,
+                    create_s.model_name)
 
         # Bridge is used to store python functions called by clips
         clips_command = "(create_func " + \
                         '"' + create_s.model_name + '"' + " " + \
                         '"reflect"' + " " + \
                         '"' + str(create_s.reflect) + '"' + " " + \
-                        " ".join(arg_list) + ")"
+                        '"data-len"' + " " + \
+                        '"' + str(int(len(data_arg_list)/2)) + '"' + " " + \
+                        " ".join(data_arg_list) + " " + \
+                        '"ref-len"' + " " + \
+                        '"' + str(int(len(ref_arg_list)/2)) + '"' + " " + \
+                        " ".join(ref_arg_list) + ")"
 
         self.rhs_clips_command_list.append(clips_command)
 
