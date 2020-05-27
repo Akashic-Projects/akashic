@@ -2,7 +2,6 @@
     "rule-name": "Test_count_rule",
     "salience": 100,
     "when": [
-        { "?kurs=": "[Course.id == 1]" }
     ],
     "then": [
         {
@@ -11,11 +10,10 @@
                 "reflect-on-web": true,
                 "data": {
                     "name": "Moj kursss Pan",
-	                "start_date": "14.11.2021.",
+	                "start_date": "14.11.2020.",
                     "end_date": "13.11.2021."
                 }
             }
-        },
-        { "clips": "(printout t 345 crlf))" }
+        }
     ]
 }

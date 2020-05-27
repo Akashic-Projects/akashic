@@ -5,7 +5,7 @@ from textx.model import get_model
 from os.path import join, dirname
 from enum import Enum
 
-from akashic.arules.variable_table import VariableTable
+from akashic.arules.variable_table import VariableTable, VarType
 from akashic.arules.data_locator_table import DataLocatorTable
 from akashic.arules.clips_statement_builder import ClipsStatementBuilder
 
@@ -13,7 +13,7 @@ from akashic.exceptions import AkashicError, ErrType
 
 from akashic.util.type_converter import clips_to_py_type, py_to_clips_type, translate_if_c_bool
 from akashic.util.type_resolver import resolve_expr_type
-from akashic.util.string_util import remove_quotes
+from akashic.util.string_util import remove_quotes, to_clips_quotes
 
 
 #TODO: Need to add DataType: STRING_VAR, INT_VAR, FLOAT_VAR, BOOL_VAR 
@@ -27,8 +27,9 @@ class DataType(Enum):
     WORKABLE    = 1
     VARIABLE    = 2
     EXPRESSION  = 3
-    SPECIAL     = 4 # conditional statement
-    NOTHING     = 5
+    COUNT_CALL  = 4
+    SPECIAL     = 5 # conditional statement
+    NOTHING     = 6
 
 
 
@@ -51,7 +52,7 @@ class Transpiler(object):
         6. Loads CLIPS Pattern Builder module.
         """
 
-        self.enviroment = enviroment
+        self.bridge = enviroment.bridge
         self.data_providers = enviroment.bridge.data_providers
 
         self.variable_table = VariableTable()
@@ -66,6 +67,7 @@ class Transpiler(object):
             'Rule': self.rule,
 
             'LHSStatement': self.lhs_statement,
+            'BINDING_VAR': self.binding_var,
             'SpecialBinaryLogicExpression': self.special_binary_logic_expression,
             'SpecialSingularLogicExpression': self.special_singular_logic_expression,
             'TestSingularLogicExpression': self.test_singular_logic_expression,
@@ -82,8 +84,7 @@ class Transpiler(object):
 
             'RHSStatement': self.rhs_statement,
             'CreateStatement': self.create_statement,
-            'ReadOneStatement': self.read_one_statement,
-            'ReadMultipleStatement': self.read_multiple_statement,
+            'ReturnStatement': self.return_statement,
             'UpdateStatement': self.update_statement,
             'DeleteStatement': self.delete_statement,
         }
@@ -198,7 +199,7 @@ class Transpiler(object):
 
         print("name: " +  lhss.stat.__class__.__name__)
 
-        if lhss.stat.__class__.__name__ == "VARIABLE_INIT":
+        if lhss.stat.__class__.__name__ == "SYMBOLIC_VAR":
             if self.variable_table.lookup(lhss.stat.var_name):
                 line, col = get_model(lhss.stat)._tx_parser.pos_to_linecol(lhss.stat._tx_position)
                 message = f"Variable '{lhss.stat.var_name}' is already defined."
@@ -207,7 +208,8 @@ class Transpiler(object):
             self.variable_table.add_named_var(
                 lhss.stat.var_name, 
                 lhss.stat.expr, 
-                self.data_locator_vars
+                self.data_locator_vars,
+                VarType.SYMBOLIC
             )
             self.data_locator_vars = []
             print("Variable adding done.")
@@ -215,7 +217,7 @@ class Transpiler(object):
         elif lhss.stat.__class__.__name__ == "ASSERTION":
             print("Assertion done.")
         
-        elif lhss.stat.__class__.__name__ == "FACT_ADDRESS":
+        elif lhss.stat.__class__.__name__ == "FACT_ADDRESS_VAR":
             if self.variable_table.lookup(lhss.stat.var_name):
                 line, col = get_model(lhss.stat)._tx_parser.pos_to_linecol(lhss.stat._tx_position)
                 message = f"Variable '{lhss.stat.var_name}' is already defined."
@@ -224,15 +226,37 @@ class Transpiler(object):
             self.variable_table.add_named_var(
                 lhss.stat.var_name,
                 lhss.stat.expr, 
-                []
+                [],
+                VarType.FACT_ADDRESS
             )
             clips_address_pattern_command = lhss.stat.var_name + " <- " + lhss.stat.expr["content"]
             self.lhs_clips_command_list.append(clips_address_pattern_command)
             print("Address pattern adding done.")
 
         elif lhss.stat.__class__.__name__ == "CLIPS_CODE":
-            clips_address_pattern_command = lhss.stat.clips_code
-            self.lhs_clips_command_list.append(remove_quotes(clips_address_pattern_command))
+            clips_address_pattern_command = remove_quotes(lhss.stat.clips_code)
+            self.lhs_clips_command_list.append(to_clips_quotes(clips_address_pattern_command))
+
+
+    def binding_var(self, bv):
+        if self.variable_table.lookup(bv.var_name):
+            line, col = get_model(bv)._tx_parser.pos_to_linecol(bv._tx_position)
+            message = f"Variable '{bv.var_name}' is already defined."
+            raise AkashicError(message, line, col, ErrType.SEMANTIC)
+
+        self.variable_table.add_named_var(
+            bv.var_name,
+            bv.expr,
+            [],
+            VarType.BINDING
+        )
+
+        # Build clips commands
+        if bv.expr["construct_type"] == DataType.EXPRESSION:
+            clips_commands = self.clips_statement_builder.build_regular_dl_patterns(self.data_locator_table)
+            self.lhs_clips_command_list.extend(clips_commands)
+
+        return 0
 
 
     def special_binary_logic_expression(self, binary):
@@ -345,12 +369,12 @@ class Transpiler(object):
         self.data_locator_vars = []
 
         # Return CLIPS command
-        val = "(" + countt.operator + " " + clips_command + ")"
+        val = clips_command
         resolved_c_type = "INTEGER"
         return {
             "content": val,
             "content_type": resolved_c_type,
-            "construct_type": DataType.EXPRESSION,
+            "construct_type": DataType.COUNT_CALL,
             "_tx_position": (bline, bcol)
         }
 
@@ -545,11 +569,39 @@ class Transpiler(object):
         return result
 
 
+    def plus_minus_string(self, plus_minus):
+
+        resulting_string = ""
+        for operator in plus_minus.operator:
+            if operator != "+":
+                return None
+
+        for operand in plus_minus.operands:
+            if not (operand["content_type"] == "STRING" and \
+             operand["construct_type"] == DataType.WORKABLE):
+                return None
+            else:
+                resulting_string += operand["content"]
+        
+        return resulting_string
+
 
     def plus_minus_expr(self, plus_minus):
-        result = plus_minus.operands[0]
         bline, bcol = get_model(plus_minus)._tx_parser.pos_to_linecol(plus_minus._tx_position)
 
+        # Check if expression is string concat.
+        result = self.plus_minus_string(plus_minus)
+        if result != None and len(result) > 0:
+            return {
+                "content": result,
+                "content_type": "STRING",
+                "construct_type": DataType.WORKABLE,
+                "_tx_position": (bline, bcol)
+            }
+
+        # Check if expression is numeric
+        result = plus_minus.operands[0]
+        
         l = len(plus_minus.operands)
         i = 1
         while i < l:
@@ -827,7 +879,7 @@ class Transpiler(object):
 
 
 
-    def check_fact_address_def(self, json_field, dp_field):
+    def check_fact_address_def(self, json_field, dp_field=None):
         # Check if variable is [address variable]
         var_entry = self.variable_table.lookup(json_field.value.var_name)
         # Get token json_field value token location
@@ -836,9 +888,13 @@ class Transpiler(object):
         if not var_entry:
             message = f"Variable '{json_field.value.var_name}' is not defined."
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
+        
+        if var_entry.var_type != VarType.FACT_ADDRESS:
+            message = f"Variable '{json_field.value.var_name}' is not fact address."
+            raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
         if not "model_id" in var_entry.value:
-            message = f"Variable '{json_field.value.var_name}' is not fact address."
+            message = f"Variable '{json_field.value.var_name}' does not point to any fact."
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
         # Extract information 
@@ -860,11 +916,29 @@ class Transpiler(object):
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
         # Check if type of fact accress field is same as field in json object
-        if found_dp_field.type != dp_field.type:
+        if dp_field != None and found_dp_field.type != dp_field.type:
             message = f"Type missmatch in field '{json_field.name}'. Expected type '{dp_field.type}'. Given type '{found_dp_field.type}'"
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
   
 
+    def check_binding_variable(self, var, dp_field=None):
+        var_entry = self.variable_table.lookup(var.var_name)
+        line, col = get_model(var)._tx_parser.pos_to_linecol(var._tx_position)
+
+        if var_entry == None:
+            message = "Undefined variable {0}.".format(var.var_name)
+            raise AkashicError(message, line, col, ErrType.SEMANTIC)
+
+        if var_entry.var_type != VarType.BINDING:
+            message = "Cannot reference non-binding variable in RHS of the rule."
+            raise AkashicError(message, line, col, ErrType.SEMANTIC)
+
+        entry_type = var_entry.value["content_type"]
+        if dp_field != None and entry_type != dp_field.type:
+            message = f"Type missmatch in field '{dp_field.field_name}'. "\
+                      f"Expected type '{dp_field.type}'. Given type is "\
+                      f"'{entry_type}'."
+            raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
 
     def separate_data_from_other_fields(self, json_object, dp_field_list):
@@ -922,14 +996,10 @@ class Transpiler(object):
 
 
 
-    def check_fields_and_build_clips_func_call_args(self, 
-                                                    data_json_fields, 
-                                                    dp_field_list,
-                                                    can_reflect,
-                                                    model_name,
-                                                    web_op_name):
+    def check_data_fields(self,data_json_fields, dp_field_list,
+                          can_reflect, model_name, web_op_name):
+
         # Check types and create args
-        arg_list = []
         for dp_field in dp_field_list:
             json_field_ok = False
 
@@ -940,30 +1010,16 @@ class Transpiler(object):
                     given_type = py_to_clips_type(
                                     json_field.value.__class__)
 
-                    if given_type == None:
-                        self.check_fact_address_def(json_field, dp_field)
+                    if (given_type != None) and (given_type != dp_field.type):
+                        line, col = get_model(json_field)._tx_parser \
+                                .pos_to_linecol(json_field._tx_position)
 
-                        # Build clips command args
-                        arg_list.append('"' + json_field.name + '"')
-                        arg_list.append('(fact-slot-value ' + 
-                                        json_field.value.var_name + ' ' + 
-                                        json_field.value.field_name + ')')
-                    else:
-                        if given_type != dp_field.type:
-                            line, col = get_model(json_field)._tx_parser \
-                                    .pos_to_linecol(json_field._tx_position)
-
-                            message = f"Field '{json_field.name}' "\
-                                      f"contains data with wrong type. "\
-                                      f"Expected type is {dp_field.type}. "\
-                                      f"Given type is {given_type}."
-                            raise AkashicError(message, line, col, 
-                                               ErrType.SEMANTIC)
-                        
-                        # Add field name
-                        arg_list.append('"' + json_field.name + '"')
-                        # Add field value
-                        arg_list.append('"' + str(json_field.value) + '"')
+                        message = f"Field '{json_field.name}' "\
+                                    f"contains data with wrong type. "\
+                                    f"Expected type is {dp_field.type}. "\
+                                    f"Given type is {given_type}."
+                        raise AkashicError(message, line, col, 
+                                            ErrType.SEMANTIC)
                     break 
 
             if (((dp_field.use_for_create and web_op_name == "CREATE") or \
@@ -978,14 +1034,60 @@ class Transpiler(object):
                           f"on model '{model_name}'."
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
+
+    def get_dp_field(self, field_name, data_provider):
+        if data_provider == None:
+            return None
+
+        for dp_field in data_provider.dsd.fields:
+            if dp_field.field_name == field_name:
+                return dp_field
+        return None
+
+
+    def build_clips_func_call_args(self, data_json_fields, data_provider=None):
+        arg_list = []
+        for json_field in data_json_fields:
+            
+            given_type = py_to_clips_type(json_field.value.__class__)
+            if given_type == None:
+                # If json_field_value is FACT_ADDRESS_VAR
+                if json_field.value.__class__.__name__ == "ValueLocator":
+                    dp_field = self.get_dp_field(json_field.name,
+                                                 data_provider)
+                    self.check_fact_address_def(json_field, dp_field)
+
+                    # Build clips command args
+                    arg_list.append('"' + json_field.name + '"')
+                    arg_list.append('(str-cat (fact-slot-value ' + 
+                                    json_field.value.var_name + ' ' + 
+                                    json_field.value.field_name + '))')
+                                    
+                elif json_field.value.__class__.__name__ == "RHS_VARIABLE":
+                    dp_field = self.get_dp_field(json_field.name,
+                                                 data_provider)
+                    self.check_binding_variable(json_field.value, dp_field)
+
+                    var_entry = self.variable_table.lookup(json_field.value.var_name)
+                    value = var_entry.value
+
+                    # Build clips command args
+                    arg_list.append('"' + json_field.name + '"')
+                    arg_list.append('(str-cat ' + value["content"] + ')')
+            else:
+                # Add field name
+                arg_list.append('"' + json_field.name + '"')
+                # Add field value
+                arg_list.append('"' + str(json_field.value) + '"')
+
         return arg_list
 
 
 
     def rhs_statement(self, rhs):
         if rhs.stat.__class__.__name__ == "CLIPS_CODE":
-            clips_command = rhs.stat.clips_code
-            self.rhs_clips_command_list.append(remove_quotes(clips_command))
+            clips_command = remove_quotes(rhs.stat.clips_code)
+            self.rhs_clips_command_list.append(to_clips_quotes(clips_command))
 
 
 
@@ -1016,18 +1118,22 @@ class Transpiler(object):
         # Split data into data fields and other fields
         data_json_fields, other_json_fields = \
             self.separate_data_from_other_fields(create_s.json_object,
-                                             data_provider.dsd.fields)
+                                                 data_provider.dsd.fields)
 
         for a in data_json_fields:
             print("-- " + a.name)
 
-        # Check DATA field names and types and build DATA argument list
-        data_arg_list = self.check_fields_and_build_clips_func_call_args(
+        # Check DATA field names and types
+        self.check_data_fields(
             data_json_fields,
             data_provider.dsd.fields,
             create_s.reflect,
             create_s.model_name,
             "CREATE")
+
+        # Build DATA argument list
+        data_arg_list = self.build_clips_func_call_args(data_json_fields,
+                                                        data_provider)
 
         ref_arg_list = []
         if (data_provider.dsd.can_reflect and \
@@ -1039,49 +1145,49 @@ class Transpiler(object):
                     create_s.json_object,
                     create_s.model_name)
 
-        # Bridge is used to store python functions called by clips
-        # clips_command = "(create_func " + \
-        #                 '"' + create_s.model_name + '"' + " " + \
-        #                 '"reflect"' + " " + \
-        #                 '"' + str(create_s.reflect) + '"' + " " + \
-        #                 '"data-len"' + " " + \
-        #                 '"' + str(int(len(data_arg_list)/2)) + '"' + " " + \
-        #                 " ".join(data_arg_list) + " " + \
-        #                 '"ref-len"' + " " + \
-        #                 '"' + str(int(len(ref_arg_list)/2)) + '"' + " " + \
-        #                 " ".join(ref_arg_list) + ")"
-
         arg_array = list([
             create_s.model_name,
-            "reflect",
-            str(create_s.reflect),
-            "data-len",
-            str(len(data_arg_list)),
+            "\"reflect\"",
+            '"' + str(create_s.reflect) + '"',
+            "\"data-len\"",
+            '"' + str(len(data_arg_list)) + '"',
             *data_arg_list,
-            "ref-len",
-            str(len(ref_arg_list)),
+            "\"ref-len\"",
+            '"' + str(len(ref_arg_list)) + '"',
             *ref_arg_list
         ])
 
         clips_command = "(create_func " + " ".join(arg_array) + ")"
+        # self.rhs_clips_command_list.append(clips_command)
 
-        #self.rhs_clips_command_list.append(clips_command)
-
-        # Direct call of function to test is
-
-        self.enviroment.bridge.create_func(arg_array)
+        # Direct call of function bridge function - for testing purpose
+        self.bridge.create_func(arg_array)
 
 
 
+    def return_statement(self, return_s):
+        # Check field list for duplicate fileds
+        self.check_field_list_for_duplicates(return_s.json_object.field_list, 
+                                             return_s)
 
-    def read_one_statement(self, ros):
-        pass
+        # Build DATA argument list
+        data_arg_list = self.build_clips_func_call_args(
+            return_s.json_object.field_list)
 
-    def read_multiple_statement(self, rms):
-        pass
+        arg_array = list([
+            "\"data-len\"",
+            '"' + str(len(data_arg_list)) + '"',
+            *data_arg_list
+        ])
+
+        clips_command = "(return_func " + " ".join(arg_array) + ")"
+        self.rhs_clips_command_list.append(clips_command)
+
+        # Direct call of function bridge function - for testing purpose
+        # self.bridge.return_func(arg_array)
     
-    def update_statement(self, us):
+    def update_statement(self, update_s):
         pass
 
-    def delete_statement(self, ds):
+    def delete_statement(self, delete_s):
         pass

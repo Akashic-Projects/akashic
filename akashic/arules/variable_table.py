@@ -2,6 +2,11 @@
 
 from enum import Enum
 
+class VarType(Enum):
+    SYMBOLIC     = 1
+    BINDING      = 2
+    FACT_ADDRESS = 3
+
 
 class Entry(object):
     """ Entry class
@@ -13,6 +18,7 @@ class Entry(object):
         self.name = None
         self.value = None
         self.used_variables = []
+        self.var_type = None
 
 
 
@@ -36,7 +42,7 @@ class VariableTable(object):
 
 
 
-    def add_named_var(self, name, value, used_vars):
+    def add_named_var(self, name, value, used_vars, var_type=VarType.SYMBOLIC):
         """ Adds named variable to the table
 
         Parameters
@@ -59,6 +65,7 @@ class VariableTable(object):
         e.name = name
         e.value = value
         e.used_variables = used_vars
+        e.var_type = var_type
 
         self.table[name] = e
         return e.name

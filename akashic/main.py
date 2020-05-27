@@ -103,7 +103,11 @@ def test_rule_transpiler():
     bridge = Bridge([user_data_provider, course_data_provider])
 
     # Create CLIPS env
-    env = EnvProvider(bridge)
+    env = EnvProvider()
+
+    # Provide self to eachother
+    bridge.set_env_provider(env)
+    env.set_bridge(bridge)
 
     # Setup akashic transpiler
     transpiler = Transpiler(env)
@@ -111,8 +115,13 @@ def test_rule_transpiler():
     # Read rule from sample file
     this_folder = dirname(__file__)
 
+    # Insert COURSE tempalte
+    course_template = course_data_provider.generate_clips_template() 
+    env.define_template(course_template)
+    print(course_template)
 
-    sample_path = abspath(join(this_folder, '..', 'test', 'samples', 'arules', 'rhs_test.json'))
+    # Load Akashic rule
+    sample_path = abspath(join(this_folder, '..', 'test', 'samples', 'arules', 'rhs_test_return.json'))
     with open(sample_path, 'r') as sample:
         akashic_rule = sample.read()
         transpiler.load(akashic_rule)
@@ -124,13 +133,11 @@ def test_rule_transpiler():
     print(transpiler.tranpiled_rule)        
     print()
 
+    # Insert transpiled rule intu the ENV
+    env.insert_rule(transpiler.tranpiled_rule)
 
-    # 1. TEST OF THE SYSTEM
 
-    # Insert user tempalte
-    course_template = course_data_provider.generate_clips_template() 
-    env.define_template(course_template)
-    print(course_template)
+    #####  1. TEST OF THE SYSTEM
 
     # Read users from DS
     multiple_courses = course_data_provider.read_multiple()
@@ -140,9 +147,19 @@ def test_rule_transpiler():
     for u in course_clips_facts:
         env.insert_fact(u)
 
-    # Insert transpiled rule intu the ENV
-    env.insert_rule(transpiler.tranpiled_rule)
+    
+
+    # env.env.eval("(undefrule Test_count_rule)")
+
+    # Run CLIPS engine
     env.run()
+
+    # print("\n")
+    # print("RULES: ")
+    # print("-------------------------")
+    # for r in env.env.rules():
+    #     print(r)
+    #     print("+++++++++++++++++++++++++")
        
 
 if __name__ == "__main__":
