@@ -143,6 +143,22 @@ class Transpiler(object):
 # LEFT HAND SIDE SECTION
 # ----------------------------------------------------------------
 
+    def clear_after_binding(self):
+        fields_to_remove = []
+        for var_name in self.data_locator_vars:
+            for template_name, template in self.data_locator_table.table.items():
+                for field_name, field in template.fields.items():
+                    if field.var_name == var_name:
+                        fields_to_remove.append((template_name, field_name))
+                    
+        for f in fields_to_remove:
+            self.data_locator_table.table[f[0]].fields.pop(f[1])
+        
+        if len(self.data_locator_table.table[f[0]].fields.items()) < 1:
+            self.data_locator_table.table.pop(f[0])
+
+
+
     def rotate_used_data_locator_vars(self):
         """ Function rotates used data locator variables
 
@@ -157,25 +173,28 @@ class Transpiler(object):
         6. We go through list of variables refenrenced in statement of * and replace their names also.
         """
 
+        print("------ locator vars: " + str(self.data_locator_vars))
+        new_data_locator_vars = self.data_locator_vars.copy()
+
         for var_name in self.data_locator_vars:
             for template_name, template in self.data_locator_table.table.items():
                 for field_name, field in template.fields.items():
                     if field.var_name == var_name:
-                        to_add = {
-                            "content": "",
-                            "content_type": field.dp_field.type,
-                            "construct_type": DataType.NOTHING
-                        }
-                        gen_var_name = self.variable_table.add_helper_var(to_add)
-                        field.var_name = gen_var_name
+
+                        gen_var_name = self.variable_table.next_var_name()
 
                         for vn, var_value in self.variable_table.table.items():
-
                             # This check is important - very!!
                             if var_value.value["construct_type"] != DataType.WORKABLE:
+                                field.var_name = gen_var_name
+
+                                print(f"replace '{var_name}' with '{gen_var_name}'")
                                 var_value.value["content"] = var_value.value["content"].replace(var_name, gen_var_name)
 
                             var_value.used_variables = [gen_var_name if uv == var_name else uv for uv in var_value.used_variables]
+                            new_data_locator_vars = [gen_var_name if dlv == var_name else dlv for dlv in new_data_locator_vars]
+        
+        self.data_locator_vars = new_data_locator_vars
 
 
 
@@ -197,9 +216,10 @@ class Transpiler(object):
         2. Id statement represents assertion function. Then nothing... for now.. 
         """
 
-        print("name: " +  lhss.stat.__class__.__name__)
+        if lhss.stat.__class__.__name__ == "ASSERTION":
+            print("Assertion done.")
 
-        if lhss.stat.__class__.__name__ == "SYMBOLIC_VAR":
+        elif lhss.stat.__class__.__name__ == "SYMBOLIC_VAR":
             if self.variable_table.lookup(lhss.stat.var_name):
                 line, col = get_model(lhss.stat)._tx_parser.pos_to_linecol(lhss.stat._tx_position)
                 message = f"Variable '{lhss.stat.var_name}' is already defined."
@@ -213,9 +233,6 @@ class Transpiler(object):
             )
             self.data_locator_vars = []
             print("Variable adding done.")
-
-        elif lhss.stat.__class__.__name__ == "ASSERTION":
-            print("Assertion done.")
         
         elif lhss.stat.__class__.__name__ == "FACT_ADDRESS_VAR":
             if self.variable_table.lookup(lhss.stat.var_name):
@@ -238,6 +255,7 @@ class Transpiler(object):
             self.lhs_clips_command_list.append(to_clips_quotes(clips_address_pattern_command))
 
 
+
     def binding_var(self, bv):
         if self.variable_table.lookup(bv.var_name):
             line, col = get_model(bv)._tx_parser.pos_to_linecol(bv._tx_position)
@@ -252,11 +270,13 @@ class Transpiler(object):
         )
 
         # Build clips commands
-        if bv.expr["construct_type"] == DataType.EXPRESSION:
+        if bv.expr["construct_type"] in [ DataType.EXPRESSION, DataType.VARIABLE ]:
             clips_commands = self.clips_statement_builder.build_regular_dl_patterns(self.data_locator_table)
             self.lhs_clips_command_list.extend(clips_commands)
+            self.clear_after_binding()
 
         return 0
+
 
 
     def special_binary_logic_expression(self, binary):
@@ -287,6 +307,22 @@ class Transpiler(object):
 
     def special_singular_logic_expression(self, singular):
         bline, bcol = get_model(singular)._tx_parser.pos_to_linecol(singular._tx_position)
+
+        if hasattr(singular, "template"):
+            self.find_data_provider(singular.template, singular)
+            clips_command = '(' + singular.template + ')'
+            if not singular.operator:
+                val = clips_command
+            else:
+                val = "(" + singular.operator + " " + clips_command + ")"
+            
+            return {
+                "content": val, 
+                "content_type": None,
+                "construct_type": DataType.SPECIAL,
+                "_tx_position": (bline, bcol),
+                "model_id": singular.template
+            }
 
         if singular.operand["construct_type"] != DataType.EXPRESSION:
             line, col = singular.operand["_tx_position"]

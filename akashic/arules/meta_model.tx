@@ -37,7 +37,8 @@ BINDING_VAR:
 ;
 
 FACT_ADDRESS_VAR:
-      '{' '"' var_name=/\?[^\d\W]\w*\b/ '<-' '"' ':' '"' expr=SpecialSingularLogicExpression '"' '}'
+      '{' 
+            '"' var_name=/\?[^\d\W]\w*\b/ '<-' '"' ':' '"' expr=SpecialSingularLogicExpression '"' '}'
 ;
 
 ASSERTION:
@@ -74,15 +75,16 @@ SpecialBinaryLogicExpression:
 ;
 
 SpecialSingularLogicExpression:
-    operator=SPECIAL_SINGULAR? operand=CountExpression
+    operator=SPECIAL_SINGULAR? '[' template=ID ']' |
+    operator=SPECIAL_SINGULAR? '[' operand=CountExpression ']'
 ;
 
 TestSingularLogicExpression:
-    operator=TEST operand=CountExpression
+    operator=TEST '[' operand=CountExpression ']'
 ;
 
 CountExpression:
-    operator=COUNT? '[' operand=NegationExpression ']'
+    operator=COUNT? operand=NegationExpression
 ;
 
 NegationExpression:
@@ -116,7 +118,7 @@ Factor:
     value=STRING_C | 
     value=VARIABLE | 
     value=DataLocator |
-    (lpar=LPAR value=NegationExpression rpar=RPAR) | 
+    (LPAR value=CountExpression RPAR) |
     value=CountExpression
 ;
 

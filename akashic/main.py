@@ -118,7 +118,10 @@ def test_rule_transpiler():
     # Insert COURSE tempalte
     course_template = course_data_provider.generate_clips_template() 
     env.define_template(course_template)
-    print(course_template)
+
+    # Insert USER tempalte
+    user_template = user_data_provider.generate_clips_template() 
+    env.define_template(user_template)
 
     # Load Akashic rule
     sample_path = abspath(join(this_folder, '..', 'test', 'samples', 'arules', 'rhs_test_return.json'))

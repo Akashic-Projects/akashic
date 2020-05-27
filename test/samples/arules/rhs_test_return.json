@@ -2,14 +2,13 @@
     "rule-name": "Test_count_rule",
     "salience": 100,
     "when": [
-        //{ "?c=": "count[Course.id - Course.id == 1]" },
-        { "?c1": "[Course.id]" },
-        { "?c2<-": "[Course.id - ?c1 > 0]" }
+        { "?age<-": "[Course]"}
+
     ],
     "then": [
         {
-            "return": {
-                "Number of courses with id > 4": "YES"
+           "return": {
+               "C1": "?age.id"
             }
         }
     ]

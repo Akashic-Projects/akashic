@@ -41,6 +41,12 @@ class VariableTable(object):
         self.table = {}
 
 
+    def next_var_name(self):
+        gen_name = "?v" + str(self.gen_var_index)
+        self.gen_var_index += 1
+
+        return gen_name
+
 
     def add_named_var(self, name, value, used_vars, var_type=VarType.SYMBOLIC):
         """ Adds named variable to the table
@@ -72,7 +78,7 @@ class VariableTable(object):
 
 
 
-    def add_helper_var(self, value):
+    def add_helper_var(self, value, var_type=VarType.SYMBOLIC):
         """ Adds helper variable to the table - variable with unique generated name
 
         Parameters
@@ -86,17 +92,15 @@ class VariableTable(object):
             Generated name of generated variable
         """
 
-        gen_name = "?v" + str(self.gen_var_index)
-        self.gen_var_index += 1
-
         e = Entry()
-        e.name = gen_name
+        e.name = self.next_var_name()
         e.value = value
         e.used_variables = []
+        e.var_type = var_type
        
         
-        self.table[gen_name] = e
-        return gen_name
+        self.table[e.name] = e
+        return e.name
 
 
 
