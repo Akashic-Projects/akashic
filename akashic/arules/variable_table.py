@@ -3,6 +3,9 @@
 from enum import Enum
 
 class VarType(Enum):
+    def __str__(self):
+        return str(self.name)
+        
     SYMBOLIC     = 1
     BINDING      = 2
     FACT_ADDRESS = 3

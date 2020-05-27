@@ -24,6 +24,9 @@ class DataType(Enum):
     We use this class to define type of data generated inside of transpiler loop
     """
 
+    def __str__(self):
+        return str(self.name)
+
     WORKABLE    = 1
     VARIABLE    = 2
     EXPRESSION  = 3
@@ -308,7 +311,7 @@ class Transpiler(object):
     def special_singular_logic_expression(self, singular):
         bline, bcol = get_model(singular)._tx_parser.pos_to_linecol(singular._tx_position)
 
-        if hasattr(singular, "template"):
+        if hasattr(singular, "template") and singular.template != '':
             self.find_data_provider(singular.template, singular)
             clips_command = '(' + singular.template + ')'
             if not singular.operator:
@@ -326,11 +329,12 @@ class Transpiler(object):
 
         if singular.operand["construct_type"] != DataType.EXPRESSION:
             line, col = singular.operand["_tx_position"]
-            message = "{0} operation argument must be expression. {1} given.".format(
-                singular.operator, singular.operand["construct_type"])
+            message = "Special singular operation argument must be "\
+                      "expression. {0} "\
+                      "given.".format(
+                        singular.operand["construct_type"]
+                      )
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
-
-        print("DLV from special_singular_logic_expression: " + str(self.data_locator_vars))
 
         # Build clips regular command
         clips_command = self.clips_statement_builder.build_special_pattern(
