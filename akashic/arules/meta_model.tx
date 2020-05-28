@@ -96,17 +96,18 @@ Root:
 Function:
     NegationFunction |
     CountFunction |
-    StrFunction |
+    
     StrToTimeFunction |
-    TimeToStrFunction
+    TimeToStrFunction |
+    StrFunction 
 ;
 
 TimeToStrFunction:
-    operator=TIME_TO_STR operands=Factor COMMA operands=Factor
+    operator=TIME_TO_STR '(' operands=Factor COMMA operands=Factor ')'
 ;
 
 StrToTimeFunction:
-    operator=STR_TO_TIME operands=Factor COMMA operands=Factor
+    operator=STR_TO_TIME '(' operands=Factor COMMA operands=Factor ')'
 ;
 
 StrFunction:

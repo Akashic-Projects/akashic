@@ -14,6 +14,8 @@ class TimeBridge(object):
         print(time)
         print(time_format)
 
+        return 1590705141
+
 
 
     def time_to_str(self, time, time_format):

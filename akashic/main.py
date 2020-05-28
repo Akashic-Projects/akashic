@@ -1,7 +1,10 @@
 from akashic.arules.transpiler import Transpiler
+
 from akashic.ads.data_provider import DataProvider
 from akashic.ads.env_provider import EnvProvider
+
 from akashic.bridges.data_bridge import DataBridge
+from akashic.bridges.time_bridge import TimeBridge
 
 from os.path import join, dirname, abspath
 import json
@@ -109,6 +112,10 @@ def test_rule_transpiler():
     data_bridge.set_env_provider(env)
     env.set_data_bridge(data_bridge)
 
+    # Create and set time bridge
+    time_bridge = TimeBridge()
+    env.set_time_bridge(time_bridge)
+
     # Setup akashic transpiler
     transpiler = Transpiler(env)
 
@@ -124,7 +131,7 @@ def test_rule_transpiler():
     env.define_template(user_template)
 
     # Load Akashic rule
-    sample_path = abspath(join(this_folder, '..', 'test', 'samples', 'arules', 'rhs_test_return.json'))
+    sample_path = abspath(join(this_folder, '..', 'test', 'samples', 'arules', 'test_datetime.json'))
     with open(sample_path, 'r') as sample:
         akashic_rule = sample.read()
         transpiler.load(akashic_rule)

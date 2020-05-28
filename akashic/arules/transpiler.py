@@ -493,13 +493,17 @@ class Transpiler(object):
             countt.operand["content"]
         )
 
+        # Rotate defined variables for next special expression
+        # self.rotate_used_data_locator_vars()
+        # self.data_locator_vars = []
+
         # Return CLIPS command
         clips_content = clips_command
         resolved_c_type = "INTEGER"
         return {
             "content": clips_content,
             "content_type": resolved_c_type,
-            "construct_type": ConstructType.FUNCTION_CALL,
+            "construct_type": ConstructType.COUNT_FUNC_CALL,
             "_tx_position": (bline, bcol)
         }
 
@@ -535,6 +539,9 @@ class Transpiler(object):
         time = sttf.operands[0]
         time_format = sttf.operands[1]
 
+        bline, bcol = get_model(sttf)._tx_parser \
+                      .pos_to_linecol(sttf._tx_position)
+
         def raise_error_if_not_type(obj, expected_types):
             if obj["content_type"] != "STRING":
                 line, col = obj["_tx_position"]
@@ -547,20 +554,20 @@ class Transpiler(object):
         raise_error_if_not_type(time_format, "STRING")
 
         time_str = None
-        if time["content_type"] == ConstructType.WORKABLE:
+        if time["construct_type"] == ConstructType.WORKABLE:
             time_str = '"' + time["content"] + '"'
         else:
             time_str = time["content"]
 
         time_format_str = None
-        if time_format["content_type"] == ConstructType.WORKABLE:
+        if time_format["construct_type"] == ConstructType.WORKABLE:
             time_format_str = '"' + time_format["content"] + '"'
         else:
             time_format_str = time_format["content"]
         
         construct_type = None
-        if time["content_type"] != ConstructType.WORKABLE or \
-        time_format["content_type"] != ConstructType.WORKABLE:
+        if time["construct_type"] != ConstructType.WORKABLE or \
+        time_format["construct_type"] != ConstructType.WORKABLE:
             construct_type = ConstructType.NORMAL_EXP
         else:
             construct_type = ConstructType.WORKABLE

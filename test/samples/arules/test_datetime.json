@@ -1,0 +1,15 @@
+{
+    "rule-name": "Test_count_rule",
+    "salience": 100,
+    "when": [
+        { "?time=": "str_to_time('some time', 'dff')"}
+
+    ],
+    "then": [
+        {
+           "return": {
+               "test": "?time"
+            }
+        }
+    ]
+}

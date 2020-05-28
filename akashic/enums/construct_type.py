@@ -12,7 +12,8 @@ class ConstructType(Enum):
 
     WORKABLE            = 1
     VARIABLE            = 2
-    NORMAL_EXP         = 3
+    NORMAL_EXP          = 3
     FUNCTION_CALL       = 4
-    SPECIAL_CON_EXP     = 5 # Special Conditional Expression 
-    NOTHING             = 6
+    COUNT_FUNC_CALL     = 5
+    SPECIAL_CON_EXP     = 6 # Special Conditional Expression 
+    NOTHING             = 7
