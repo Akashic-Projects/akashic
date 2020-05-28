@@ -74,6 +74,7 @@ class Transpiler(object):
             'StrFunction':        self.str_function,
             'StrToTimeFunction':  self.str_to_time_function,
             'TimeToStrFunction':  self.time_to_str_function,
+            'SubTimesFunction':   self.sub_times_function,
             
             'LogicExpression':  self.logic_expression,
             'CompExpression':   self.comp_expression,
@@ -614,6 +615,51 @@ class Transpiler(object):
         construct_type = ConstructType.NORMAL_EXP
         resolved_c_type = "STRING"
         clips_content = "(time_to_str " + \
+                        time_str + " " + \
+                        time_format_str + \
+                        ")"
+        return {
+            "content": clips_content,
+            "content_type": resolved_c_type,
+            "construct_type": construct_type,
+            "_tx_position": (bline, bcol)
+        }
+
+
+    def sub_times_function(self, stf):
+        time = stf.operands[0]
+        time_format = stf.operands[1]
+
+        bline, bcol = get_model(stf)._tx_parser \
+                      .pos_to_linecol(stf._tx_position)
+
+        def raise_error_if_not_type(obj, expected_type):
+            if obj["content_type"] != expected_type:
+                line, col = obj["_tx_position"]
+                message = "Expected type {0}, but {1} found." \
+                          .format(expected_type, 
+                                  time["content_type"])
+                raise AkashicError(message, line, col, ErrType.SEMANTIC)
+        
+        raise_error_if_not_type(time, "INTEGER")
+        raise_error_if_not_type(time_format, "INTEGER")
+
+        time_str = None
+        if time["construct_type"] == ConstructType.WORKABLE:
+            time_str = '"' + time["content"] + '"'
+        else:
+            time_str = time["content"]
+
+        time_format_str = None
+        if time_format["construct_type"] == ConstructType.WORKABLE:
+            time_format_str = '"' + time_format["content"] + '"'
+        else:
+            time_format_str = time_format["content"]
+        
+
+        construct_type = ConstructType.NORMAL_EXP
+        resolved_c_type = "INTEGER"
+        clips_content = "(sub_times " + \
                         time_str + " " + \
                         time_format_str + \
                         ")"

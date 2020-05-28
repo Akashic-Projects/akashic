@@ -26,3 +26,10 @@ class TimeBridge(object):
         date_time_obj = datetime.datetime.fromtimestamp(int(time))
 
         return date_time_obj.strftime(time_format)
+
+
+    def sub_times(self, time1, time2):
+        date_time_obj1 = datetime.datetime.fromtimestamp(int(time1))
+        date_time_obj2 = datetime.datetime.fromtimestamp(int(time2))
+
+        return (date_time_obj1 - date_time_obj2).total_seconds()

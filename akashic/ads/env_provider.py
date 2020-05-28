@@ -38,7 +38,7 @@ class EnvProvider(object):
         self.time_bridge = time_bridge
         self.env.define_function(self.time_bridge.str_to_time)
         self.env.define_function(self.time_bridge.time_to_str)
-
+        self.env.define_function(self.time_bridge.sub_times)
 
     def define_template(self, template):
         """ Defines / inserts new CLIPS template into the enviroment

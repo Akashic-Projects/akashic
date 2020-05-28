@@ -69,6 +69,7 @@ COUNT:          'count' ;
 STR:            'str' ;
 TIME_TO_STR:    'time_to_str' ;
 STR_TO_TIME:    'str_to_time' ;
+SUB_TIMES:       'sub_times' ;
 
 
 SPECIAL_SINGULAR: NOT | EXISTS | FORALL ;
@@ -97,9 +98,15 @@ Function:
     NegationFunction |
     CountFunction |
     
+    SubTimesFunction |
     StrToTimeFunction |
     TimeToStrFunction |
+    
     StrFunction 
+;
+
+SubTimesFunction:
+    operator=SUB_TIMES '(' operands=Factor COMMA operands=Factor ')'
 ;
 
 TimeToStrFunction:
