@@ -11,7 +11,8 @@ class TimeBridge(object):
 
 
     def str_to_time(self, time, time_format):
-        pass
+        print(time)
+        print(time_format)
 
 
 

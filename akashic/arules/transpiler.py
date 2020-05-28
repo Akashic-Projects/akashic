@@ -396,8 +396,7 @@ class Transpiler(object):
         )
 
         # Extract used template name
-        template_name = self.clips_statement_builder.get_template(
-            self, 
+        template = self.clips_statement_builder.get_template(
             self.data_locator_table, 
             self.data_locator_vars
         )
@@ -417,7 +416,7 @@ class Transpiler(object):
             "content_type": None,
             "construct_type": ConstructType.SPECIAL_CON_EXP,
             "_tx_position": (bline, bcol),
-            "model_id": template_name
+            "model_id": template.name
         }
 
 
@@ -596,13 +595,13 @@ class Transpiler(object):
             
             if result["content_type"] not in ["INTEGER", "FLOAT", "BOOLEAN"]:
                 line, col = result["_tx_position"]
-                message = "Logic operand of type INTEGER, FLOAT or BOOLEAN expected, {0} geven.".format(
+                message = "Logic operand of type INTEGER, FLOAT or BOOLEAN expected, {0} found.".format(
                     result["content_type"])
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
             if current["content_type"] not in ["INTEGER", "FLOAT", "BOOLEAN"]:
                 line, col = current["_tx_position"]
-                message = "Logic operand of type INTEGER, FLOAT or BOOLEAN expected, {0} geven.".format(
+                message = "Logic operand of type INTEGER, FLOAT or BOOLEAN expected, {0} found.".format(
                     current["content_type"])
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
@@ -653,14 +652,14 @@ class Transpiler(object):
             
             if result["content_type"] not in ["INTEGER", "FLOAT", "STRING"]:
                 line, col = result["_tx_position"]
-                message = "Comparison operand of type INTEGER, FLOAT or STRING expected, {0} geven.".format(
+                message = "Comparison operand of type INTEGER, FLOAT or STRING expected, {0} found.".format(
                     result["content_type"])
                 print("----" + str(result["content"]))
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
             if current["content_type"] not in ["INTEGER", "FLOAT", "STRING"]:
                 line, col = current["_tx_position"]
-                message = "Comparison operand of type INTEGER, FLOAT or STRING expected, {0} geven.".format(
+                message = "Comparison operand of type INTEGER, FLOAT or STRING expected, {0} found.".format(
                     current["content_type"])
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
@@ -751,14 +750,14 @@ class Transpiler(object):
             if result["content_type"] not in ["INTEGER", "FLOAT", "STRING"]:
                 line, col = result["_tx_position"]
                 message = "Addition or subtraction operand of type INTEGER "\
-                          "or FLOAT expected, {0} geven."\
+                          "or FLOAT expected, {0} found."\
                             .format(result["content_type"])
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
                
             if current["content_type"] not in ["INTEGER", "FLOAT","STRING"]:
                 line, col = current["_tx_position"]
                 message = "Addition or subtraction operand of type INTEGER "\
-                          "or FLOAT expected, {0} geven."\
+                          "or FLOAT expected, {0} found."\
                             .format(current["content_type"])
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
@@ -847,13 +846,13 @@ class Transpiler(object):
 
             if result["content_type"] not in ["INTEGER", "FLOAT"]:
                 line, col = result["_tx_position"]
-                message = "Multiplication or division operand of type INTEGER or FLOAT expected, {0} geven.".format(
+                message = "Multiplication or division operand of type INTEGER or FLOAT expected, {0} found.".format(
                     result["content_type"])
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
             if current["content_type"] not in ["INTEGER", "FLOAT"]:
                 line, col = current["_tx_position"]
-                message = "Multiplication or division operand of type INTEGER or FLOAT expected, {0} geven.".format(
+                message = "Multiplication or division operand of type INTEGER or FLOAT expected, {0} found.".format(
                     current["content_type"])
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
@@ -901,13 +900,13 @@ class Transpiler(object):
            
             if result["content_type"] not in ["INTEGER", "FLOAT"]:
                 line, col = result["_tx_position"]
-                message = "Exponentiation or root extraction operand of type INTEGER or FLOAT expected, {0} geven.".format(
+                message = "Exponentiation or root extraction operand of type INTEGER or FLOAT expected, {0} found.".format(
                     result["content_type"])
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
             if current["content_type"] not in ["INTEGER", "FLOAT"]:
                 line, col = current["_tx_position"]
-                message = "Exponentiation or root extraction operand of type INTEGER or FLOAT expected, {0} geven.".format(
+                message = "Exponentiation or root extraction operand of type INTEGER or FLOAT expected, {0} found.".format(
                     current["content_type"])
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
