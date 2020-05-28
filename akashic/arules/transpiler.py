@@ -565,13 +565,7 @@ class Transpiler(object):
         else:
             time_format_str = time_format["content"]
         
-        construct_type = None
-        if time["construct_type"] != ConstructType.WORKABLE or \
-        time_format["construct_type"] != ConstructType.WORKABLE:
-            construct_type = ConstructType.NORMAL_EXP
-        else:
-            construct_type = ConstructType.WORKABLE
-
+        construct_type = ConstructType.NORMAL_EXP
         resolved_c_type = "INTEGER"
         clips_content = "(str_to_time " + \
                         time_str + " " + \
@@ -587,7 +581,48 @@ class Transpiler(object):
 
 
     def time_to_str_function(self, ttsf):
-        pass
+        time = ttsf.operands[0]
+        time_format = ttsf.operands[1]
+
+        bline, bcol = get_model(ttsf)._tx_parser \
+                      .pos_to_linecol(ttsf._tx_position)
+
+        def raise_error_if_not_type(obj, expected_type):
+            if obj["content_type"] != expected_type:
+                line, col = obj["_tx_position"]
+                message = "Expected type {0}, but {1} found." \
+                          .format(expected_type, 
+                                  time["content_type"])
+                raise AkashicError(message, line, col, ErrType.SEMANTIC)
+        
+        raise_error_if_not_type(time, "INTEGER")
+        raise_error_if_not_type(time_format, "STRING")
+
+        time_str = None
+        if time["construct_type"] == ConstructType.WORKABLE:
+            time_str = '"' + time["content"] + '"'
+        else:
+            time_str = time["content"]
+
+        time_format_str = None
+        if time_format["construct_type"] == ConstructType.WORKABLE:
+            time_format_str = '"' + time_format["content"] + '"'
+        else:
+            time_format_str = time_format["content"]
+        
+
+        construct_type = ConstructType.NORMAL_EXP
+        resolved_c_type = "STRING"
+        clips_content = "(time_to_str " + \
+                        time_str + " " + \
+                        time_format_str + \
+                        ")"
+        return {
+            "content": clips_content,
+            "content_type": resolved_c_type,
+            "construct_type": construct_type,
+            "_tx_position": (bline, bcol)
+        }
 
 
 

@@ -2,13 +2,14 @@
     "rule-name": "Test_count_rule",
     "salience": 100,
     "when": [
-        { "?time=": "str_to_time('some time', 'dff')"}
+        { "?time": "str_to_time('29.05.2020. 14:0:0', '%d.%m.%Y. %H:%M:%S')"},
+        { "?time2=": "time_to_str(?time, '%d.%m.%Y. %H:%M:%S')"}
 
     ],
     "then": [
         {
            "return": {
-               "test": "?time"
+               "test": "?time2"
             }
         }
     ]

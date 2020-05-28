@@ -1,3 +1,5 @@
+import datetime
+
 from akashic.util.type_converter import py_to_clips_type
 from akashic.exceptions import AkashicError, ErrType
 
@@ -10,13 +12,17 @@ class TimeBridge(object):
     """
 
 
-    def str_to_time(self, time, time_format):
-        print(time)
-        print(time_format)
+    def str_to_time(self, time_str, time_format):
+        if time_str == 'now':
+            date_time_obj = datetime.datetime.now()
+        else:
+            date_time_obj = datetime.datetime.strptime(time_str, time_format)
 
-        return 1590705141
+        return int(date_time_obj.timestamp())
 
 
 
     def time_to_str(self, time, time_format):
-        pass
+        date_time_obj = datetime.datetime.fromtimestamp(int(time))
+
+        return date_time_obj.strftime(time_format)
