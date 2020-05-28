@@ -23,13 +23,13 @@ class EnvProvider(object):
         """
 
         self.env = clips.Environment()
-        self.bridge = None
+        self.data_bridge = None
 
     
-    def set_bridge(self, bridge):
-        self.bridge = bridge
-        self.env.define_function(self.bridge.create_func)
-        self.env.define_function(self.bridge.return_func)
+    def set_data_bridge(self, data_bridge):
+        self.data_bridge = data_bridge
+        self.env.define_function(self.data_bridge.create_func)
+        self.env.define_function(self.data_bridge.return_func)
        
 
 

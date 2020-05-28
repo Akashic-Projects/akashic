@@ -25,7 +25,7 @@ class Transpiler(object):
     We use this class to transpile Akashic rule into the CLIPS rule.
     """
 
-    def __init__(self, enviroment):
+    def __init__(self, env_provider):
         """ Transpiler constructor method
         
         Details
@@ -40,8 +40,8 @@ class Transpiler(object):
         6. Loads CLIPS Pattern Builder module.
         """
 
-        self.bridge = enviroment.bridge
-        self.data_providers = enviroment.bridge.data_providers
+        self.data_bridge = env_provider.data_bridge
+        self.data_providers = self.data_bridge.data_providers
 
         self.variable_table = VariableTable()
         self.data_locator_table = DataLocatorTable()
@@ -456,11 +456,11 @@ class Transpiler(object):
         if result["content_type"] == ConstructType.WORKABLE:
             clips_content = not result["content"]
             return {
-                    "content": clips_content, 
-                    "content_type": py_to_clips_type(clips_content.__class__),
-                    "construct_type": ConstructType.WORKABLE,
-                    "_tx_position": (bline, bcol)
-                }
+                "content": clips_content, 
+                "content_type": py_to_clips_type(clips_content.__class__),
+                "construct_type": ConstructType.WORKABLE,
+                "_tx_position": (bline, bcol)
+            }
         else:
             clips_content = '(' + operator + ' ' + \
                             str(translate_if_c_bool(result["content"])) + \
@@ -468,10 +468,10 @@ class Transpiler(object):
 
             resolved_c_type = "BOOLEAN"
             return {
-                    "content": clips_content, 
-                    "content_type": resolved_c_type,
-                    "construct_type": ConstructType.NORMAL_EXP,
-                    "_tx_position": (bline, bcol)
+                "content": clips_content, 
+                "content_type": resolved_c_type,
+                "construct_type": ConstructType.NORMAL_EXP,
+                "_tx_position": (bline, bcol)
             }
 
 
@@ -509,45 +509,73 @@ class Transpiler(object):
         bline, bcol = get_model(strr)._tx_parser \
                       .pos_to_linecol(strr._tx_position)
 
-        operator = strr.operator
         resolved_c_type = "STRING"
         if result["content_type"] == ConstructType.WORKABLE:
             clips_content = str(result["content"])
             return {
-                    "content": clips_content,
-                    "content_type": resolved_c_type,
-                    "construct_type": ConstructType.WORKABLE,
-                    "_tx_position": (bline, bcol)
-                }
+                "content": clips_content,
+                "content_type": resolved_c_type,
+                "construct_type": ConstructType.WORKABLE,
+                "_tx_position": (bline, bcol)
+            }
         else:
             clips_content = '(str-cat ' + \
                             str(translate_if_c_bool(result["content"])) + ')'
             return {
-                    "content": clips_content, 
-                    "content_type": resolved_c_type,
-                    "construct_type": ConstructType.FUNCTION_CALL,
-                    "_tx_position": (bline, bcol)
+                "content": clips_content, 
+                "content_type": resolved_c_type,
+                "construct_type": ConstructType.FUNCTION_CALL,
+                "_tx_position": (bline, bcol)
             }
 
 
 
     def str_to_time_function(self, sttf):
-        str_time = sttf.operands[0]
+        time = sttf.operands[0]
         time_format = sttf.operands[1]
 
         def raise_error_if_not_type(obj, expected_types):
             if obj["content_type"] != "STRING":
                 line, col = obj["_tx_position"]
-                message = "Expected type {1}, but {2} found." \
-                          .format(operation,
-                          expected_types, 
-                          str_time["content_type"])
+                message = "Expected type {0}, but {1} found." \
+                          .format(expected_types, 
+                                  time["content_type"])
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
         
-        
-        raise_error_if_not_type(str_time, "STRING")
+        raise_error_if_not_type(time, "STRING")
         raise_error_if_not_type(time_format, "STRING")
-            
+
+        time_str = None
+        if time["content_type"] == ConstructType.WORKABLE:
+            time_str = '"' + time["content"] + '"'
+        else:
+            time_str = time["content"]
+
+        time_format_str = None
+        if time_format["content_type"] == ConstructType.WORKABLE:
+            time_format_str = '"' + time_format["content"] + '"'
+        else:
+            time_format_str = time_format["content"]
+        
+        construct_type = None
+        if time["content_type"] != ConstructType.WORKABLE or \
+        time_format["content_type"] != ConstructType.WORKABLE:
+            construct_type = ConstructType.NORMAL_EXP
+        else:
+            construct_type = ConstructType.WORKABLE
+
+        resolved_c_type = "INTEGER"
+        clips_content = "(str_to_time " + \
+                        time_str + " " + \
+                        time_format_str + \
+                        ")"
+        return {
+            "content": clips_content,
+            "content_type": resolved_c_type,
+            "construct_type": construct_type,
+            "_tx_position": (bline, bcol)
+        }
+
 
 
     def time_to_str_function(self, ttsf):
@@ -1314,8 +1342,8 @@ class Transpiler(object):
         clips_command = "(create_func " + " ".join(arg_array) + ")"
         # self.rhs_clips_command_list.append(clips_command)
 
-        # Direct call of function bridge function - for testing purpose
-        self.bridge.create_func(arg_array)
+        # Direct call of function data_bridge function - for testing purpose
+        self.data_bridge.create_func(arg_array)
 
 
 
@@ -1337,8 +1365,8 @@ class Transpiler(object):
         clips_command = "(return_func " + " ".join(arg_array) + ")"
         self.rhs_clips_command_list.append(clips_command)
 
-        # Direct call of function bridge function - for testing purpose
-        # self.bridge.return_func(arg_array)
+        # Direct call of function data_bridge function - for testing purpose
+        # self.data_bridge.return_func(arg_array)
     
     def update_statement(self, update_s):
         pass

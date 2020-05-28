@@ -10,8 +10,8 @@ from akashic.exceptions import AkashicError, ErrType
 #TODO: ??? query system
 
 
-class Bridge(object):
-    """ Bridge class
+class DataBridge(object):
+    """ DataBridge class
         
     We use this class to store python functions called by CLIPS enviroment
     """
