@@ -54,8 +54,11 @@ class Transpiler(object):
         processors = {
             'Rule': self.rule,
 
-            'LHSStatement': self.lhs_statement,
-            'BINDING_VAR': self.binding_var,
+            #### LHS processors
+            'LHSStatement':     self.lhs_statement,
+            'SYMBOLIC_VAR':     self.symbolic_var,
+            'FACT_ADDRESS_VAR': self.fact_address_var,
+            'BINDING_VAR':      self.binding_var,
 
             'SpecialBinaryLogicExpression': \
                 self.special_binary_logic_expression,
@@ -64,25 +67,27 @@ class Transpiler(object):
             'TestSingularLogicExpression': \
                 self.test_singular_logic_expression,
 
-            'StrToTimeExpression': self.str_to_time_expression,
-            'StrExpression': self.str_expression,
-            'CountExpression': self.count_expression,
-            'NegationExpression': self.negation_expression,
+            'NegationFunction':   self.negation_function,
+            'CountFunction':      self.count_function,
+            'StrFunction':        self.str_function,
+            'StrToTimeFunction':  self.str_to_time_function,
+            'TimeToStrFunction':  self.time_to_str_function,
+            
+            'LogicExpression':  self.logic_expression,
+            'CompExpression':   self.comp_expression,
+            'PlusMinusExpr':    self.plus_minus_expr,
+            'MulDivExpr':       self.mul_div_expr,
+            'SqrExpr':          self.sqr_expr,
+            'Factor':           self.factor,
+            'DataLocator':      self.data_locator,
+            'VARIABLE':         self.variable,
 
-            'LogicExpression': self.logic_expression,
-            'CompExpression': self.comp_expression,
-            'PlusMinusExpr': self.plus_minus_expr,
-            'MulDivExpr': self.mul_div_expr,
-            'SqrExpr': self.sqr_expr,
-            'Factor': self.factor,
-            'DataLocator': self.data_locator,
-            'VARIABLE': self.variable,
-
-            'RHSStatement': self.rhs_statement,
-            'CreateStatement': self.create_statement,
-            'ReturnStatement': self.return_statement,
-            'UpdateStatement': self.update_statement,
-            'DeleteStatement': self.delete_statement,
+            #### RHS processors
+            'RHSStatement':     self.rhs_statement,
+            'CreateStatement':  self.create_statement,
+            'ReturnStatement':  self.return_statement,
+            'UpdateStatement':  self.update_statement,
+            'DeleteStatement':  self.delete_statement,
         }
 
         this_folder = dirname(__file__)
@@ -239,8 +244,8 @@ class Transpiler(object):
         elif lhss.stat.__class__.__name__ == "FACT_ADDRESS_VAR":
             print("Init of new fact address variable - done.")
 
-        elif lhss.stat.__class__.__name__ == "FACT_ADDRESS_VAR":
-            print("Init of new fact address variable - done.")
+        elif lhss.stat.__class__.__name__ == "BINDING_VAR":
+            print("Init of new binding variable - done.")
         return 0
 
 
@@ -328,18 +333,23 @@ class Transpiler(object):
 
         args = []
         for i in range(0, len(binary.operands)):
-            if binary.operands[i]["construct_type"] == ConstructType.SPECIAL_CON_EXP:
+            if binary.operands[i]["construct_type"] == \
+            ConstructType.SPECIAL_CON_EXP:
                 args.append(binary.operands[i]["content"])
             else:
                 line, col = binary.operands[i]["_tx_position"]
-                message = "Special Binary Operation argument must be " \
+                message = "Special Binary Operation argument must be a " \
                           "Special Conditional Expression, but '{0}' found." \
                           .format(binary.operands[i]["construct_type"])
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
                 
         clips_command = args[0]
         for i in range(1, len(binary.operands)):
-            clips_command = "(" + binary.operator[i-1] + " " + clips_command + " " + args[i] + ")"
+            clips_command = "(" + \
+                            binary.operator[i-1] + " " + \
+                            clips_command + " " + \
+                            args[i] + \
+                            ")"
 
         self.lhs_clips_command_list.append(clips_command)
         return 0
@@ -371,7 +381,7 @@ class Transpiler(object):
 
         if singular.operand["construct_type"] != ConstructType.NORMAL_EXP:
             line, col = singular.operand["_tx_position"]
-            message = "Special Singular Operation argument must be " \
+            message = "Special Singular Operation argument must be a " \
                       "Normal Expression, but '{0}' found." \
                       .format(singular.operand["construct_type"])
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
@@ -413,76 +423,60 @@ class Transpiler(object):
     def test_singular_logic_expression(self, test):
         if test.operand["construct_type"] != ConstructType.NORMAL_EXP:
             line, col = test.operand["_tx_position"]
-            message = "TEST operation argument must be an EXPRESSION. {0} given.".format(
-                test.operand["construct_type"])
+            message = "Test Operation argument must be a " \
+                      "Normal Expression, but '{0}' found." \
+                      .format(test.operand["construct_type"])
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
         # Build clips commands
-        clips_commands = self.clips_statement_builder.build_regular_dl_patterns(self.data_locator_table)
-        self.lhs_clips_command_list.extend(clips_commands)
-        self.lhs_clips_command_list.append("(test " + test.operand["content"] + ")")
+        clips_commands = self.clips_statement_builder \
+                         .build_regular_dl_patterns(self.data_locator_table)
 
+        self.lhs_clips_command_list.extend(clips_commands)
+        self.lhs_clips_command_list.append("(test " + \
+                                           test.operand["content"] + \
+                                           ")")
         return 0
 
 
-    def str_to_time_expression(self, stime):
-        str_time = stime.operands[0]
-        time_format = stime.operands[1]
 
-        def raise_error_if_not_type(obj, expected_types):
-            if obj["content_type"] != "STRING":
-                line, col = obj["_tx_position"]
-                message = "Expected type {1}, but {2} found." \
-                          .format(operation,
-                          expected_types, 
-                          str_time["content_type"])
-                raise AkashicError(message, line, col, ErrType.SEMANTIC)
-        
-        
-        raise_error_if_not_type(str_time, "STRING")
-        raise_error_if_not_type(time_format, "STRING")
-            
+    def negation_function(self, neg):
+        result = neg.operand
+        bline, bcol = get_model(neg)._tx_parser \
+                      .pos_to_linecol(neg._tx_position)
 
+        if result["content_type"] not in ["INTEGER", "FLOAT", "BOOLEAN"]:
+            line, col = result["_tx_position"]
+            message = "Negation operand type INTEGER, FLOAT or BOOLEAN " \
+                      "is expected, but '{0}' found." \
+                      .format(result["content_type"])
+            raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
-    def str_expression(self, strr):
-        result = strr.operand
-        bline, bcol = get_model(strr)._tx_parser.pos_to_linecol(strr._tx_position)
-
-        # Exit if operator is not present
-        if not strr.operator:
-            return result
-
-        operator = strr.operator
-        resolved_c_type = "STRING"
+        operator = neg.operator
         if result["content_type"] == ConstructType.WORKABLE:
-            val = str(result["content"])
+            clips_content = not result["content"]
             return {
-                    "content": val,
-                    "content_type": resolved_c_type,
+                    "content": clips_content, 
+                    "content_type": py_to_clips_type(val.__class__),
                     "construct_type": ConstructType.WORKABLE,
                     "_tx_position": (bline, bcol)
                 }
-
         else:
-            val = '(str-cat ' + \
-                    str(translate_if_c_bool(result["content"])) + ')'
+            clips_content = '(' + operator + ' ' + \
+                            str(translate_if_c_bool(result["content"])) + \
+                            ')'
 
-            # It is always bool
-            
+            resolved_c_type = "BOOLEAN"
             return {
-                    "content": val, 
+                    "content": clips_content, 
                     "content_type": resolved_c_type,
-                    "construct_type": ConstructType.FUNCTION_CALL,
+                    "construct_type": ConstructType.NORMAL_EXP,
                     "_tx_position": (bline, bcol)
             }
 
 
 
-    def count_expression(self, countt):
-        # Exit if operator is not present
-        if not countt.operator:
-            return countt.operand
-
+    def count_function(self, countt):
         bline, bcol = get_model(countt)._tx_parser.pos_to_linecol(countt._tx_position)
 
         if countt.operand["construct_type"] != ConstructType.NORMAL_EXP:
@@ -499,10 +493,10 @@ class Transpiler(object):
         )
 
         # Return CLIPS command
-        val = clips_command
+        clips_content = clips_command
         resolved_c_type = "INTEGER"
         return {
-            "content": val,
+            "content": clips_content,
             "content_type": resolved_c_type,
             "construct_type": ConstructType.FUNCTION_CALL,
             "_tx_position": (bline, bcol)
@@ -510,43 +504,53 @@ class Transpiler(object):
 
 
 
-    def negation_expression(self, neg):
-        result = neg.operand
-        bline, bcol = get_model(neg)._tx_parser.pos_to_linecol(neg._tx_position)
+    def str_function(self, strr):
+        result = strr.operand
+        bline, bcol = get_model(strr)._tx_parser.pos_to_linecol(strr._tx_position)
 
-        # Exit if operator is not present
-        if not neg.operator:
-            return result
-
-        if result["content_type"] not in ["INTEGER", "FLOAT", "BOOLEAN"]:
-            line, col = result["_tx_position"]
-            message = "Negation operand of type INTEGER, FLOAT or BOOLEAN expected, {0} geven.".format(
-                result["content_type"])
-            raise AkashicError(message, line, col, ErrType.SEMANTIC)
-
-        operator = neg.operator
-
+        operator = strr.operator
+        resolved_c_type = "STRING"
         if result["content_type"] == ConstructType.WORKABLE:
-            val = not result["content"]
+            clips_content = str(result["content"])
             return {
-                    "content": val, 
-                    "content_type": py_to_clips_type(val.__class__),
+                    "content": clips_content,
+                    "content_type": resolved_c_type,
                     "construct_type": ConstructType.WORKABLE,
                     "_tx_position": (bline, bcol)
                 }
-
         else:
-            val = '(' + operator + ' ' + \
-                    str(translate_if_c_bool(result["content"])) + ')'
-
-            # It is always bool
-            resolved_c_type = "BOOLEAN"
+            clips_content = '(str-cat ' + \
+                            str(translate_if_c_bool(result["content"])) + ')'
             return {
-                    "content": val, 
+                    "content": clips_content, 
                     "content_type": resolved_c_type,
-                    "construct_type": ConstructType.NORMAL_EXP,
+                    "construct_type": ConstructType.FUNCTION_CALL,
                     "_tx_position": (bline, bcol)
             }
+
+
+
+    def str_to_time_function(self, sttf):
+        str_time = sttf.operands[0]
+        time_format = sttf.operands[1]
+
+        def raise_error_if_not_type(obj, expected_types):
+            if obj["content_type"] != "STRING":
+                line, col = obj["_tx_position"]
+                message = "Expected type {1}, but {2} found." \
+                          .format(operation,
+                          expected_types, 
+                          str_time["content_type"])
+                raise AkashicError(message, line, col, ErrType.SEMANTIC)
+        
+        
+        raise_error_if_not_type(str_time, "STRING")
+        raise_error_if_not_type(time_format, "STRING")
+            
+
+
+    def time_to_str_function(self, ttsf):
+        pass
 
 
 

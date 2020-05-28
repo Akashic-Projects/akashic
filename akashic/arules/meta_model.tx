@@ -94,25 +94,30 @@ Root:
 ;
 
 Function:
-    StrExpression |
-    CountExpression |
-    NegationExpression 
+    NegationFunction |
+    CountFunction |
+    StrFunction |
+    StrToTimeFunction |
+    TimeToStrFunction
 ;
 
-
-StrToTimeExpression:
+TimeToStrFunction:
     operator=TIME_TO_STR operands=Factor COMMA operands=Factor
 ;
 
-StrExpression:
+StrToTimeFunction:
+    operator=STR_TO_TIME operands=Factor COMMA operands=Factor
+;
+
+StrFunction:
     operator=STR operand=Factor
 ;
 
-CountExpression:
+CountFunction:
     operator=COUNT operand=Factor
 ;
 
-NegationExpression:
+NegationFunction:
     operator=NOT operand=Factor
 ;
 
