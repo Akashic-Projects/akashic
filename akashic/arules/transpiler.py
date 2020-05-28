@@ -31,8 +31,9 @@ class DataType(Enum):
     VARIABLE    = 2
     EXPRESSION  = 3
     COUNT_CALL  = 4
-    SPECIAL     = 5 # conditional statement
-    NOTHING     = 6
+    STR_CALL    = 5
+    SPECIAL     = 6 # conditional statement
+    NOTHING     = 7
 
 
 
@@ -74,6 +75,7 @@ class Transpiler(object):
             'SpecialBinaryLogicExpression': self.special_binary_logic_expression,
             'SpecialSingularLogicExpression': self.special_singular_logic_expression,
             'TestSingularLogicExpression': self.test_singular_logic_expression,
+            'StrExpression': self.str_expression,
             'CountExpression': self.count_expression,
             'NegationExpression': self.negation_expression,
             'LogicExpression': self.logic_expression,
@@ -157,8 +159,8 @@ class Transpiler(object):
         for f in fields_to_remove:
             self.data_locator_table.table[f[0]].fields.pop(f[1])
         
-        if len(self.data_locator_table.table[f[0]].fields.items()) < 1:
-            self.data_locator_table.table.pop(f[0])
+            if len(self.data_locator_table.table[f[0]].fields.items()) < 1:
+                self.data_locator_table.table.pop(f[0])
 
 
 
@@ -273,7 +275,7 @@ class Transpiler(object):
         )
 
         # Build clips commands
-        if bv.expr["construct_type"] in [ DataType.EXPRESSION, DataType.VARIABLE ]:
+        if bv.expr["construct_type"] in [ DataType.EXPRESSION, DataType.VARIABLE, DataType.STR_CALL ]:
             clips_commands = self.clips_statement_builder.build_regular_dl_patterns(self.data_locator_table)
             self.lhs_clips_command_list.extend(clips_commands)
             self.clear_after_binding()
@@ -384,10 +386,48 @@ class Transpiler(object):
         return 0
 
 
+
+    def str_expression(self, strr):
+        result = strr.operand
+        bline, bcol = get_model(strr)._tx_parser.pos_to_linecol(strr._tx_position)
+
+        # Exit if operator is not present
+        if not strr.operator:
+            return result
+
+        operator = strr.operator
+        resolved_c_type = "STRING"
+        if result["content_type"] == DataType.WORKABLE:
+            val = str(result["content"])
+            return {
+                    "content": val,
+                    "content_type": resolved_c_type,
+                    "construct_type": DataType.WORKABLE,
+                    "_tx_position": (bline, bcol)
+                }
+
+        else:
+            val = '(str-cat ' + \
+                    str(translate_if_c_bool(result["content"])) + ')'
+
+            # It is always bool
+            
+            return {
+                    "content": val, 
+                    "content_type": resolved_c_type,
+                    "construct_type": DataType.STR_CALL,
+                    "_tx_position": (bline, bcol)
+            }
+
+
+
     def count_expression(self, countt):
+        print("CCCC")
         # Exit if operator is not present
         if not countt.operator:
             return countt.operand
+
+        print("AAAAA")
 
         bline, bcol = get_model(countt)._tx_parser.pos_to_linecol(countt._tx_position)
 
@@ -403,10 +443,12 @@ class Transpiler(object):
             self.data_locator_vars, 
             countt.operand["content"]
         )
+
+        print("COUNT: " + clips_command)
     
         # Rotate defined variables for next special expression
-        self.rotate_used_data_locator_vars()
-        self.data_locator_vars = []
+        # self.rotate_used_data_locator_vars()
+        # self.data_locator_vars = []
 
         # Return CLIPS command
         val = clips_command
@@ -525,11 +567,12 @@ class Transpiler(object):
         i = 1
         while i < l:
             current = comp.operands[i]
-
+            
             if result["content_type"] not in ["INTEGER", "FLOAT", "STRING"]:
                 line, col = result["_tx_position"]
                 message = "Comparison operand of type INTEGER, FLOAT or STRING expected, {0} geven.".format(
                     result["content_type"])
+                print("----" + str(result["content"]))
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
             if current["content_type"] not in ["INTEGER", "FLOAT", "STRING"]:
@@ -609,35 +652,10 @@ class Transpiler(object):
         return result
 
 
-    def plus_minus_string(self, plus_minus):
-
-        resulting_string = ""
-        for operator in plus_minus.operator:
-            if operator != "+":
-                return None
-
-        for operand in plus_minus.operands:
-            if not (operand["content_type"] == "STRING" and \
-             operand["construct_type"] == DataType.WORKABLE):
-                return None
-            else:
-                resulting_string += operand["content"]
-        
-        return resulting_string
-
 
     def plus_minus_expr(self, plus_minus):
-        bline, bcol = get_model(plus_minus)._tx_parser.pos_to_linecol(plus_minus._tx_position)
-
-        # Check if expression is string concat.
-        result = self.plus_minus_string(plus_minus)
-        if result != None and len(result) > 0:
-            return {
-                "content": result,
-                "content_type": "STRING",
-                "construct_type": DataType.WORKABLE,
-                "_tx_position": (bline, bcol)
-            }
+        bline, bcol = get_model(plus_minus)._tx_parser \
+                        .pos_to_linecol(plus_minus._tx_position)
 
         # Check if expression is numeric
         result = plus_minus.operands[0]
@@ -647,16 +665,18 @@ class Transpiler(object):
         while i < l:
             current = plus_minus.operands[i]
 
-            if result["content_type"] not in ["INTEGER", "FLOAT"]:
+            if result["content_type"] not in ["INTEGER", "FLOAT", "STRING"]:
                 line, col = result["_tx_position"]
-                message = "Addition or subtraction operand of type INTEGER or FLOAT expected, {0} geven.".format(
-                    result["content_type"])
+                message = "Addition or subtraction operand of type INTEGER "\
+                          "or FLOAT expected, {0} geven."\
+                            .format(result["content_type"])
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
                
-            if current["content_type"] not in ["INTEGER", "FLOAT"]:
+            if current["content_type"] not in ["INTEGER", "FLOAT","STRING"]:
                 line, col = current["_tx_position"]
-                message = "Addition or subtraction operand of type INTEGER or FLOAT expected, {0} geven.".format(
-                    current["content_type"])
+                message = "Addition or subtraction operand of type INTEGER "\
+                          "or FLOAT expected, {0} geven."\
+                            .format(current["content_type"])
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
             operator = plus_minus.operator[i-1]
@@ -666,6 +686,14 @@ class Transpiler(object):
                 if operator == '+':
                     val = result["content"] + current["content"]
                 elif operator == '-':
+                    if ("STRING" in [result["content_type"],
+                    current["content_type"]]):
+                        line, col = result["_tx_position"]
+                        message = "Cannot perform operation 'minus' "\
+                                  "on strings."
+                        raise AkashicError(message, line, col, 
+                                           ErrType.SEMANTIC)
+
                     val = result["content"] - current["content"]
                     
                 result = {
@@ -676,8 +704,42 @@ class Transpiler(object):
                 }
 
             else:
-                val = '(' + operator + ' ' + str(result["content"]) + ' ' + str(current["content"]) + ')'
-                resolved_c_type = resolve_expr_type("plus_minus", result["content_type"], current["content_type"])
+
+                if ("STRING" in [result["content_type"],
+                current["content_type"]]):
+                    
+                    if result["construct_type"] == DataType.WORKABLE:
+                        if result["content_type"] != "STRING": 
+                            result_content = str(result["content"]) 
+                        else: 
+                            result_content = '"' + str(result["content"]) + '"'
+                    else:
+                        result_content = str(result["content"]) 
+
+                    if current["construct_type"] == DataType.WORKABLE:
+                        if current["content_type"] != "STRING": 
+                            current_content = str(current["content"]) 
+                        else: 
+                            current_content = '"' + str(current["content"]) + '"'
+                    else:
+                        current_content = str(current["content"]) 
+
+                    val = '(str-cat ' + ' ' + \
+                          result_content + ' ' + \
+                          current_content + ')'
+                    resolved_c_type = resolve_expr_type(
+                                        "plus_minus", 
+                                        result["content_type"], 
+                                        current["content_type"])
+
+                else:
+                    val = '(' + operator + ' ' + \
+                        str(result["content"]) + ' ' + \
+                        str(current["content"]) + ')'
+                    resolved_c_type = resolve_expr_type(
+                                        "plus_minus", 
+                                        result["content_type"], 
+                                        current["content_type"])
 
                 result = {
                     "content": val,
@@ -687,7 +749,6 @@ class Transpiler(object):
                 }
 
             i += 1
-
         return result
 
 

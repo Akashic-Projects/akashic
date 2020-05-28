@@ -29,11 +29,11 @@ LHSStatement:
 ;
 
 SYMBOLIC_VAR:
-    '{' '"' var_name=/\?[^\d\W]\w*\b/ '"' ':' '"' expr=CountExpression '"' '}'
+    '{' '"' var_name=/\?[^\d\W]\w*\b/ '"' ':' '"' expr=Root '"' '}'
 ;
 
 BINDING_VAR:
-      '{' '"' var_name=/\?[^\d\W]\w*\b/ '=' '"' ':' '"' expr=CountExpression '"' '}'
+      '{' '"' var_name=/\?[^\d\W]\w*\b/ '=' '"' ':' '"' expr=Root '"' '}'
 ;
 
 FACT_ADDRESS_VAR:
@@ -66,6 +66,7 @@ EXISTS:         'exists' ;
 FORALL:         'forall' ;
 TEST:           'test' ;
 COUNT:          'count' ;
+STR:            'str' ;
 
 SPECIAL_SINGULAR: NOT | EXISTS | FORALL ;
 
@@ -76,19 +77,35 @@ SpecialBinaryLogicExpression:
 
 SpecialSingularLogicExpression:
     (operator=SPECIAL_SINGULAR? '[' template=ID ']') |
-    (operator=SPECIAL_SINGULAR? '[' operand=CountExpression ']')
+    (operator=SPECIAL_SINGULAR? '[' operand=Root ']')
 ;
 
 TestSingularLogicExpression:
-    operator=TEST '[' operand=CountExpression ']'
+    operator=TEST '[' operand=Root ']'
+;
+
+
+Root:
+    LogicExpression |
+    Function
+;
+
+Function:
+    StrExpression |
+    CountExpression |
+    NegationExpression 
+;
+
+StrExpression:
+    operator=STR operand=Factor
 ;
 
 CountExpression:
-    operator=COUNT? operand=NegationExpression
+    operator=COUNT operand=Factor
 ;
 
 NegationExpression:
-    operator=NOT? operand=LogicExpression
+    operator=NOT operand=Factor
 ;
 
 LogicExpression:
@@ -112,19 +129,21 @@ SqrExpr:
 ;
 
 Factor:
-    value=INT | 
-    value=FLOAT | 
-    value=BOOL | 
-    value=STRING_C | 
-    value=VARIABLE | 
-    value=DataLocator |
-    (LPAR value=CountExpression RPAR) |
-    value=CountExpression
+    (value=Function) |
+    (value=INT) | 
+    (value=FLOAT) | 
+    (value=BOOL) | 
+    (value=STRING_C) | 
+    (value=VARIABLE) | 
+    (value=DataLocator) |
+
+    (LPAR value=LogicExpression RPAR) |
+    (value=LogicExpression)
 ;
 
 LPAR:   '(' ;
 RPAR:   ')' ;
-STRING_C: val=/(\')(.*)(\')/ ;
+STRING_C: val=/(\')([^\']*)(\')/ ; //'
 VARIABLE: var_name=/\?[^\d\W]\w*\b/;
 
 DataLocator: template_conn_expr=TEMPLATE_CONNECTION_EXPRESSION ('.' field=ID)? ;

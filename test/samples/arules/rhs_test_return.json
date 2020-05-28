@@ -2,15 +2,18 @@
     "rule-name": "Test_count_rule",
     "salience": 100,
     "when": [
-        { "?other_course=": "Course.id"},
-        { "?result<-": "[Course.id - ?other_course > 2]"}
+        //{ "?other_course=": "Course.id"},
+        //{ "?msg=": "1 + Course.id / 2 * str 1 "}
+        { "assert": "test[(4 + 5) * count(Course.id > 2)]"}
+        //{ "?result<-": "[Course.id - ?other_course > 2]"}
 
     ],
     "then": [
         {
            "return": {
-               "C1": "?other_course",
-               "C2": "?result.id"
+               "test": "hello"
+               //"MSG": "?msg"
+               //"C2": "?result.id"
             }
         }
     ]
