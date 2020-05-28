@@ -290,10 +290,10 @@ class Transpiler(object):
             [],
             VarType.FACT_ADDRESS
         )
-        clips_address_pattern_command = fav.var_name + \
-                                        " <- " + \
-                                        fav.expr["content"]
-        self.lhs_clips_command_list.append(clips_address_pattern_command)
+        clips_command = fav.var_name + \
+                        " <- " + \
+                        fav.expr["content"]
+        self.lhs_clips_command_list.append(clips_command)
         return 0
 
 
@@ -406,12 +406,12 @@ class Transpiler(object):
 
         # Return CLIPS command
         if not singular.operator:
-            val = clips_command
+            clips_content = clips_command
         else:
-            val = "(" + singular.operator + " " + clips_command + ")"
+            clips_content = "(" + singular.operator + " " + clips_command + ")"
 
         return {
-            "content": val, 
+            "content": clips_content, 
             "content_type": None,
             "construct_type": ConstructType.SPECIAL_CON_EXP,
             "_tx_position": (bline, bcol),
@@ -457,7 +457,7 @@ class Transpiler(object):
             clips_content = not result["content"]
             return {
                     "content": clips_content, 
-                    "content_type": py_to_clips_type(val.__class__),
+                    "content_type": py_to_clips_type(clips_content.__class__),
                     "construct_type": ConstructType.WORKABLE,
                     "_tx_position": (bline, bcol)
                 }
@@ -506,7 +506,8 @@ class Transpiler(object):
 
     def str_function(self, strr):
         result = strr.operand
-        bline, bcol = get_model(strr)._tx_parser.pos_to_linecol(strr._tx_position)
+        bline, bcol = get_model(strr)._tx_parser \
+                      .pos_to_linecol(strr._tx_position)
 
         operator = strr.operator
         resolved_c_type = "STRING"
