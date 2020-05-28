@@ -88,7 +88,7 @@ class Bridge(object):
         print("\n-------------------")
         for a in args:
             print(a)
-        print("--------------------\n")
+        print()
 
         MODEL_NAME_POS      = 0
         REFLECT_INFO_POS    = 2
@@ -144,4 +144,4 @@ class Bridge(object):
         print("\n-------------------")
         for a in args:
             print(a)
-        print("--------------------\n")
+        print()

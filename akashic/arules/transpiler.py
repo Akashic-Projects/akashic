@@ -1,9 +1,8 @@
+from os.path import join, dirname
+
 from textx import metamodel_from_file
 from textx.export import metamodel_export, model_export
 from textx.model import get_model
-
-from os.path import join, dirname
-from enum import Enum
 
 from akashic.arules.variable_table import VariableTable, VarType
 from akashic.arules.data_locator_table import DataLocatorTable
@@ -11,30 +10,13 @@ from akashic.arules.clips_statement_builder import ClipsStatementBuilder
 
 from akashic.exceptions import AkashicError, ErrType
 
-from akashic.util.type_converter import clips_to_py_type, py_to_clips_type, translate_if_c_bool
+from akashic.util.type_converter import clips_to_py_type, py_to_clips_type, \
+                                        translate_if_c_bool
 from akashic.util.type_resolver import resolve_expr_type
 from akashic.util.string_util import remove_quotes, to_clips_quotes
 
-
-#TODO: Need to add DataType: STRING_VAR, INT_VAR, FLOAT_VAR, BOOL_VAR 
-#-> podatke vuci iz data_provider-a
-class DataType(Enum):
-    """ DataType enum class
-
-    We use this class to define type of data generated inside of transpiler loop
-    """
-
-    def __str__(self):
-        return str(self.name)
-
-    WORKABLE    = 1
-    VARIABLE    = 2
-    EXPRESSION  = 3
-    COUNT_CALL  = 4
-    STR_CALL    = 5
-    SPECIAL     = 6 # conditional statement
-    NOTHING     = 7
-
+from akashic.enums.construct_type import ConstructType
+from akashic.enums.data_type import DataType
 
 
 class Transpiler(object):
@@ -49,8 +31,10 @@ class Transpiler(object):
         Details
         -------
         1. Imports created data_providers.
-        2. Creates new Variable table (used for managing symbolic and real variables).
-        3. Creates new DataLocatorTable (used for namaging fact data referencing inside of rule).
+        2. Creates new Variable table (used for managing symbolic
+           and real variables).
+        3. Creates new DataLocatorTable (used for namaging fact
+           data referencing inside of rule).
         4. Setups model processor functions - transpiler loop.
         5. Loads Akashic meta-model.
         6. Loads CLIPS Pattern Builder module.
@@ -72,12 +56,19 @@ class Transpiler(object):
 
             'LHSStatement': self.lhs_statement,
             'BINDING_VAR': self.binding_var,
-            'SpecialBinaryLogicExpression': self.special_binary_logic_expression,
-            'SpecialSingularLogicExpression': self.special_singular_logic_expression,
-            'TestSingularLogicExpression': self.test_singular_logic_expression,
+
+            'SpecialBinaryLogicExpression': \
+                self.special_binary_logic_expression,
+            'SpecialSingularLogicExpression': \
+                self.special_singular_logic_expression,
+            'TestSingularLogicExpression': \
+                self.test_singular_logic_expression,
+
+            'StrToTimeExpression': self.str_to_time_expression,
             'StrExpression': self.str_expression,
             'CountExpression': self.count_expression,
             'NegationExpression': self.negation_expression,
+
             'LogicExpression': self.logic_expression,
             'CompExpression': self.comp_expression,
             'PlusMinusExpr': self.plus_minus_expr,
@@ -95,19 +86,18 @@ class Transpiler(object):
         }
 
         this_folder = dirname(__file__)
-        self.meta_model = metamodel_from_file(join(this_folder, 'meta_model.tx'), debug=False)
+        self.meta_model = metamodel_from_file(
+                            join(this_folder, 'meta_model.tx'), debug=False)
         self.meta_model.register_obj_processors(processors)
 
         # Get builder classes
         self.clips_statement_builder = ClipsStatementBuilder()
 
         self.rule = None
-
         self.tranpiled_rule = None
 
 
 
-    # TODO: Need to catch this exception!!!
     def load(self, akashic_rule):
         """ Loads akashic_rule from given string
 
@@ -122,45 +112,29 @@ class Transpiler(object):
         """
         
         self.rule = self.meta_model.model_from_str(akashic_rule)
-
-    def rule(self, rule):
-        clips_salience = ""
-        if hasattr(rule, 'salience'):
-            if (rule.salience < 0):
-                line, col = get_model(rule)._tx_parser.pos_to_linecol(rule._tx_position)
-                message = "Rule salience cannot be negative."
-                raise AkashicError(message, line, col, ErrType.SEMANTIC)
-            else:
-                clips_salience = "\n\t(declare (salience " + str(rule.salience) + "))\n"
-
-        rule = "(defrule " + rule.rule_name + clips_salience
-        
-        lhs_commands = ["\t" + comm for comm in self.lhs_clips_command_list]
-        rhs_commands = ["\t" + comm for comm in self.rhs_clips_command_list]
-
-        rule += "\n" + "\n".join(lhs_commands) + "\n\t=>\n" + "\n".join(rhs_commands) + "\n)"
-
-        self.tranpiled_rule = rule
+        return 0
 
 
 
 # ----------------------------------------------------------------
-# LEFT HAND SIDE SECTION
+#  HELPER FUNCTIONS SECTION
 # ----------------------------------------------------------------
 
-    def clear_after_binding(self):
+    def clear_after_binding_var(self):
         fields_to_remove = []
         for var_name in self.data_locator_vars:
-            for template_name, template in self.data_locator_table.table.items():
+            for template_name, template in self.data_locator_table \
+                                           .table.items():
                 for field_name, field in template.fields.items():
                     if field.var_name == var_name:
                         fields_to_remove.append((template_name, field_name))
                     
         for f in fields_to_remove:
             self.data_locator_table.table[f[0]].fields.pop(f[1])
-        
+
             if len(self.data_locator_table.table[f[0]].fields.items()) < 1:
                 self.data_locator_table.table.pop(f[0])
+        return 0
 
 
 
@@ -169,102 +143,162 @@ class Transpiler(object):
 
         Details
         -------
-        1. We go through variables used to reference CLIPS facts (data locators (DL) - in Akashic terminology)
-        2. We through data locator table to get every entry using current DL variable
-        3. We generate new variable in varialbe table (with new name - 'name rotation')
+        1. We go through variables used to reference CLIPS facts 
+            (data locators (DL) - in Akashic terminology)
+        2. We through data locator table to get every entry using
+            current DL variable
+        3. We generate new variable in varialbe table
+            (with new name - 'name rotation')
         4. We reassign this new variable to mentioned entry
         
-        5. We go through all defined variables* and replace old helper varialbe names with new ones.
-        6. We go through list of variables refenrenced in statement of * and replace their names also.
+        5. We go through all defined variables* and replace old
+            helper varialbe names with new ones.
+        6. We go through list of variables refenrenced in statement
+            of * and replace their names also.
         """
 
-        print("------ locator vars: " + str(self.data_locator_vars))
         new_data_locator_vars = self.data_locator_vars.copy()
 
         for var_name in self.data_locator_vars:
-            for template_name, template in self.data_locator_table.table.items():
+            for template_name, template in self.data_locator_table \
+                                           .table.items():
                 for field_name, field in template.fields.items():
-                    if field.var_name == var_name:
+                    if field.var_name != var_name:
+                        continue
 
-                        gen_var_name = self.variable_table.next_var_name()
+                    gen_var_name = self.variable_table.next_var_name()
 
-                        for vn, var_value in self.variable_table.table.items():
-                            # This check is important - very!!
-                            if var_value.value["construct_type"] != DataType.WORKABLE:
-                                field.var_name = gen_var_name
+                    for vn, var_value in self.variable_table.table.items():
+                        if var_value.value["construct_type"] != \
+                        ConstructType.WORKABLE:
+                            field.var_name = gen_var_name
+                            var_value.value["content"] = \
+                                var_value.value["content"] \
+                                .replace(var_name, gen_var_name)
 
-                                print(f"replace '{var_name}' with '{gen_var_name}'")
-                                var_value.value["content"] = var_value.value["content"].replace(var_name, gen_var_name)
-
-                            var_value.used_variables = [gen_var_name if uv == var_name else uv for uv in var_value.used_variables]
-                            new_data_locator_vars = [gen_var_name if dlv == var_name else dlv for dlv in new_data_locator_vars]
+                        var_value.used_variables = \
+                            [gen_var_name if uv == var_name \
+                            else uv for uv in var_value.used_variables]
+                        new_data_locator_vars = \
+                            [gen_var_name if dlv == var_name \
+                            else dlv for dlv in new_data_locator_vars]
         
         self.data_locator_vars = new_data_locator_vars
+        return 0
+
+
+
+# ----------------------------------------------------------------
+# LEFT HAND SIDE SECTION
+# ----------------------------------------------------------------
+
+    def rule(self, rule):
+        clips_salience = ""
+        if hasattr(rule, 'salience'):
+            if (rule.salience < 0):
+                line, col = get_model(rule)._tx_parser \
+                            .pos_to_linecol(rule._tx_position)
+                message = "Rule salience cannot be negative."
+                raise AkashicError(message, line, col, ErrType.SEMANTIC)
+            else:
+                clips_salience = "\n\t(declare (salience " + \
+                                 str(rule.salience) + "))\n"
+
+        rule = "(defrule " + rule.rule_name + clips_salience
+        
+        lhs_commands = ["\t" + comm for comm in self.lhs_clips_command_list]
+        rhs_commands = ["\t" + comm for comm in self.rhs_clips_command_list]
+
+        rule += "\n" + \
+                "\n".join(lhs_commands) + \
+                "\n\t=>\n" + \
+                "\n".join(rhs_commands) + "\n)"
+
+        self.tranpiled_rule = rule
+        return 0
 
 
 
     def lhs_statement(self, lhss):
-        """ Processes left hand side (LHS) of the rule
+        """ Informs about creation of new statement
 
         Parameters
         ----------
         lhss : object
-            LHS object constructed by the textX by parsing Akashic rule based on predefined meta-model
-        
-        Details
-        -------
-        1. If statement represents variable definition / init then we add varaible name
-        to the variable table (something like table of sumbols) along with value / defined expression
-        and list of used DL variables in that expression. After adding to the variable list, we empty
-        the data_locator_vars - list that contains current DL variables in use in last expression.
+            LHS object constructed by the textX by parsing
+            Akashic rule based on predefined meta-model
 
-        2. Id statement represents assertion function. Then nothing... for now.. 
         """
 
         if lhss.stat.__class__.__name__ == "ASSERTION":
-            print("Assertion done.")
+            print("Assertion of expression - done.")
 
         elif lhss.stat.__class__.__name__ == "SYMBOLIC_VAR":
-            if self.variable_table.lookup(lhss.stat.var_name):
-                line, col = get_model(lhss.stat)._tx_parser.pos_to_linecol(lhss.stat._tx_position)
-                message = f"Variable '{lhss.stat.var_name}' is already defined."
-                raise AkashicError(message, line, col, ErrType.SEMANTIC)
-            
-            self.variable_table.add_named_var(
-                lhss.stat.var_name, 
-                lhss.stat.expr, 
-                self.data_locator_vars,
-                VarType.SYMBOLIC
-            )
-            self.data_locator_vars = []
-            print("Variable adding done.")
+            print("Init of new symbolic variable - done.")
         
         elif lhss.stat.__class__.__name__ == "FACT_ADDRESS_VAR":
-            if self.variable_table.lookup(lhss.stat.var_name):
-                line, col = get_model(lhss.stat)._tx_parser.pos_to_linecol(lhss.stat._tx_position)
-                message = f"Variable '{lhss.stat.var_name}' is already defined."
-                raise AkashicError(message, line, col, ErrType.SEMANTIC)
+            print("Init of new fact address variable - done.")
 
-            self.variable_table.add_named_var(
-                lhss.stat.var_name,
-                lhss.stat.expr, 
-                [],
-                VarType.FACT_ADDRESS
-            )
-            clips_address_pattern_command = lhss.stat.var_name + " <- " + lhss.stat.expr["content"]
-            self.lhs_clips_command_list.append(clips_address_pattern_command)
-            print("Address pattern adding done.")
+        elif lhss.stat.__class__.__name__ == "FACT_ADDRESS_VAR":
+            print("Init of new fact address variable - done.")
+        return 0
 
-        elif lhss.stat.__class__.__name__ == "CLIPS_CODE":
-            clips_address_pattern_command = remove_quotes(lhss.stat.clips_code)
-            self.lhs_clips_command_list.append(to_clips_quotes(clips_address_pattern_command))
+
+
+    def clips_code(self, cc):
+        clips_command = remove_quotes(cc.clips_code)
+        self.lhs_clips_command_list.append(to_clips_quotes(clips_command))
+        return 0
+
+
+
+    def symbolic_var(self, sv):
+        if self.variable_table.lookup(sv.var_name):
+            line, col = get_model(sv)._tx_parser \
+                        .pos_to_linecol(sv._tx_position)
+            message = "Variable '{0}' is already defined." \
+                      .format(sv.var_name)
+            raise AkashicError(message, line, col, ErrType.SEMANTIC)
+        
+        self.variable_table.add_named_var(
+            sv.var_name, 
+            sv.expr, 
+            self.data_locator_vars,
+            VarType.SYMBOLIC
+        )
+        self.data_locator_vars = []
+        return 0
+
+
+
+    def fact_address_var(self, fav):
+        if self.variable_table.lookup(fav.var_name):
+            line, col = get_model(fav)._tx_parser \
+                        .pos_to_linecol(fav._tx_position)
+            message = "Variable '{0}' is already defined." \
+                      .format(sv.var_name)
+            raise AkashicError(message, line, col, ErrType.SEMANTIC)
+
+        self.variable_table.add_named_var(
+            fav.var_name,
+            fav.expr,
+            [],
+            VarType.FACT_ADDRESS
+        )
+        clips_address_pattern_command = fav.var_name + \
+                                        " <- " + \
+                                        fav.expr["content"]
+        self.lhs_clips_command_list.append(clips_address_pattern_command)
+        return 0
 
 
 
     def binding_var(self, bv):
         if self.variable_table.lookup(bv.var_name):
-            line, col = get_model(bv)._tx_parser.pos_to_linecol(bv._tx_position)
-            message = f"Variable '{bv.var_name}' is already defined."
+            line, col = get_model(bv)._tx_parser \
+                        .pos_to_linecol(bv._tx_position)
+            message = "Variable '{0}' is already defined." \
+                      .format(sv.var_name)
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
         self.variable_table.add_named_var(
@@ -275,10 +309,13 @@ class Transpiler(object):
         )
 
         # Build clips commands
-        if bv.expr["construct_type"] in [ DataType.EXPRESSION, DataType.VARIABLE, DataType.STR_CALL ]:
-            clips_commands = self.clips_statement_builder.build_regular_dl_patterns(self.data_locator_table)
+        if bv.expr["construct_type"] in [ ConstructType.NORMAL_EXP, \
+                                          ConstructType.VARIABLE, \
+                                          ConstructType.FUNCTION_CALL ]:
+            clips_commands = self.clips_statement_builder \
+                            .build_regular_dl_patterns(self.data_locator_table)
             self.lhs_clips_command_list.extend(clips_commands)
-            self.clear_after_binding()
+            self.clear_after_binding_var()
 
         return 0
 
@@ -289,56 +326,56 @@ class Transpiler(object):
             self.lhs_clips_command_list.append(binary.operands[0]["content"])
             return 0
 
-        ops = []
+        args = []
         for i in range(0, len(binary.operands)):
-            if binary.operands[i]["construct_type"] == DataType.SPECIAL:
-                ops.append(binary.operands[i]["content"])
+            if binary.operands[i]["construct_type"] == ConstructType.SPECIAL_CON_EXP:
+                args.append(binary.operands[i]["content"])
             else:
                 line, col = binary.operands[i]["_tx_position"]
-                message = "AND-OR logic operation arguments must be of SPECIAL conditional statement type. {0} given.".format(
-                    binary.operands[i]["construct_type"])
+                message = "Special Binary Operation argument must be " \
+                          "Special Conditional Expression, but '{0}' found." \
+                          .format(binary.operands[i]["construct_type"])
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
                 
-
-        result = ops[0]
+        clips_command = args[0]
         for i in range(1, len(binary.operands)):
-            result = "(" + binary.operator[i-1] + " " + result + " " + ops[i] + ")"
+            clips_command = "(" + binary.operator[i-1] + " " + clips_command + " " + args[i] + ")"
 
-        self.lhs_clips_command_list.append(result)
-
+        self.lhs_clips_command_list.append(clips_command)
         return 0
 
 
 
     def special_singular_logic_expression(self, singular):
-        bline, bcol = get_model(singular)._tx_parser.pos_to_linecol(singular._tx_position)
+        bline, bcol = get_model(singular)._tx_parser \
+                      .pos_to_linecol(singular._tx_position)
 
         if hasattr(singular, "template") and singular.template != '':
             self.find_data_provider(singular.template, singular)
             clips_command = '(' + singular.template + ')'
-            if not singular.operator:
-                val = clips_command
+            if singular.operator:
+                clips_content = clips_command
             else:
-                val = "(" + singular.operator + " " + clips_command + ")"
+                clips_content = "(" + \
+                                singular.operator + " " + \
+                                clips_command + \
+                                ")"
             
             return {
-                "content": val, 
+                "content": clips_content, 
                 "content_type": None,
-                "construct_type": DataType.SPECIAL,
+                "construct_type": ConstructType.SPECIAL_CON_EXP,
                 "_tx_position": (bline, bcol),
                 "model_id": singular.template
             }
 
-        if singular.operand["construct_type"] != DataType.EXPRESSION:
+        if singular.operand["construct_type"] != ConstructType.NORMAL_EXP:
             line, col = singular.operand["_tx_position"]
-            message = "Special singular operation argument must be "\
-                      "expression. {0} "\
-                      "given.".format(
-                        singular.operand["construct_type"]
-                      )
+            message = "Special Singular Operation argument must be " \
+                      "Normal Expression, but '{0}' found." \
+                      .format(singular.operand["construct_type"])
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
-        # Build clips regular command
         clips_command = self.clips_statement_builder.build_special_pattern(
             self.data_locator_table, 
             self.data_locator_vars, 
@@ -346,10 +383,12 @@ class Transpiler(object):
             singular
         )
 
-        t_name = None
         # Extract used template name
-        for template_name, template in self.data_locator_table.table.items():
-            t_name = template_name
+        template_name = self.clips_statement_builder.get_template(
+            self, 
+            self.data_locator_table, 
+            self.data_locator_vars
+        )
 
         # Rotate defined variables for next special expression
         self.rotate_used_data_locator_vars()
@@ -364,15 +403,15 @@ class Transpiler(object):
         return {
             "content": val, 
             "content_type": None,
-            "construct_type": DataType.SPECIAL,
+            "construct_type": ConstructType.SPECIAL_CON_EXP,
             "_tx_position": (bline, bcol),
-            "model_id": t_name
+            "model_id": template_name
         }
 
 
 
     def test_singular_logic_expression(self, test):
-        if test.operand["construct_type"] != DataType.EXPRESSION:
+        if test.operand["construct_type"] != ConstructType.NORMAL_EXP:
             line, col = test.operand["_tx_position"]
             message = "TEST operation argument must be an EXPRESSION. {0} given.".format(
                 test.operand["construct_type"])
@@ -386,6 +425,24 @@ class Transpiler(object):
         return 0
 
 
+    def str_to_time_expression(self, stime):
+        str_time = stime.operands[0]
+        time_format = stime.operands[1]
+
+        def raise_error_if_not_type(obj, expected_types):
+            if obj["content_type"] != "STRING":
+                line, col = obj["_tx_position"]
+                message = "Expected type {1}, but {2} found." \
+                          .format(operation,
+                          expected_types, 
+                          str_time["content_type"])
+                raise AkashicError(message, line, col, ErrType.SEMANTIC)
+        
+        
+        raise_error_if_not_type(str_time, "STRING")
+        raise_error_if_not_type(time_format, "STRING")
+            
+
 
     def str_expression(self, strr):
         result = strr.operand
@@ -397,12 +454,12 @@ class Transpiler(object):
 
         operator = strr.operator
         resolved_c_type = "STRING"
-        if result["content_type"] == DataType.WORKABLE:
+        if result["content_type"] == ConstructType.WORKABLE:
             val = str(result["content"])
             return {
                     "content": val,
                     "content_type": resolved_c_type,
-                    "construct_type": DataType.WORKABLE,
+                    "construct_type": ConstructType.WORKABLE,
                     "_tx_position": (bline, bcol)
                 }
 
@@ -415,23 +472,20 @@ class Transpiler(object):
             return {
                     "content": val, 
                     "content_type": resolved_c_type,
-                    "construct_type": DataType.STR_CALL,
+                    "construct_type": ConstructType.FUNCTION_CALL,
                     "_tx_position": (bline, bcol)
             }
 
 
 
     def count_expression(self, countt):
-        print("CCCC")
         # Exit if operator is not present
         if not countt.operator:
             return countt.operand
 
-        print("AAAAA")
-
         bline, bcol = get_model(countt)._tx_parser.pos_to_linecol(countt._tx_position)
 
-        if countt.operand["construct_type"] != DataType.EXPRESSION:
+        if countt.operand["construct_type"] != ConstructType.NORMAL_EXP:
             line, col = countt.operand["_tx_position"]
             message =  "{0} operation argument must be expression. {1} given.".format(
                 countt.operator, countt.operand["construct_type"])
@@ -444,19 +498,13 @@ class Transpiler(object):
             countt.operand["content"]
         )
 
-        print("COUNT: " + clips_command)
-    
-        # Rotate defined variables for next special expression
-        # self.rotate_used_data_locator_vars()
-        # self.data_locator_vars = []
-
         # Return CLIPS command
         val = clips_command
         resolved_c_type = "INTEGER"
         return {
             "content": val,
             "content_type": resolved_c_type,
-            "construct_type": DataType.COUNT_CALL,
+            "construct_type": ConstructType.FUNCTION_CALL,
             "_tx_position": (bline, bcol)
         }
 
@@ -478,12 +526,12 @@ class Transpiler(object):
 
         operator = neg.operator
 
-        if result["content_type"] == DataType.WORKABLE:
+        if result["content_type"] == ConstructType.WORKABLE:
             val = not result["content"]
             return {
                     "content": val, 
                     "content_type": py_to_clips_type(val.__class__),
-                    "construct_type": DataType.WORKABLE,
+                    "construct_type": ConstructType.WORKABLE,
                     "_tx_position": (bline, bcol)
                 }
 
@@ -496,7 +544,7 @@ class Transpiler(object):
             return {
                     "content": val, 
                     "content_type": resolved_c_type,
-                    "construct_type": DataType.EXPRESSION,
+                    "construct_type": ConstructType.NORMAL_EXP,
                     "_tx_position": (bline, bcol)
             }
 
@@ -525,8 +573,8 @@ class Transpiler(object):
 
             operator = logic.operator[i-1]
 
-            if (result["construct_type"]  == DataType.WORKABLE 
-            and current["construct_type"] == DataType.WORKABLE):
+            if (result["construct_type"]  == ConstructType.WORKABLE 
+            and current["construct_type"] == ConstructType.WORKABLE):
                 if operator == 'and':
                     val = result["content"] and current["content"]
                 if operator == 'or':
@@ -535,7 +583,7 @@ class Transpiler(object):
                 result = {
                     "content": val, 
                     "content_type": py_to_clips_type(val.__class__),
-                    "construct_type": DataType.WORKABLE,
+                    "construct_type": ConstructType.WORKABLE,
                     "_tx_position": (bline, bcol)
                 }
 
@@ -549,7 +597,7 @@ class Transpiler(object):
                 result = {
                     "content": val,
                     "content_type": resolved_c_type,
-                    "construct_type": DataType.EXPRESSION,
+                    "construct_type": ConstructType.NORMAL_EXP,
                     "_tx_position": (bline, bcol)
                 }
 
@@ -587,8 +635,8 @@ class Transpiler(object):
             else:
                 operator = comp.operator[i-1]
 
-            if ((result["construct_type"]  == DataType.WORKABLE 
-            and current["construct_type"] == DataType.WORKABLE)
+            if ((result["construct_type"]  == ConstructType.WORKABLE 
+            and current["construct_type"] == ConstructType.WORKABLE)
             and ((result["content_type"] in ["INTEGER", "FLOAT"] and current["content_type"] in  ["INTEGER", "FLOAT"])
             or  (result["content_type"] == "STRING" and current["content_type"] == "STRING"))):
                    
@@ -608,19 +656,19 @@ class Transpiler(object):
                 result = {
                     "content": val, 
                     "content_type": py_to_clips_type(val.__class__),
-                    "construct_type": DataType.WORKABLE,
+                    "construct_type": ConstructType.WORKABLE,
                     "_tx_position": (bline, bcol)
                 }
 
             else:
                 op1 = ""
                 op2 = ""
-                if result["content_type"] == "STRING" and result["construct_type"]  == DataType.WORKABLE:
+                if result["content_type"] == "STRING" and result["construct_type"]  == ConstructType.WORKABLE:
                     op1 = "\"" + result["content"] + "\""
                 else:
                     op1 = result["content"]
 
-                if current["content_type"] == "STRING" and current["construct_type"]  == DataType.WORKABLE:
+                if current["content_type"] == "STRING" and current["construct_type"]  == ConstructType.WORKABLE:
                     op2 = "\"" + current["content"] + "\""
                 else:
                     op2 = current["content"]
@@ -643,7 +691,7 @@ class Transpiler(object):
                 result = {
                     "content": val,
                     "content_type": resolved_c_type,
-                    "construct_type": DataType.EXPRESSION,
+                    "construct_type": ConstructType.NORMAL_EXP,
                     "_tx_position": (bline, bcol)
                 }
 
@@ -681,8 +729,8 @@ class Transpiler(object):
 
             operator = plus_minus.operator[i-1]
 
-            if (result["construct_type"]  == DataType.WORKABLE 
-            and current["construct_type"] == DataType.WORKABLE):
+            if (result["construct_type"]  == ConstructType.WORKABLE 
+            and current["construct_type"] == ConstructType.WORKABLE):
                 if operator == '+':
                     val = result["content"] + current["content"]
                 elif operator == '-':
@@ -699,7 +747,7 @@ class Transpiler(object):
                 result = {
                     "content": val, 
                     "content_type": py_to_clips_type(val.__class__),
-                    "construct_type": DataType.WORKABLE,
+                    "construct_type": ConstructType.WORKABLE,
                     "_tx_position": (bline, bcol)
                 }
 
@@ -708,7 +756,7 @@ class Transpiler(object):
                 if ("STRING" in [result["content_type"],
                 current["content_type"]]):
                     
-                    if result["construct_type"] == DataType.WORKABLE:
+                    if result["construct_type"] == ConstructType.WORKABLE:
                         if result["content_type"] != "STRING": 
                             result_content = str(result["content"]) 
                         else: 
@@ -716,7 +764,7 @@ class Transpiler(object):
                     else:
                         result_content = str(result["content"]) 
 
-                    if current["construct_type"] == DataType.WORKABLE:
+                    if current["construct_type"] == ConstructType.WORKABLE:
                         if current["content_type"] != "STRING": 
                             current_content = str(current["content"]) 
                         else: 
@@ -744,7 +792,7 @@ class Transpiler(object):
                 result = {
                     "content": val,
                     "content_type": resolved_c_type,
-                    "construct_type": DataType.EXPRESSION,
+                    "construct_type": ConstructType.NORMAL_EXP,
                     "_tx_position": (bline, bcol)
                 }
 
@@ -776,8 +824,8 @@ class Transpiler(object):
 
             operator = mul_div.operator[i-1]
 
-            if (result["construct_type"]  == DataType.WORKABLE 
-            and current["construct_type"] == DataType.WORKABLE):
+            if (result["construct_type"]  == ConstructType.WORKABLE 
+            and current["construct_type"] == ConstructType.WORKABLE):
                 if operator == '*':
                     val = result["content"] * current["content"]
                 elif operator == '/':
@@ -786,7 +834,7 @@ class Transpiler(object):
                 result = {
                     "content": val, 
                     "content_type": py_to_clips_type(val.__class__),
-                    "construct_type": DataType.WORKABLE,
+                    "construct_type": ConstructType.WORKABLE,
                     "_tx_position": (bline, bcol)
                 }
 
@@ -797,7 +845,7 @@ class Transpiler(object):
                 result = {
                     "content": val,
                     "content_type": resolved_c_type,
-                    "construct_type": DataType.EXPRESSION,
+                    "construct_type": ConstructType.NORMAL_EXP,
                     "_tx_position": (bline, bcol)
                 }
 
@@ -830,14 +878,14 @@ class Transpiler(object):
 
             operator = '**'
 
-            if (result["construct_type"]  == DataType.WORKABLE 
-            and current["construct_type"] == DataType.WORKABLE):
+            if (result["construct_type"]  == ConstructType.WORKABLE 
+            and current["construct_type"] == ConstructType.WORKABLE):
                 val = result["content"] ** current["content"]
 
                 result = {
                     "content": val, 
                     "content_type": py_to_clips_type(val.__class__),
-                    "construct_type": DataType.WORKABLE,
+                    "construct_type": ConstructType.WORKABLE,
                     "_tx_position": (bline, bcol)
                 }
 
@@ -848,7 +896,7 @@ class Transpiler(object):
                 result = {
                     "content": val, 
                     "content_type": resolved_c_type,
-                    "construct_type": DataType.EXPRESSION,
+                    "construct_type": ConstructType.NORMAL_EXP,
                     "_tx_position": (bline, bcol)
                 }
 
@@ -865,7 +913,7 @@ class Transpiler(object):
             return {
                 "content": factor.value, 
                 "content_type": py_to_clips_type(factor.value.__class__),
-                "construct_type": DataType.WORKABLE,
+                "construct_type": ConstructType.WORKABLE,
                 "_tx_position": (line, col)
             }
         elif factor.value.__class__.__name__ == "STRING_C":
@@ -873,7 +921,7 @@ class Transpiler(object):
             return {
                 "content": remove_quotes(factor.value.val),
                 "content_type": py_to_clips_type(str),
-                "construct_type": DataType.WORKABLE,
+                "construct_type": ConstructType.WORKABLE,
                 "_tx_position": (line, col)
             }
 
@@ -910,7 +958,7 @@ class Transpiler(object):
             return {
                 "content": field.var_name, 
                 "content_type": field.dp_field.type,
-                "construct_type": DataType.VARIABLE,
+                "construct_type": ConstructType.VARIABLE,
                 "_tx_position": (line, col)
             }
 
@@ -935,7 +983,7 @@ class Transpiler(object):
             gen_var_name = self.variable_table.add_helper_var({
                 "content": "",
                 "content_type": found_dp_field.type,
-                "construct_type": DataType.NOTHING,
+                "construct_type": ConstructType.NOTHING,
             })
             self.data_locator_vars.append(gen_var_name)
             self.data_locator_table.add(template_name, field_name, gen_var_name, found_dp_field)
@@ -943,7 +991,7 @@ class Transpiler(object):
             return {
                 "content": gen_var_name,
                 "content_type": found_dp_field.type,
-                "construct_type": DataType.VARIABLE,
+                "construct_type": ConstructType.VARIABLE,
                 "_tx_position": (line, col)
             }
 

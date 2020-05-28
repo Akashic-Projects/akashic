@@ -53,8 +53,14 @@ class ClipsStatementBuilder(object):
                     t_set.add(template_name)
         print("END count\n")
         return len(t_set)
-        
     
+
+    def get_template(self, data_locator_table, used_vars):
+        for template_name, template in data_locator_table.table.items():
+            for field_name, field in template.fields.items():
+                if field.var_name in used_vars:
+                    return template
+
     
     #TODO: What happens when empty statement is given?
     def build_special_pattern(self, data_locator_table, used_vars, expression, expression_object):

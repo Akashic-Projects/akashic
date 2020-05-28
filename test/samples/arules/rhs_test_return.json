@@ -4,7 +4,7 @@
     "when": [
         //{ "?other_course=": "Course.id"},
         //{ "?msg=": "1 + Course.id / 2 * str 1 "}
-        { "assert": "test[(4 + 5) * count(Course.id > 2)]"}
+        { "assert": "test[count(((4 + 5) * count(Course.id > 2)) > 2) >2]"}
         //{ "?result<-": "[Course.id - ?other_course > 2]"}
 
     ],

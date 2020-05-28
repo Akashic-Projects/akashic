@@ -67,6 +67,9 @@ FORALL:         'forall' ;
 TEST:           'test' ;
 COUNT:          'count' ;
 STR:            'str' ;
+TIME_TO_STR:    'time_to_str' ;
+STR_TO_TIME:    'str_to_time' ;
+
 
 SPECIAL_SINGULAR: NOT | EXISTS | FORALL ;
 
@@ -94,6 +97,11 @@ Function:
     StrExpression |
     CountExpression |
     NegationExpression 
+;
+
+
+StrToTimeExpression:
+    operator=TIME_TO_STR operands=Factor COMMA operands=Factor
 ;
 
 StrExpression:
@@ -136,11 +144,11 @@ Factor:
     (value=STRING_C) | 
     (value=VARIABLE) | 
     (value=DataLocator) |
-
     (LPAR value=LogicExpression RPAR) |
     (value=LogicExpression)
 ;
 
+COMMA: ',';
 LPAR:   '(' ;
 RPAR:   ')' ;
 STRING_C: val=/(\')([^\']*)(\')/ ; //'
