@@ -41,6 +41,8 @@ class Transpiler(object):
         """
 
         self.data_bridge = env_provider.data_bridge
+        self.time_bridge = env_provider.time_bridge
+
         self.data_providers = self.data_bridge.data_providers
 
         self.variable_table = VariableTable()

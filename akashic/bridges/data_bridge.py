@@ -13,7 +13,8 @@ from akashic.exceptions import AkashicError, ErrType
 class DataBridge(object):
     """ DataBridge class
         
-    We use this class to store python functions called by CLIPS enviroment
+    We use this class to store CRUD and data related python
+    functions called by CLIPS enviroment
     """
 
     def __init__(self, data_providers):

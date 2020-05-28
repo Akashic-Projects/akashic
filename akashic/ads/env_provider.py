@@ -25,12 +25,19 @@ class EnvProvider(object):
         self.env = clips.Environment()
         self.data_bridge = None
 
+        self.time_bridge = None
+
     
     def set_data_bridge(self, data_bridge):
         self.data_bridge = data_bridge
         self.env.define_function(self.data_bridge.create_func)
         self.env.define_function(self.data_bridge.return_func)
-       
+
+
+    def set_time_bridge(self, time_bridge):
+        self.time_bridge = time_bridge
+        self.env.define_function(self.time_bridge.str_to_time)
+        self.env.define_function(self.time_bridge.time_to_str)
 
 
     def define_template(self, template):
