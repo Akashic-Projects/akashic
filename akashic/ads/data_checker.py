@@ -29,20 +29,20 @@ class DataChecker(object):
     def check_web_reflection_data(self):
         if not hasattr(self.dsd, 'apis'):
             line, col = self.dsd._tx_parser \
-            .pos_to_linecol(self.dsd._tx_position)
-            message = f"Web reflection is turned on. There must "\
-                        f"be at least one defined api in DSD."
+                        .pos_to_linecol(self.dsd._tx_position)
+            message = "Web reflection is turned on. There must " \
+                      "be at least one defined api in DSD."
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
         for field in self.dsd.fields:
             if not hasattr(field, 'use_for_create') or not \
-                hasattr(field, 'use_for_update'):
-                    line, col = self.dsd._tx_parser \
-                    .pos_to_linecol(field._tx_position)
-                    message = "Web reflection is turned on. Every "\
-                                "field must contain 'use_for_create'"\
-                                "and 'use_for_update' data."
-                    raise AkashicError(message, line, col, ErrType.SEMANTIC)
+            hasattr(field, 'use_for_update'):
+                line, col = self.dsd._tx_parser \
+                            .pos_to_linecol(field._tx_position)
+                message = "Web reflection is turned on. Every " \
+                          "field must contain 'use_for_create'" \
+                          "and 'use_for_update' data."
+                raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
 
 
@@ -53,9 +53,11 @@ class DataChecker(object):
         ----------
         operation : str
             Web service operation / method, 
-            possible values: "create", "read_one", "read_multiple", "update", "delete"
+            possible values: "create", "read_one", "read_multiple",
+                             "update", "delete"
         url_map : str
-            URL map is regular URL string containing '{variable_name}' in places of real key data
+            URL map is regular URL string containing '{variable_name}'
+            in places of real key data
         field_refs : list
             The list of referenced-foreign-models url-placements
 
@@ -73,12 +75,17 @@ class DataChecker(object):
             if ref in url_fields:
                 url_fields.remove(ref)
             else:
-                message = f"Field ({ref}) in operation ({operation}) cannot be found in url-map setting."
+                message = "Field '{0}' in operation '{1}' cannot " \
+                          "be found in url-map setting." \
+                          .format(ref, operation)
                 raise AkashicError(message)
         
         if len(url_fields) > 0:
             fields_left_string = ", ".join(url_fields)
-            message = f"Following fields ({fields_left_string}) inside of url-map setting ({url_map}) in operation ({operation}) are not referenced in settings."
+            message = "Following fields '{0}' inside " \
+                      "of url-map setting '{1}' in operation '{2}' " \
+                      "are not referenced in settings." \
+                      .format(fields_left_string, url_map, operation)
             raise AkashicError(message)
 
 
@@ -110,10 +117,16 @@ class DataChecker(object):
                             field_refs.append(ref.url_placement)
 
                         try:
-                            self.check_url_mapping("create", create.url_map, field_refs)
+                            self.check_url_mapping("create", 
+                                                   create.url_map, 
+                                                   field_refs)
                         except AkashicError as e:
-                            line, col = self.dsd._tx_parser.pos_to_linecol(create._tx_position)
-                            raise AkashicError(e.message, line, col, ErrType.SEMANTIC)
+                            line, col = self.dsd._tx_parser \
+                                        .pos_to_linecol(create._tx_position)
+                            raise AkashicError(e.message, 
+                                               line, 
+                                               col, 
+                                               ErrType.SEMANTIC)
             
             # Check read_one api, if available
             if hasattr(self.dsd.apis, 'read_one'):
@@ -126,10 +139,16 @@ class DataChecker(object):
                         field_refs.append(read_one.data_indexing_up)
                         
                         try:
-                            self.check_url_mapping("read-one", read_one.url_map, field_refs)
+                            self.check_url_mapping("read-one", 
+                                                   read_one.url_map, 
+                                                   field_refs)
                         except AkashicError as e:
-                            line, col = self.dsd._tx_parser.pos_to_linecol(read_one._tx_position)
-                            raise AkashicError(e.message, line, col, ErrType.SEMANTIC)
+                            line, col = self.dsd._tx_parser \
+                                        .pos_to_linecol(read_one._tx_position)
+                            raise AkashicError(e.message, 
+                                               line, 
+                                               col, 
+                                               ErrType.SEMANTIC)
 
             # Check read_multiple api, if available
             if hasattr(self.dsd.apis, 'read_multiple'):
@@ -139,18 +158,30 @@ class DataChecker(object):
                         field_refs = []
                         for ref in read_mul.ref_foreign_models:
                             field_refs.append(ref.url_placement)
-                        field_refs.append(read_mul.page_index_url_placement)
-                        field_refs.append(read_mul.page_row_count_url_placement)
-                        field_refs.append(read_mul.search_fields_url_placement)
-                        field_refs.append(read_mul.search_strings_url_placement)
-                        field_refs.append(read_mul.sort_field_url_placement)
-                        field_refs.append(read_mul.sort_order_url_placement)
+                        field_refs.append(
+                            read_mul.page_index_url_placement)
+                        field_refs.append(
+                            read_mul.page_row_count_url_placement)
+                        field_refs.append(
+                            read_mul.search_fields_url_placement)
+                        field_refs.append(
+                            read_mul.search_strings_url_placement)
+                        field_refs.append(
+                            read_mul.sort_field_url_placement)
+                        field_refs.append(
+                            read_mul.sort_order_url_placement)
                         
                         try:
-                            self.check_url_mapping("read-multiple", read_mul.url_map, field_refs)
+                            self.check_url_mapping("read-multiple", 
+                                                   read_mul.url_map, 
+                                                   field_refs)
                         except AkashicError as e:
-                            line, col = self.dsd._tx_parser.pos_to_linecol(read_mul._tx_position)
-                            raise AkashicError(e.message, line, col, ErrType.SEMANTIC)
+                            line, col = self.dsd._tx_parser \
+                                        .pos_to_linecol(read_mul._tx_position)
+                            raise AkashicError(e.message, 
+                                               line, 
+                                               col, 
+                                               ErrType.SEMANTIC)
                         
             # Check update api, if available
             if hasattr(self.dsd.apis, 'update'):
@@ -163,10 +194,16 @@ class DataChecker(object):
                         field_refs.append(update.data_indexing_up)
                         
                         try:
-                            self.check_url_mapping("update", update.url_map, field_refs)
+                            self.check_url_mapping("update", 
+                                                   update.url_map, 
+                                                   field_refs)
                         except AkashicError as e:
-                            line, col = self.dsd._tx_parser.pos_to_linecol(update._tx_position)
-                            raise AkashicError(e.message, line, col, ErrType.SEMANTIC)
+                            line, col = self.dsd._tx_parser \
+                                        .pos_to_linecol(update._tx_position)
+                            raise AkashicError(e.message, 
+                                               line, 
+                                               col, 
+                                               ErrType.SEMANTIC)
 
             # Check delete api, if available
             if hasattr(self.dsd.apis, 'delete'):
@@ -179,10 +216,16 @@ class DataChecker(object):
                         field_refs.append(delete.data_indexing_up)
                         
                         try:
-                            self.check_url_mapping("delete", delete.url_map, field_refs)
+                            self.check_url_mapping("delete", 
+                                                   delete.url_map, 
+                                                   field_refs)
                         except AkashicError as e:
-                            line, col = self.dsd._tx_parser.pos_to_linecol(delete._tx_position)
-                            raise AkashicError(e.message, line, col, ErrType.SEMANTIC)
+                            line, col = self.dsd._tx_parser \
+                                        .pos_to_linecol(delete._tx_position)
+                            raise AkashicError(e.message, 
+                                               line, 
+                                               col, 
+                                               ErrType.SEMANTIC)
 
 
 
@@ -192,10 +235,12 @@ class DataChecker(object):
         Parameters
         ----------
         use_json_as : str
-            Value which defines if JSON originates from web server 'request' or 'response'
+            Value which defines if JSON originates from web server 
+            'request' or 'response'
         operation : str
             Web service operation / method, 
-            possible values: "create", "read_one", "read_multiple", "update", "delete"
+            possible values: "create", "read_one", "read_multiple", 
+                             "update", "delete"
         json_object : object
             Parsed JSON object
 
@@ -213,8 +258,10 @@ class DataChecker(object):
 
         for field in self.dsd.fields:
             if (
-                (not (use_json_as == "request" and operation == "create" and field.use_for_create)) and
-                (not (use_json_as == "request" and operation == "update" and field.use_for_update))
+                (not (use_json_as == "request" and operation == "create" \
+                and field.use_for_create)) and
+                (not (use_json_as == "request" and operation == "update" \
+                and field.use_for_update))
             ): 
                 continue
             
@@ -222,18 +269,29 @@ class DataChecker(object):
             result = [match.value for match in jsonpath_expr.find(json_object)]
 
             if len(result) == 0:
-                line, col = self.dsd._tx_parser.pos_to_linecol(field._tx_position)
-                message = f"Field ({field.field_name}) is not present in json object."
+                line, col = self.dsd._tx_parser \
+                            .pos_to_linecol(field._tx_position)
+                message = "Field '{0}' is not present in json object." \
+                          .format(field.field_name)
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
             if len(result) > 1:
-                line, col = self.dsd._tx_parser.pos_to_linecol(field._tx_position)
-                message = f"More than one field with same name ({field.field_name}) is present in json object."
+                line, col = self.dsd._tx_parser \
+                            .pos_to_linecol(field._tx_position)
+                message = "More than one field with same name '{0}' " \
+                          "is present in json object." \
+                          .format(field.field_name)
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
             expected_type = clips_to_py_type(field.type)
 
             if not isinstance(result[0], expected_type):
-                line, col = self.dsd._tx_parser.pos_to_linecol(field._tx_position)
-                message = f"Type of field ({field.field_name}) does not match type from provided data. Expected ({str(field.type)}), but received ({py_to_clips_type(result[0].__class__)})."
+                line, col = self.dsd._tx_parser \
+                            .pos_to_linecol(field._tx_position)
+                message = "Type of field '{0}' does not match type from " \
+                          "provided data. Expected '{1}', " \
+                          "but received '{2}'." \
+                          .format(field.field_name,
+                                  str(field.type),
+                                  py_to_clips_type(result[0].__class__))
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)

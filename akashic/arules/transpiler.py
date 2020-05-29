@@ -546,7 +546,7 @@ class Transpiler(object):
         def raise_error_if_not_type(obj, expected_types):
             if obj["content_type"] != "STRING":
                 line, col = obj["_tx_position"]
-                message = "Expected type {0}, but {1} found." \
+                message = "Expected type '{0}', but '{1}' found." \
                           .format(expected_types, 
                                   time["content_type"])
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
@@ -591,7 +591,7 @@ class Transpiler(object):
         def raise_error_if_not_type(obj, expected_type):
             if obj["content_type"] != expected_type:
                 line, col = obj["_tx_position"]
-                message = "Expected type {0}, but {1} found." \
+                message = "Expected type '{0}', but '{1}' found." \
                           .format(expected_type, 
                                   time["content_type"])
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
@@ -636,7 +636,7 @@ class Transpiler(object):
         def raise_error_if_not_type(obj, expected_type):
             if obj["content_type"] != expected_type:
                 line, col = obj["_tx_position"]
-                message = "Expected type {0}, but {1} found." \
+                message = "Expected type '{0}', but '{1}' found." \
                           .format(expected_type, 
                                   time["content_type"])
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
@@ -674,7 +674,8 @@ class Transpiler(object):
 
     def logic_expression(self, logic):
         result = logic.operands[0]
-        bline, bcol = get_model(logic)._tx_parser.pos_to_linecol(logic._tx_position)
+        bline, bcol = get_model(logic)._tx_parser \
+                      .pos_to_linecol(logic._tx_position)
 
         l = len(logic.operands)
         i = 1
@@ -683,14 +684,16 @@ class Transpiler(object):
             
             if result["content_type"] not in ["INTEGER", "FLOAT", "BOOLEAN"]:
                 line, col = result["_tx_position"]
-                message = "Logic operand of type INTEGER, FLOAT or BOOLEAN expected, {0} found.".format(
-                    result["content_type"])
+                message = "Logic operation argument type INTEGER, FLOAT " \
+                          "or BOOLEAN is expected, but '{0}' found." \
+                          .format(result["content_type"])
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
             if current["content_type"] not in ["INTEGER", "FLOAT", "BOOLEAN"]:
                 line, col = current["_tx_position"]
-                message = "Logic operand of type INTEGER, FLOAT or BOOLEAN expected, {0} found.".format(
-                    current["content_type"])
+                message = "Logic operation argument type INTEGER, FLOAT " \
+                          "or BOOLEAN is expected, but '{0}' found." \
+                          .format(current["content_type"])
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
             operator = logic.operator[i-1]
@@ -711,10 +714,15 @@ class Transpiler(object):
 
             else:
                 val = '(' + operator + ' ' + \
-                        str(translate_if_c_bool(result["content"])) + ' ' + \
-                        str(translate_if_c_bool(current["content"])) + ')'
+                      str(translate_if_c_bool(result["content"])) + ' ' + \
+                      str(translate_if_c_bool(current["content"])) + \
+                      ')'
 
-                resolved_c_type = resolve_expr_type("logic", result["content_type"], current["content_type"])
+                resolved_c_type = resolve_expr_type(
+                    "logic", 
+                    result["content_type"], 
+                    current["content_type"]
+                )
 
                 result = {
                     "content": val,
@@ -724,7 +732,6 @@ class Transpiler(object):
                 }
 
             i += 1
-
         return result
 
 
@@ -740,15 +747,17 @@ class Transpiler(object):
             
             if result["content_type"] not in ["INTEGER", "FLOAT", "STRING"]:
                 line, col = result["_tx_position"]
-                message = "Comparison operand of type INTEGER, FLOAT or STRING expected, {0} found.".format(
-                    result["content_type"])
+                message = "Comparison operation of type INTEGER, FLOAT " \
+                          "or STRING is expected, but '{0}' found." \
+                          .format(result["content_type"])
                 print("----" + str(result["content"]))
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
             if current["content_type"] not in ["INTEGER", "FLOAT", "STRING"]:
                 line, col = current["_tx_position"]
-                message = "Comparison operand of type INTEGER, FLOAT or STRING expected, {0} found.".format(
-                    current["content_type"])
+                message = "Comparison operation of type INTEGER, FLOAT " \
+                          "or STRING is expected, but '{0}' found." \
+                          .format(current["content_type"])
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
             # Resolve eq operaator
@@ -757,10 +766,12 @@ class Transpiler(object):
             else:
                 operator = comp.operator[i-1]
 
-            if ((result["construct_type"]  == ConstructType.WORKABLE 
-            and current["construct_type"] == ConstructType.WORKABLE)
-            and ((result["content_type"] in ["INTEGER", "FLOAT"] and current["content_type"] in  ["INTEGER", "FLOAT"])
-            or  (result["content_type"] == "STRING" and current["content_type"] == "STRING"))):
+            if ((result["construct_type"]  == ConstructType.WORKABLE \
+            and current["construct_type"] == ConstructType.WORKABLE) \
+            and ((result["content_type"] in ["INTEGER", "FLOAT"] \
+            and current["content_type"] in ["INTEGER", "FLOAT"]) \
+            or  (result["content_type"] == "STRING" and \
+            current["content_type"] == "STRING"))):
                    
                 if operator == '<':
                     val = result["content"] < current["content"]
@@ -785,12 +796,14 @@ class Transpiler(object):
             else:
                 op1 = ""
                 op2 = ""
-                if result["content_type"] == "STRING" and result["construct_type"]  == ConstructType.WORKABLE:
+                if result["content_type"] == "STRING" and \
+                result["construct_type"]  == ConstructType.WORKABLE:
                     op1 = "\"" + result["content"] + "\""
                 else:
                     op1 = result["content"]
 
-                if current["content_type"] == "STRING" and current["construct_type"]  == ConstructType.WORKABLE:
+                if current["content_type"] == "STRING" and \
+                current["construct_type"]  == ConstructType.WORKABLE:
                     op2 = "\"" + current["content"] + "\""
                 else:
                     op2 = current["content"]
@@ -801,13 +814,21 @@ class Transpiler(object):
                 op1_type = result["content_type"]
                 op2_type = current["content_type"]
 
-                val = self.clips_statement_builder.build_string_comparison_expr(op1, op1_type, op2, op2_type, operator)
-                resolved_c_type = resolve_expr_type("comp", result["content_type"], current["content_type"])
+                val = self.clips_statement_builder \
+                      .build_string_comparison_expr(
+                            op1, op1_type, op2, op2_type, operator)
+
+                resolved_c_type = resolve_expr_type(
+                        "comp", 
+                        result["content_type"], 
+                        current["content_type"]
+                )
 
                 # Check if type is resolved correctly
                 if resolved_c_type == 1:
                     line, col = result["_tx_position"]
-                    message = "Incompatible operand types present in comparison expression."
+                    message = "Incompatible operand types " \
+                              "present in comparison expression."
                     raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
                 result = {
@@ -818,7 +839,6 @@ class Transpiler(object):
                 }
 
             i += 1
-
         return result
 
 
@@ -837,16 +857,16 @@ class Transpiler(object):
 
             if result["content_type"] not in ["INTEGER", "FLOAT", "STRING"]:
                 line, col = result["_tx_position"]
-                message = "Addition or subtraction operand of type INTEGER "\
-                          "or FLOAT expected, {0} found."\
-                            .format(result["content_type"])
+                message = "Addition or subtraction operand type INTEGER " \
+                          "or FLOAT is expected, '{0}' but found." \
+                          .format(result["content_type"])
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
                
             if current["content_type"] not in ["INTEGER", "FLOAT","STRING"]:
                 line, col = current["_tx_position"]
-                message = "Addition or subtraction operand of type INTEGER "\
-                          "or FLOAT expected, {0} found."\
-                            .format(current["content_type"])
+                message = "Addition or subtraction operand type INTEGER " \
+                          "or FLOAT is expected, but '{0}' found." \
+                          .format(current["content_type"])
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
             operator = plus_minus.operator[i-1]
@@ -859,7 +879,7 @@ class Transpiler(object):
                     if ("STRING" in [result["content_type"],
                     current["content_type"]]):
                         line, col = result["_tx_position"]
-                        message = "Cannot perform operation 'minus' "\
+                        message = "Cannot perform operation 'minus' " \
                                   "on strings."
                         raise AkashicError(message, line, col, 
                                            ErrType.SEMANTIC)
@@ -882,7 +902,9 @@ class Transpiler(object):
                         if result["content_type"] != "STRING": 
                             result_content = str(result["content"]) 
                         else: 
-                            result_content = '"' + str(result["content"]) + '"'
+                            result_content = '"' + \
+                                             str(result["content"]) + \
+                                             '"'
                     else:
                         result_content = str(result["content"]) 
 
@@ -890,7 +912,9 @@ class Transpiler(object):
                         if current["content_type"] != "STRING": 
                             current_content = str(current["content"]) 
                         else: 
-                            current_content = '"' + str(current["content"]) + '"'
+                            current_content = '"' + \
+                                              str(current["content"]) + \
+                                              '"'
                     else:
                         current_content = str(current["content"]) 
 
@@ -925,7 +949,8 @@ class Transpiler(object):
 
     def mul_div_expr(self, mul_div):
         result = mul_div.operands[0]
-        bline, bcol = get_model(mul_div)._tx_parser.pos_to_linecol(mul_div._tx_position)
+        bline, bcol = get_model(mul_div)._tx_parser \
+                      .pos_to_linecol(mul_div._tx_position)
 
         l = len(mul_div.operands)
         i = 1
@@ -934,14 +959,16 @@ class Transpiler(object):
 
             if result["content_type"] not in ["INTEGER", "FLOAT"]:
                 line, col = result["_tx_position"]
-                message = "Multiplication or division operand of type INTEGER or FLOAT expected, {0} found.".format(
-                    result["content_type"])
+                message = "Multiplication or division operand type INTEGER " \
+                          "or FLOAT is expected, but '{0}' found." \
+                          .format(result["content_type"])
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
             if current["content_type"] not in ["INTEGER", "FLOAT"]:
                 line, col = current["_tx_position"]
-                message = "Multiplication or division operand of type INTEGER or FLOAT expected, {0} found.".format(
-                    current["content_type"])
+                message = "Multiplication or division operand type INTEGER " \
+                          "or FLOAT is expected, but '{0}' found." \
+                          .format(current["content_type"])
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
             operator = mul_div.operator[i-1]
@@ -961,8 +988,16 @@ class Transpiler(object):
                 }
 
             else:
-                val = '(' + operator + ' ' + str(result["content"]) + ' ' + str(current["content"]) + ')'
-                resolved_c_type = resolve_expr_type("mul_div", result["content_type"], current["content_type"])
+                val = '(' + operator + ' ' + \
+                      str(result["content"]) + ' ' + \
+                      str(current["content"]) + \
+                      ')'
+
+                resolved_c_type = resolve_expr_type(
+                    "mul_div", 
+                    result["content_type"], 
+                    current["content_type"]
+                )
 
                 result = {
                     "content": val,
@@ -972,14 +1007,14 @@ class Transpiler(object):
                 }
 
             i += 1
-
         return result
 
 
 
     def sqr_expr(self, sqr):
         result = sqr.operands[0]
-        bline, bcol = get_model(sqr)._tx_parser.pos_to_linecol(sqr._tx_position)
+        bline, bcol = get_model(sqr)._tx_parser \
+                      .pos_to_linecol(sqr._tx_position)
 
         l = len(sqr.operands)
         i = 1
@@ -988,14 +1023,16 @@ class Transpiler(object):
            
             if result["content_type"] not in ["INTEGER", "FLOAT"]:
                 line, col = result["_tx_position"]
-                message = "Exponentiation or root extraction operand of type INTEGER or FLOAT expected, {0} found.".format(
-                    result["content_type"])
+                message = "Exponentiation or root extraction operand type " \
+                          "INTEGER or FLOAT is expected, but '{0}' found." \
+                          .format(result["content_type"])
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
             if current["content_type"] not in ["INTEGER", "FLOAT"]:
                 line, col = current["_tx_position"]
-                message = "Exponentiation or root extraction operand of type INTEGER or FLOAT expected, {0} found.".format(
-                    current["content_type"])
+                message = "Exponentiation or root extraction operand type " \
+                          "INTEGER or FLOAT is expected, but '{0}' found." \
+                          .format(current["content_type"])
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
             operator = '**'
@@ -1012,8 +1049,16 @@ class Transpiler(object):
                 }
 
             else:
-                val = '(' + operator + ' ' + str(result["content"]) + ' ' + str(current["content"]) + ')'
-                resolved_c_type = resolve_expr_type("sqr", result["content_type"], current["content_type"])
+                val = '(' + operator + ' ' + \
+                      str(result["content"]) + ' ' + \
+                      str(current["content"]) + \
+                      ')'
+
+                resolved_c_type = resolve_expr_type(
+                    "sqr", 
+                    result["content_type"], 
+                    current["content_type"]
+                )
 
                 result = {
                     "content": val, 
@@ -1023,13 +1068,14 @@ class Transpiler(object):
                 }
 
             i += 1
-
         return result
 
 
 
     def factor(self, factor):
-        line, col = get_model(factor)._tx_parser.pos_to_linecol(factor._tx_position)
+        line, col = get_model(factor)._tx_parser \
+                    .pos_to_linecol(factor._tx_position)
+
         if factor.value.__class__.__name__ in ["int", "float", "bool"]:
             # If factor class is simple python type
             return {
@@ -1046,9 +1092,9 @@ class Transpiler(object):
                 "construct_type": ConstructType.WORKABLE,
                 "_tx_position": (line, col)
             }
-
         else:
-            # Enters when factor class is: VARIABLE or DataLocator VALUE ENTRY
+            # Enters when factor class is: VARIABLE or 
+            # DataLocator VALUE ENTRY
             return factor.value
 
 
@@ -1056,12 +1102,15 @@ class Transpiler(object):
     def variable(self, var):
         var_entry = self.variable_table.lookup(var.var_name)
         if var_entry == None:
-            line, col = get_model(var)._tx_parser.pos_to_linecol(var._tx_position)
+            line, col = get_model(var)._tx_parser \
+                        .pos_to_linecol(var._tx_position)
             message = "Undefined variable {0}.".format(var.var_name)
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
         else:
-            # Add used variables from current variable to the list of globally used variables
-            self.data_locator_vars = list(set(self.data_locator_vars) | set(var_entry.used_variables))
+            # Add used variables from current variable to the list of 
+            # globally used variables
+            self.data_locator_vars = list(set(self.data_locator_vars) | \
+                                          set(var_entry.used_variables))
             return var_entry.value
 
 
@@ -1072,7 +1121,8 @@ class Transpiler(object):
         field_name = data_locator.field
 
         # Get position of token
-        line, col = get_model(data_locator)._tx_parser.pos_to_linecol(data_locator._tx_position)
+        line, col = get_model(data_locator)._tx_parser \
+                    .pos_to_linecol(data_locator._tx_position)
 
         # Search for existing entry in data locator table
         field = self.data_locator_table.lookup(template_name, field_name)
@@ -1092,23 +1142,33 @@ class Transpiler(object):
                     found_data_provider = data_provider
 
             if found_data_provider == None:
-                message = "There is no data provider defined for template connection '{0}'.".format(template_name)
+                message = "There is no data provider defined for " \
+                          "template connection '{0}'." \
+                          .format(template_name)
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
             
             found_dp_field = found_data_provider.field_lookup(field_name)
 
             if not found_dp_field:
-                message = "Template field '{0}' is not defined in data provider's template '{1}'".format(field_name, template_name)
+                message = "Template field '{0}' is not defined in data " \
+                          "provider's template '{1}'" \
+                          .format(field_name, template_name)
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
-            # Generate new variable and add new entry to the data locator table
+            # Generate new variable and add new entry 
+            # to the data locator table
             gen_var_name = self.variable_table.add_helper_var({
                 "content": "",
                 "content_type": found_dp_field.type,
                 "construct_type": ConstructType.NOTHING,
             })
             self.data_locator_vars.append(gen_var_name)
-            self.data_locator_table.add(template_name, field_name, gen_var_name, found_dp_field)
+            self.data_locator_table.add(
+                template_name, 
+                field_name, 
+                gen_var_name, 
+                found_dp_field
+            )
             
             return {
                 "content": gen_var_name,
@@ -1132,8 +1192,10 @@ class Transpiler(object):
                 data_provider = ds
 
         if not data_provider:
-            line, col = get_model(web_op_object)._tx_parser.pos_to_linecol(web_op_object._tx_position)
-            message = "DSD model with name '{0}' does not exist.".format(model_name)
+            line, col = get_model(web_op_object)._tx_parser \
+                        .pos_to_linecol(web_op_object._tx_position)
+            message = "DSD model with name '{0}' does not exist." \
+                      .format(model_name)
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
         return data_provider
@@ -1144,8 +1206,10 @@ class Transpiler(object):
         for i in range(0, len(json_field_list)):
             for j in range(i+1, len(json_field_list)):
                 if json_field_list[i].name == json_field_list[j].name:
-                    line, col = get_model(web_op_object)._tx_parser.pos_to_linecol(web_op_object._tx_position)
-                    message = f"Duplicate fields '{json_field_list[i].name}' detected."
+                    line, col = get_model(web_op_object)._tx_parser \
+                                .pos_to_linecol(web_op_object._tx_position)
+                    message = "Duplicate fields '{0}' detected." \
+                              .format(json_field_list[i].name)
                     raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
 
@@ -1154,61 +1218,82 @@ class Transpiler(object):
         # Check if variable is [address variable]
         var_entry = self.variable_table.lookup(json_field.value.var_name)
         # Get token json_field value token location
-        line, col = get_model(json_field.value)._tx_parser.pos_to_linecol(json_field.value._tx_position)
+        line, col = get_model(json_field.value)._tx_parser \
+                    .pos_to_linecol(json_field.value._tx_position)
 
         if not var_entry:
-            message = f"Variable '{json_field.value.var_name}' is not defined."
+            message = "Variable '{0}' is not defined." \
+                      .format(json_field.value.var_name)
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
         
         if var_entry.var_type != VarType.FACT_ADDRESS:
-            message = f"Variable '{json_field.value.var_name}' is not fact address."
+            message = "Variable '{0}' is not fact address." \
+                      .format(json_field.value.var_name)
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
         if not "model_id" in var_entry.value:
-            message = f"Variable '{json_field.value.var_name}' does not point to any fact."
+            message = "Variable '{0}' does not point to any fact." \
+                      .format(json_field.value.var_name)
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
         # Extract information 
         fact_address_template_name = var_entry.value["model_id"]
         fact_address_field_name = json_field.value.field_name
         
-        # Check semantics of fact_address_template_name and fact_address_field_name
+        # Check semantics of fact_address_template_name and 
+        # fact_address_field_name
         found_data_provider = None
         for data_provider in self.data_providers:
             if data_provider.dsd.model_id == fact_address_template_name:
                 found_data_provider = data_provider
         if found_data_provider == None:
-            message = f"There is no data provider defined for fact address template '{fact_address_template_name}'."
+            message = "There is no data provider defined for " \
+                      "fact address template '{0}'." \
+                      .format(fact_address_template_name)
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
-        found_dp_field = found_data_provider.field_lookup(fact_address_field_name)
+        found_dp_field = found_data_provider \
+                         .field_lookup(fact_address_field_name)
         if not found_dp_field:
-            message = f"Fact address field '{fact_address_field_name}' is not defined in data provider's template '{fact_address_template_name}'"
+            message = "Fact address field '{0}' is not defined in " \
+                      "data provider's template '{1}'" \
+                      .format(fact_address_field_name,
+                              fact_address_template_name)
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
-        # Check if type of fact accress field is same as field in json object
+        # Check if type of fact accress field is 
+        # same as field in json object
         if dp_field != None and found_dp_field.type != dp_field.type:
-            message = f"Type missmatch in field '{json_field.name}'. Expected type '{dp_field.type}'. Given type '{found_dp_field.type}'"
+            message = "Type missmatch in field '{0}'. " \
+                      "Expected type '{1}'. " \
+                      "Given type '{2}'" \
+                      .format(json_field.name,
+                              dp_field.type,
+                              found_dp_field.type)
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
   
 
     def check_binding_variable(self, var, dp_field=None):
         var_entry = self.variable_table.lookup(var.var_name)
-        line, col = get_model(var)._tx_parser.pos_to_linecol(var._tx_position)
+        line, col = get_model(var)._tx_parser \
+                    .pos_to_linecol(var._tx_position)
 
         if var_entry == None:
             message = "Undefined variable {0}.".format(var.var_name)
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
         if var_entry.var_type != VarType.BINDING:
-            message = "Cannot reference non-binding variable in RHS of the rule."
+            message = "Cannot reference non-binding " \
+                      "variable in RHS of the rule."
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
         entry_type = var_entry.value["content_type"]
         if dp_field != None and entry_type != dp_field.type:
-            message = f"Type missmatch in field '{dp_field.field_name}'. "\
-                      f"Expected type '{dp_field.type}'. Given type is "\
-                      f"'{entry_type}'."
+            message = "Type missmatch in field '{0}'. " \
+                      "Expected type '{1}'. Given type is '{2}'." \
+                      .format(dp_field.field_name,
+                              dp_field.type,
+                              entry_type)
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
 
@@ -1234,11 +1319,10 @@ class Transpiler(object):
 
 
 
-    def check_model_refs_and_build_clips_func_call_args(self, 
-                                                        other_json_fields,
-                                                        dp_ref_foreign_models,
-                                                        json_object, 
-                                                        model_name):
+    def check_model_refs_and_build_clips_func_call_args(
+        self, other_json_fields, dp_ref_foreign_models,
+        json_object, model_name):
+
         # Check refs and collect actual refs from non-data fields
         json_refs = []
         for ref in dp_ref_foreign_models:
@@ -1253,9 +1337,10 @@ class Transpiler(object):
             if not ref_ok:
                 line, col = get_model(json_object)._tx_parser \
                             .pos_to_linecol(json_object._tx_position)
-                message = f"Foreign model reference field "\
-                          f"'{ref.field_name}' is omitted from the "\
-                          f"operation request for model '{model_name}'."
+                message = "Foreign model reference field " \
+                          "'{0}' is omitted from the " \
+                          "operation request for model '{1}'." \
+                          .format(ref.field_name, model_name)
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
         arg_list = []
@@ -1267,7 +1352,7 @@ class Transpiler(object):
 
 
 
-    def check_data_fields(self,data_json_fields, dp_field_list,
+    def check_data_fields(self, data_json_fields, dp_field_list,
                           can_reflect, model_name, web_op_name):
 
         # Check types and create args
@@ -1285,10 +1370,12 @@ class Transpiler(object):
                         line, col = get_model(json_field)._tx_parser \
                                 .pos_to_linecol(json_field._tx_position)
 
-                        message = f"Field '{json_field.name}' "\
-                                    f"contains data with wrong type. "\
-                                    f"Expected type is {dp_field.type}. "\
-                                    f"Given type is {given_type}."
+                        message = "Field '{0}' contains data with " \
+                                  "wrong type. Expected type is {1}. " \
+                                  "Found type is {2}." \
+                                  .format(json_field.name,
+                                          dp_field.type,
+                                          given_type)
                         raise AkashicError(message, line, col, 
                                             ErrType.SEMANTIC)
                     break 
@@ -1300,9 +1387,9 @@ class Transpiler(object):
 
                 line, col = get_model(json_field)._tx_parser \
                 .pos_to_linecol(json_field._tx_position)
-                message = f"Field '{dp_field.field_name}' "\
-                          f"is omitted from the operation request "\
-                          f"on model '{model_name}'."
+                message = "Field '{0}' is omitted from the operation " \
+                          "request on model '{1}'." \
+                          .format(dp_field.field_name, model_name)
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
 
@@ -1339,7 +1426,8 @@ class Transpiler(object):
                                                  data_provider)
                     self.check_binding_variable(json_field.value, dp_field)
 
-                    var_entry = self.variable_table.lookup(json_field.value.var_name)
+                    var_entry = self.variable_table \
+                                .lookup(json_field.value.var_name)
                     value = var_entry.value
 
                     # Build clips command args
@@ -1370,16 +1458,19 @@ class Transpiler(object):
         if create_s.reflect and not data_provider.dsd.can_reflect:
             line, col = get_model(create_s)._tx_parser \
             .pos_to_linecol(create_s._tx_position)
-            message = f"Model '{create_s.model_name}' does not support "\
-                      f"web reflection."
+            message = "Model '{0}' does not support " \
+                      "web reflection." \
+                      .format(create_s.model_name)
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
         # Exit if reflects on web, but does not have createApi
-        if (create_s.reflect) and not hasattr(data_provider.dsd.apis, 'create'):
+        if (create_s.reflect) and \
+        not hasattr(data_provider.dsd.apis, 'create'):
             line, col = get_model(create_s)._tx_parser \
             .pos_to_linecol(create_s._tx_position)
-            message = f"Model '{create_s.model_name}' does not support "\
-                      f"CREATE operation."
+            message = "Model '{0}' does not support " \
+                      "CREATE operation." \
+                      .format(create_s.model_name)
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
         # Check field list for duplicate fileds
@@ -1408,7 +1499,7 @@ class Transpiler(object):
 
         ref_arg_list = []
         if (data_provider.dsd.can_reflect and \
-            hasattr(data_provider.dsd.apis.create, 'ref_foreign_models')):
+        hasattr(data_provider.dsd.apis.create, 'ref_foreign_models')):
             ref_arg_list = \
                 self.check_model_refs_and_build_clips_func_call_args(
                     other_json_fields, 
@@ -1438,7 +1529,7 @@ class Transpiler(object):
 
     def return_statement(self, return_s):
         # Check field list for duplicate fileds
-        self.check_field_list_for_duplicates(return_s.json_object.field_list, 
+        self.check_field_list_for_duplicates(return_s.json_object.field_list,
                                              return_s)
 
         # Build DATA argument list
