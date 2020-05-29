@@ -77,3 +77,17 @@ def translate_if_c_bool(value):
             return "FALSE"
     else:
         return value
+
+
+def string_to_py_type(self, s, to_type):
+    if to_type == "INTEGER":
+        return int(s)
+    elif to_type == "FLOAT":
+        return float(s)
+    elif to_type == "BOOLEAN":
+        if s == "True" or s == "TRUE" or s == "1":
+            return True
+        else: 
+            return False
+    else:
+        return s

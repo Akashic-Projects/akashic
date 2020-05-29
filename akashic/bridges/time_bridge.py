@@ -1,6 +1,6 @@
 import datetime
 
-from akashic.util.type_converter import py_to_clips_type
+from akashic.util.type_converter import string_to_py_type
 from akashic.exceptions import AkashicError, ErrType
 
 
@@ -10,6 +10,25 @@ class TimeBridge(object):
     We use this class to store time and date related python
     functions called by CLIPS enviroment
     """
+
+    def __init__(self):
+        self.exposed_functions= [
+            {
+                "function":     self.str_to_time,
+                "num_of_args":  2,
+                "return_type":  "INTEGER"
+            },
+            {
+                "function":     self.time_to_str,
+                "num_of_args":  2,
+                "return_type":  "STRING"
+            },
+            {
+                "function":     self.sub_times,
+                "num_of_args":  2,
+                "return_type":  "INTEGER"
+            }
+        ]
 
 
     def str_to_time(self, time_str, time_format):
@@ -26,6 +45,7 @@ class TimeBridge(object):
         date_time_obj = datetime.datetime.fromtimestamp(int(time))
 
         return date_time_obj.strftime(time_format)
+
 
 
     def sub_times(self, time1, time2):

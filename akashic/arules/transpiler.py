@@ -40,10 +40,8 @@ class Transpiler(object):
         6. Loads CLIPS Pattern Builder module.
         """
 
-        self.data_bridge = env_provider.data_bridge
-        self.time_bridge = env_provider.time_bridge
-
-        self.data_providers = self.data_bridge.data_providers
+        self.data_providers = env_provider.data_providers
+        self.functions = env_provider.functions
 
         self.variable_table = VariableTable()
         self.data_locator_table = DataLocatorTable()
@@ -69,13 +67,7 @@ class Transpiler(object):
             'TestSingularLogicExpression': \
                 self.test_singular_logic_expression,
 
-            'NegationFunction':   self.negation_function,
-            'CountFunction':      self.count_function,
-            'StrFunction':        self.str_function,
-            'StrToTimeFunction':  self.str_to_time_function,
-            'TimeToStrFunction':  self.time_to_str_function,
-            'SubTimesFunction':   self.sub_times_function,
-            
+            'Function':         self.function,
             'LogicExpression':  self.logic_expression,
             'CompExpression':   self.comp_expression,
             'PlusMinusExpr':    self.plus_minus_expr,
@@ -442,19 +434,56 @@ class Transpiler(object):
 
 
 
-    def negation_function(self, neg):
-        result = neg.operand
-        bline, bcol = get_model(neg)._tx_parser \
-                      .pos_to_linecol(neg._tx_position)
+    def function(self, func):
+        def check_num_of_args(func, n):
+            line, col = get_model(func)._tx_parser \
+                        .pos_to_linecol(func._tx_position)
+
+            if int(n) >= 0 and len(func.args) != int(n):
+                message = "Function '{0}' must have {1} arguments." \
+                          .format(func.func_name, int(n))
+                raise AkashicError(message, line, col, ErrType.SEMANTIC)
+
+            if int(n) <= -1 and len(func.args) < (-1) * int(n):
+                message = "Function '{0}' must have at least {1} arguments." \
+                          .format(func.func_name, (-1) * int(n))
+                raise AkashicError(message, line, col, ErrType.SEMANTIC)
+
+        if func.func_name == "not":
+            check_num_of_args(func, 1)
+            return self.negation_function(func)
+        elif func.func_name == 'count':
+            check_num_of_args(func, 1)
+            return self.count_function(func)
+        elif func.func_name == 'str':
+            check_num_of_args(func, 1)
+            return self.str_function(func)
+        else:
+            if not func.func_name in self.functions:
+                line, col = get_model(obj)._tx_parser \
+                        .pos_to_linecol(obj._tx_position)
+                message = "Function '{0}' is not defined in any bridge." \
+                          .format(func.func_name)
+                raise AkashicError(message, line, col, ErrType.SEMANTIC)
+            
+            check_num_of_args(func, 
+                              self.functions[func.func_name]["num_of_args"])
+
+            return self.generic_function(func)
+
+
+    def negation_function(self, neg_f):
+        result = neg_f.args[0]
+        bline, bcol = get_model(neg_f)._tx_parser \
+                      .pos_to_linecol(neg_f._tx_position)
 
         if result["content_type"] not in ["INTEGER", "FLOAT", "BOOLEAN"]:
             line, col = result["_tx_position"]
-            message = "Negation operand type INTEGER, FLOAT or BOOLEAN " \
+            message = "Negation argument type INTEGER, FLOAT or BOOLEAN " \
                       "is expected, but '{0}' found." \
                       .format(result["content_type"])
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
-        operator = neg.operator
         if result["content_type"] == ConstructType.WORKABLE:
             clips_content = not result["content"]
             return {
@@ -464,7 +493,7 @@ class Transpiler(object):
                 "_tx_position": (bline, bcol)
             }
         else:
-            clips_content = '(' + operator + ' ' + \
+            clips_content = '(not ' + \
                             str(translate_if_c_bool(result["content"])) + \
                             ')'
 
@@ -478,28 +507,24 @@ class Transpiler(object):
 
 
 
-    def count_function(self, countt):
-        bline, bcol = get_model(countt)._tx_parser.pos_to_linecol(countt._tx_position)
+    def count_function(self, count_f):
+        result = count_f.args[0]
+        bline, bcol = get_model(count_f)._tx_parser \
+                      .pos_to_linecol(count_f._tx_position)
 
-        if countt.operand["construct_type"] != ConstructType.NORMAL_EXP:
-            line, col = countt.operand["_tx_position"]
-            message =  "{0} operation argument must be expression. {1} given.".format(
-                countt.operator, countt.operand["construct_type"])
+        if result["construct_type"] != ConstructType.NORMAL_EXP:
+            line, col = result["_tx_position"]
+            message = "Count operation argument must be expression. " \
+                      "{0} given.".format(result["construct_type"])
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
         # Build count command if present
-        clips_command = self.clips_statement_builder.build_count_pattern(
+        clips_content = self.clips_statement_builder.build_count_pattern(
             self.data_locator_table, 
             self.data_locator_vars, 
-            countt.operand["content"]
+            result["content"]
         )
 
-        # Rotate defined variables for next special expression
-        # self.rotate_used_data_locator_vars()
-        # self.data_locator_vars = []
-
-        # Return CLIPS command
-        clips_content = clips_command
         resolved_c_type = "INTEGER"
         return {
             "content": clips_content,
@@ -510,10 +535,10 @@ class Transpiler(object):
 
 
 
-    def str_function(self, strr):
-        result = strr.operand
-        bline, bcol = get_model(strr)._tx_parser \
-                      .pos_to_linecol(strr._tx_position)
+    def str_function(self, str_f):
+        result = str_f.args[0]
+        bline, bcol = get_model(str_f)._tx_parser \
+                      .pos_to_linecol(str_f._tx_position)
 
         resolved_c_type = "STRING"
         if result["content_type"] == ConstructType.WORKABLE:
@@ -536,133 +561,28 @@ class Transpiler(object):
 
 
 
-    def str_to_time_function(self, sttf):
-        time = sttf.operands[0]
-        time_format = sttf.operands[1]
+    def generic_function(self, generic):
+        bline, bcol = get_model(generic)._tx_parser \
+                      .pos_to_linecol(generic._tx_position)
 
-        bline, bcol = get_model(sttf)._tx_parser \
-                      .pos_to_linecol(sttf._tx_position)
+        clips_args = []
+        for arg in generic.args:
+            c_arg = ""
+            if arg["construct_type"] == ConstructType.WORKABLE:
+                c_arg = '"' + str(arg["content"]) + '"'
+            else:
+                c_arg = str(arg["content"])
+            clips_args.append(c_arg)
 
-        def raise_error_if_not_type(obj, expected_types):
-            if obj["content_type"] != "STRING":
-                line, col = obj["_tx_position"]
-                message = "Expected type '{0}', but '{1}' found." \
-                          .format(expected_types, 
-                                  time["content_type"])
-                raise AkashicError(message, line, col, ErrType.SEMANTIC)
         
-        raise_error_if_not_type(time, "STRING")
-        raise_error_if_not_type(time_format, "STRING")
-
-        time_str = None
-        if time["construct_type"] == ConstructType.WORKABLE:
-            time_str = '"' + time["content"] + '"'
-        else:
-            time_str = time["content"]
-
-        time_format_str = None
-        if time_format["construct_type"] == ConstructType.WORKABLE:
-            time_format_str = '"' + time_format["content"] + '"'
-        else:
-            time_format_str = time_format["content"]
-        
-        construct_type = ConstructType.NORMAL_EXP
-        resolved_c_type = "INTEGER"
-        clips_content = "(str_to_time " + \
-                        time_str + " " + \
-                        time_format_str + \
+        clips_content = "(" + \
+                        generic.func_name + ' ' + \
+                        " ".join(clips_args) + \
                         ")"
-        return {
-            "content": clips_content,
-            "content_type": resolved_c_type,
-            "construct_type": construct_type,
-            "_tx_position": (bline, bcol)
-        }
-
-
-
-    def time_to_str_function(self, ttsf):
-        time = ttsf.operands[0]
-        time_format = ttsf.operands[1]
-
-        bline, bcol = get_model(ttsf)._tx_parser \
-                      .pos_to_linecol(ttsf._tx_position)
-
-        def raise_error_if_not_type(obj, expected_type):
-            if obj["content_type"] != expected_type:
-                line, col = obj["_tx_position"]
-                message = "Expected type '{0}', but '{1}' found." \
-                          .format(expected_type, 
-                                  time["content_type"])
-                raise AkashicError(message, line, col, ErrType.SEMANTIC)
         
-        raise_error_if_not_type(time, "INTEGER")
-        raise_error_if_not_type(time_format, "STRING")
-
-        time_str = None
-        if time["construct_type"] == ConstructType.WORKABLE:
-            time_str = '"' + time["content"] + '"'
-        else:
-            time_str = time["content"]
-
-        time_format_str = None
-        if time_format["construct_type"] == ConstructType.WORKABLE:
-            time_format_str = '"' + time_format["content"] + '"'
-        else:
-            time_format_str = time_format["content"]
-        
-
+        resolved_c_type = self.functions[generic.func_name]["return_type"]
         construct_type = ConstructType.NORMAL_EXP
-        resolved_c_type = "STRING"
-        clips_content = "(time_to_str " + \
-                        time_str + " " + \
-                        time_format_str + \
-                        ")"
-        return {
-            "content": clips_content,
-            "content_type": resolved_c_type,
-            "construct_type": construct_type,
-            "_tx_position": (bline, bcol)
-        }
 
-
-    def sub_times_function(self, stf):
-        time = stf.operands[0]
-        time_format = stf.operands[1]
-
-        bline, bcol = get_model(stf)._tx_parser \
-                      .pos_to_linecol(stf._tx_position)
-
-        def raise_error_if_not_type(obj, expected_type):
-            if obj["content_type"] != expected_type:
-                line, col = obj["_tx_position"]
-                message = "Expected type '{0}', but '{1}' found." \
-                          .format(expected_type, 
-                                  time["content_type"])
-                raise AkashicError(message, line, col, ErrType.SEMANTIC)
-        
-        raise_error_if_not_type(time, "INTEGER")
-        raise_error_if_not_type(time_format, "INTEGER")
-
-        time_str = None
-        if time["construct_type"] == ConstructType.WORKABLE:
-            time_str = '"' + time["content"] + '"'
-        else:
-            time_str = time["content"]
-
-        time_format_str = None
-        if time_format["construct_type"] == ConstructType.WORKABLE:
-            time_format_str = '"' + time_format["content"] + '"'
-        else:
-            time_format_str = time_format["content"]
-        
-
-        construct_type = ConstructType.NORMAL_EXP
-        resolved_c_type = "INTEGER"
-        clips_content = "(sub_times " + \
-                        time_str + " " + \
-                        time_format_str + \
-                        ")"
         return {
             "content": clips_content,
             "content_type": resolved_c_type,
@@ -871,19 +791,24 @@ class Transpiler(object):
 
             operator = plus_minus.operator[i-1]
 
-            if (result["construct_type"]  == ConstructType.WORKABLE 
-            and current["construct_type"] == ConstructType.WORKABLE):
-                if operator == '+':
-                    val = result["content"] + current["content"]
-                elif operator == '-':
-                    if ("STRING" in [result["content_type"],
-                    current["content_type"]]):
+            if result["construct_type"]  == ConstructType.WORKABLE \
+            and current["construct_type"] == ConstructType.WORKABLE:
+                if result["content_type"] == "STRING" \
+                or current["content_type"] == "STRING":
+                    if operator == '+':
+                        val = '"' + str(result["content"]) + \
+                              str(current["content"]) + '"'
+                    elif operator == '-':
                         line, col = result["_tx_position"]
                         message = "Cannot perform operation 'minus' " \
-                                  "on strings."
+                                    "on strings."
                         raise AkashicError(message, line, col, 
-                                           ErrType.SEMANTIC)
+                                            ErrType.SEMANTIC)
 
+                        val = result["content"] - current["content"]
+                elif operator == '+':
+                    val = result["content"] + current["content"]
+                elif operator == '-':
                     val = result["content"] - current["content"]
                     
                 result = {
@@ -1520,10 +1445,7 @@ class Transpiler(object):
         ])
 
         clips_command = "(create_func " + " ".join(arg_array) + ")"
-        # self.rhs_clips_command_list.append(clips_command)
-
-        # Direct call of function data_bridge function - for testing purpose
-        self.data_bridge.create_func(arg_array)
+        self.rhs_clips_command_list.append(clips_command)
 
 
 
@@ -1545,8 +1467,7 @@ class Transpiler(object):
         clips_command = "(return_func " + " ".join(arg_array) + ")"
         self.rhs_clips_command_list.append(clips_command)
 
-        # Direct call of function data_bridge function - for testing purpose
-        # self.data_bridge.return_func(arg_array)
+
     
     def update_statement(self, update_s):
         pass

@@ -94,39 +94,9 @@ Root:
     Function
 ;
 
+
 Function:
-    NegationFunction |
-    CountFunction |
-    
-    SubTimesFunction |
-    StrToTimeFunction |
-    TimeToStrFunction |
-    
-    StrFunction 
-;
-
-SubTimesFunction:
-    operator=SUB_TIMES '(' operands=Factor COMMA operands=Factor ')'
-;
-
-TimeToStrFunction:
-    operator=TIME_TO_STR '(' operands=Factor COMMA operands=Factor ')'
-;
-
-StrToTimeFunction:
-    operator=STR_TO_TIME '(' operands=Factor COMMA operands=Factor ')'
-;
-
-StrFunction:
-    operator=STR operand=Factor
-;
-
-CountFunction:
-    operator=COUNT operand=Factor
-;
-
-NegationFunction:
-    operator=NOT operand=Factor
+    func_name=ID LPAR args=Factor (COMMA args=Factor)* RPAR
 ;
 
 LogicExpression:

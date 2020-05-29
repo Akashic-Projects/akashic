@@ -102,35 +102,22 @@ def test_rule_transpiler():
     course_data_provider.load(dsd_string)
     course_data_provider.setup()
 
-    # Create new Akashic-CLIPS data_bridge
-    data_bridge = DataBridge([user_data_provider, course_data_provider])
-
-    # Create CLIPS env
-    env = EnvProvider()
-
-    # Provide self to eachother
-    data_bridge.set_env_provider(env)
-    env.set_data_bridge(data_bridge)
-
-    # Create and set time bridge
-    time_bridge = TimeBridge()
-    env.set_time_bridge(time_bridge)
-
-    # Setup akashic transpiler
-    transpiler = Transpiler(env)
-
-    # Read rule from sample file
-    this_folder = dirname(__file__)
-
+    # Create CLIPS env_provider
+    env_provider = EnvProvider([user_data_provider, course_data_provider])
+    
     # Insert COURSE tempalte
     course_template = course_data_provider.generate_clips_template() 
-    env.define_template(course_template)
+    env_provider.define_template(course_template)
 
     # Insert USER tempalte
     user_template = user_data_provider.generate_clips_template() 
-    env.define_template(user_template)
+    env_provider.define_template(user_template)
+
+    # Setup akashic transpiler
+    transpiler = Transpiler(env_provider)
 
     # Load Akashic rule
+    this_folder = dirname(__file__)
     sample_path = abspath(join(this_folder, '..', 'test', 'samples', 'arules', 'test_test.json'))
     with open(sample_path, 'r') as sample:
         akashic_rule = sample.read()
@@ -143,8 +130,8 @@ def test_rule_transpiler():
     print(transpiler.tranpiled_rule)        
     print()
 
-    # Insert transpiled rule intu the ENV
-    env.insert_rule(transpiler.tranpiled_rule)
+    # Insert transpiled rule in env_provider
+    env_provider.insert_rule(transpiler.tranpiled_rule)
 
 
     #####  1. TEST OF THE SYSTEM
@@ -153,24 +140,25 @@ def test_rule_transpiler():
     multiple_courses = course_data_provider.read_multiple()
     # Generate CLIPS facts from JSON objects
     course_clips_facts = course_data_provider.generate_multiple_clips_facts(multiple_courses, 5)
-    # Insert CLIPS facts into ENV
+    # Insert CLIPS facts in env_provider
     for u in course_clips_facts:
-        env.insert_fact(u)
+        env_provider.insert_fact(u)
 
-    
 
-    # env.env.eval("(undefrule Test_count_rule)")
+    # env_provider.env.eval("(undefrule Test_count_rule)")
+
 
     # Run CLIPS engine
-    env.run()
+    env_provider.run()
 
     # print("\n")
     # print("RULES: ")
     # print("-------------------------")
-    # for r in env.env.rules():
+    # for r in env_provider.env.rules():
     #     print(r)
     #     print("+++++++++++++++++++++++++")
        
+
 
 if __name__ == "__main__":
     #test_data_provider()
