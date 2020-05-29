@@ -4,7 +4,7 @@
     "when": [
         { "?course_time": "str_to_time(Course.start_date, '%d.%m.%Y.')" },
         { "?now": "str_to_time('now', '')" },
-        { "?till_course_start=": "'Broj dana do pocetka: ' + sub_times(?course_time, ?now) / (60*60*24)"}
+        { "?till_course_start=": "'Broj dana do pocetka: ' + str(sub_times(?course_time, ?now) / (60*60*24))"}
 
     ],
     "then": [
