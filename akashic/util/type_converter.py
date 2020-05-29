@@ -1,12 +1,12 @@
 
-# TODO: Check if BOOLEAN is really needed here
 def clips_to_py_type(ctype):
     """ Converts CLIPS type to Python type
     
     Parameters
     ----------
     ctype : str
-        CLIPS type, possible values: "INTEGER", "FLOAT", "STRING" and maybe "BOOLEAN"
+        CLIPS type, possible values: "INTEGER", "FLOAT", "STRING" 
+        and maybe "BOOLEAN"
 
     Returns
     -------
@@ -53,7 +53,9 @@ def py_to_clips_type(ptype):
     return ctype
 
 
- # TODO: Check what's up with boolean as 1s of 0s in data_provider tempalte type
+
+ # TODO: Check what's up with boolean as 1s of 0s 
+ #       in data_provider tempalte type
 def translate_if_c_bool(value):
     """ Translates python bool into the CLIPS boolean
 
@@ -77,6 +79,7 @@ def translate_if_c_bool(value):
             return "FALSE"
     else:
         return value
+
 
 
 def string_to_py_type(self, s, to_type):

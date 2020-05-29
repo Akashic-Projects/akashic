@@ -1,9 +1,11 @@
 
 from enum import Enum
 
+
 class ErrType(Enum):
     def __str__(self):
         return str(self.name)
+
     SEMANTIC  = 1
     SYNTACTIC = 2
     SYSTEM    = 3

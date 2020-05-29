@@ -18,6 +18,7 @@ from datetime import datetime
 class RespType(Enum):
     def __str__(self):
         return str(self.name)
+
     SUCCESS = 1
     INFO = 2
     ERROR = 3
@@ -64,7 +65,11 @@ def resp(data, message, ln, col, resp_type):
             "timestamp": get_time()
         }
     })
-    return Response(resp_json, status=status_code, mimetype='application/json')
+    return Response(
+        resp_json, 
+        status=status_code, 
+        mimetype='application/json'
+    )
 
 
 ## DSDS SECTION
@@ -75,8 +80,9 @@ def get_dsds():
     cursors = mongo.db.dsds.find({})
     dsds = list(cursors)
 
-    return resp(dsds, f"List of DSDs is successfully loaded.",
-                0, 0, RespType.SUCCESS)
+    message = "List of DSDs is successfully loaded."
+    return resp(dsds, message, 0, 0, RespType.SUCCESS)
+
 
 
 @app.route('/dsds', methods=['POST'])
@@ -84,13 +90,15 @@ def create_dsd():
     # Get JSON data
     akashic_dsd = request.json
 
-    # Check is this even exists, prevent: ---NoneType' object is not subscriptable---
+    # Check is this even exists, prevent: 
+    # ---NoneType' object is not subscriptable---
 
     # Check if DSD with given model-name already exists
     if mongo.db.dsds.count_documents(
             {'model-name': { '$eq': akashic_dsd['model-name']}}) > 0:
-        return resp(None, "DSD with given model-name already exists.",
-                    0, 0, RespType.ERROR)
+
+        message = "DSD with given model-name already exists."
+        return resp(None, message, 0, 0, RespType.ERROR)
 
     # Create DSD provider -> syntactic and semnatic check
     data_provider = DataProvider()
@@ -117,8 +125,11 @@ def create_dsd():
     dsd_entry['clips_code'] = clips_template
     mongo.db.dsds.insert_one(dsd_entry)
 
-    return resp(dsd_entry, f"New DSD with model-name '{akashic_dsd['model-name']}' is successfully created.",
-                0, 0, RespType.SUCCESS)
+    message = "New DSD with model-name '{0}' " \
+              "is successfully created." \
+              .format(akashic_dsd['model-name'])
+    return resp(dsd_entry, message, 0, 0, RespType.SUCCESS)
+
 
 
 @app.route('/dsds/<string:old_model_name>', methods=['PUT'])
@@ -127,10 +138,12 @@ def update_dsd(old_model_name):
     akashic_dsd = request.json
 
     # Check if DSD with given model-name exists
-    foundDSD = mongo.db.dsds.find_one({'model-name': {'$eq': old_model_name}})
+    foundDSD = mongo.db.dsds.find_one(
+                {'model-name': {'$eq': old_model_name}})
+
     if not foundDSD:
-        return resp(None, "DSD with given model-name does not exists.",
-                    0, 0, RespType.ERROR)
+        message = "DSD with given model-name does not exists."
+        return resp(None, message, 0, 0, RespType.ERROR)
 
     # Create DSD provider -> syntactic and semnatic check
     data_provider = DataProvider()
@@ -142,8 +155,9 @@ def update_dsd(old_model_name):
     try:
         dsd_providers_dict.pop(old_model_name)    
     except KeyError:
-        return resp(None, "E345: dsd_providers_dict - entity with given key not found.",
-                    0, 0, RespType.ERROR)
+        message = "E345: dsd_providers_dict - " \
+                  "entity with given key not found."
+        return resp(None, message, 0, 0, RespType.ERROR)
 
     # Add new DSD provider to dict
     dsd_providers_dict[akashic_dsd['model-name']] = data_provider
@@ -165,8 +179,10 @@ def update_dsd(old_model_name):
     # Repalce old db-entry
     mongo.db.dsds.replace_one({"model-name": old_model_name}, dsd_entry)
 
-    return resp(dsd_entry, f"DSD with model-name '{old_model_name}' is successfully updated.",
-                0, 0, RespType.SUCCESS)
+    message = "DSD with model-name '{0}' is successfully updated." \
+              .format(old_model_name)
+    return resp(dsd_entry, message, 0, 0, RespType.SUCCESS)
+
 
 
 @app.route('/dsds/enable/<string:model_name>', methods=['PUT'])
@@ -176,8 +192,11 @@ def enable_dsd(model_name):
                 {"$set": {"active": True}},
                 return_document=ReturnDocument.AFTER
     )
-    return resp(result, f"DSD with model-name '{model_name}' is successfully enabled.",
-                0, 0, RespType.SUCCESS)
+
+    message = "DSD with model-name '{0}' is " \
+              "successfully enabled.".format(model_name)
+    return resp(result, message, 0, 0, RespType.SUCCESS)
+
 
 
 @app.route('/dsds/disable/<string:model_name>', methods=['PUT'])
@@ -187,16 +206,21 @@ def disable_dsd(model_name):
                 {"$set": {"active": False}},
                 return_document=ReturnDocument.AFTER
     )
-    return resp(result, f"DSD with model-name '{model_name}' is successfully disabled.",
-                0, 0, RespType.SUCCESS)
+
+    message = "DSD with model-name '{0}' is " \
+              "successfully disabled.".format(model_name)
+    return resp(result, message, 0, 0, RespType.SUCCESS)
+
 
 
 @app.route('/dsds/<string:model_name>', methods=['DELETE'])
 def remove_dsd(model_name):
     result = mongo.db.dsds.delete_one({"model-name": model_name})
     
-    return resp(None, f"DSD with model-name '{model_name}' is successfully deleted.",
-                0, 0, RespType.SUCCESS)
+    message = "DSD with model-name '{0}' is " \
+              "successfully deleted.".format(model_name)
+    return resp(None, message, 0, 0, RespType.SUCCESS)
+
 
 
 ## RULE SECTION
@@ -207,8 +231,9 @@ def get_rules():
     cursors = mongo.db.rules.find({})
     rules = list(cursors)
 
-    return resp(rules, f"List of rules is successfully loaded.",
-                0, 0, RespType.SUCCESS)
+    message = "List of rules is successfully loaded."
+    return resp(rules, message, 0, 0, RespType.SUCCESS)
+
 
 
 @app.route('/rules', methods=['POST'])
@@ -220,8 +245,9 @@ def create_rule():
     # Check if rule with gven name already exists
     if mongo.db.rules.count_documents(
             {'rule-name': { '$eq': akashic_rule['rule-name']}}) > 0:
-        return resp(None, "Rule with given rule-name already exists.",
-                    0, 0, RespType.ERROR)
+        
+        message = "Rule with given rule-name already exists."
+        return resp(None, message, 0, 0, RespType.ERROR)
 
     rule_entry = {}
     rule_entry['rule-name'] = akashic_rule['rule-name']
@@ -231,8 +257,9 @@ def create_rule():
 
     mongo.db.rules.insert_one(rule_entry)
     
-    return resp(rule_entry, f"New rule with rule-name '{akashic_rule['rule-name']}' is successfully created.",
-                0, 0, RespType.SUCCESS)
+    message = "New rule with rule-name '{0}' is successfully created." \
+              .format(akashic_rule['rule-name'])
+    return resp(rule_entry, message, 0, 0, RespType.SUCCESS)
 
 
 
@@ -244,8 +271,9 @@ def update_rule(old_rule_name):
     # Check if DSD with given model-name exists
     foundRule = mongo.db.rules.find_one({'rule-name': {'$eq': old_rule_name}})
     if not foundRule:
-        return resp(None, "Rule with given rule-name does not exists.",
-                    0, 0, RespType.ERROR)
+
+        message = "Rule with given rule-name does not exists."
+        return resp(None, message, 0, 0, RespType.ERROR)
 
     # Create DSD db-entry
     rule_entry = {}
@@ -257,8 +285,10 @@ def update_rule(old_rule_name):
     # Replace old db-entry
     mongo.db.rules.replace_one({"rule-name": old_rule_name}, rule_entry)
 
-    return resp(rule_entry, f"Rule with rule-name '{old_rule_name}' is successfully updated.",
-                0, 0, RespType.SUCCESS)
+    message = "Rule with rule-name '{0}' is successfully updated." \
+              .format(old_rule_name)
+    return resp(rule_entry, message, 0, 0, RespType.SUCCESS)
+
 
 
 @app.route('/rules/enable/<string:rule_name>', methods=['PUT'])
@@ -268,8 +298,11 @@ def enable_rule(rule_name):
                 {"$set": {"active": True}},
                 return_document=ReturnDocument.AFTER
     )
-    return resp(result, f"Rule with rule-name '{rule_name}' is successfully enabled.",
-                0, 0, RespType.SUCCESS)
+
+    message = "Rule with rule-name '{0}' is successfully enabled." \
+              .format(rule_name)
+    return resp(result, message, 0, 0, RespType.SUCCESS)
+
 
 
 @app.route('/rules/disable/<string:rule_name>', methods=['PUT'])
@@ -279,16 +312,20 @@ def disable_rule(rule_name):
                 {"$set": {"active": False}},
                 return_document=ReturnDocument.AFTER
     )
-    return resp(result, f"Rule with rule-name '{rule_name}' is successfully disabled.",
-                0, 0, RespType.SUCCESS)
+
+    message = "Rule with rule-name '{0}' is successfully disabled." \
+              .format(rule_name)
+    return resp(result, message, 0, 0, RespType.SUCCESS)
+
 
 
 @app.route('/rules/<string:rule_name>', methods=['DELETE'])
 def remove_rule(rule_name):
     result = mongo.db.rules.delete_one({"rule-name": rule_name})              
     
-    return resp(None, f"Rule with rule-name '{rule_name}' is successfully deleted.",
-                0, 0, RespType.SUCCESS)
+    message = "Rule with rule-name '{0}' is successfully deleted." \
+              .format(rule_name)
+    return resp(None, message, 0, 0, RespType.SUCCESS)
 
 
 app.run(debug=True)
