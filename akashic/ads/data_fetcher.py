@@ -16,14 +16,17 @@ class DataFetcher(object):
         Parameters
         ----------
         auth_header : object
-            Object containing authentication token header name, token and token prefix
+            Object containing authentication token header name,
+            token and token prefix
         headers : dict
-            Dictionary containing header data pairs of 'header_name : header_value'
+            Dictionary containing header data pairs of
+            'header_name : header_value'
         """
 
         self.headers = {}
         if (auth_header != None):
-            self.headers[auth_header.auth_header_name] = auth_header.token_prefix + " " + auth_header.token
+            self.headers[auth_header.auth_header_name] = \
+                auth_header.token_prefix + " " + auth_header.token
 
         if (headers != None):
             for h in headers:
@@ -41,7 +44,8 @@ class DataFetcher(object):
         payload : object
             JSON object containing data for creation of new entity
         headers : dict
-            Dictionary containing header data pairs of 'header_name : header_value'
+            Dictionary containing header data pairs of 
+            'header_name : header_value'
         
         Returns
         -------
@@ -50,7 +54,11 @@ class DataFetcher(object):
         """
 
         headers.update(self.headers)
-        response = requests.post(url, data=json.dumps(payload), headers=headers)
+        response = requests.post(
+            url, 
+            data=json.dumps(payload), 
+            headers=headers
+        )
         response.raise_for_status()
         return response.text
 
@@ -64,7 +72,8 @@ class DataFetcher(object):
         url : str
             REST URL on which request will be sent
         headers : dict
-            Dictionary containing header data pairs of 'header_name : header_value'
+            Dictionary containing header data pairs of 
+            'header_name : header_value'
         
         Returns
         -------
@@ -87,7 +96,8 @@ class DataFetcher(object):
         url : str
             REST URL on which request will be sent
         headers : dict
-            Dictionary containing header data pairs of 'header_name : header_value'
+            Dictionary containing header data pairs of
+            'header_name : header_value'
         
         Returns
         -------
@@ -112,7 +122,8 @@ class DataFetcher(object):
         payload : object
             JSON object containing data for updating of new entity
         headers : dict
-            Dictionary containing header data pairs of 'header_name : header_value'
+            Dictionary containing header data pairs of 
+            'header_name : header_value'
         
         Returns
         -------
@@ -121,7 +132,11 @@ class DataFetcher(object):
         """
 
         headers.update(self.headers)
-        response = requests.put(url, data=json.dumps(payload), headers=headers)
+        response = requests.put(
+            url, 
+            data=json.dumps(payload), 
+            headers=headers
+        )
         response.raise_for_status()
         return response.text
     
@@ -134,7 +149,8 @@ class DataFetcher(object):
         url : str
             REST URL on which request will be sent
         headers : dict
-            Dictionary containing header data pairs of 'header_name : header_value'
+            Dictionary containing header data pairs of 
+            'header_name : header_value'
         
         Returns
         -------
