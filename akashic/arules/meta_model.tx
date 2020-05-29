@@ -50,9 +50,9 @@ FACT_ADDRESS_VAR:
 ;
 
 ASSERTION:
-    '{' ASSERT_KW ':' '"' 
-        (expr=SpecialBinaryLogicExpression | 
-        expr=TestSingularLogicExpression) '"' 
+    '{' ASSERT_KW ':'
+        '"' (expr=SpecialBinaryLogicExpression | 
+             expr=TestSingularLogicExpression) '"' 
     '}'
 ;
 
