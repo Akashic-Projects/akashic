@@ -1,12 +1,10 @@
-
-from akashic.util.type_converter import clips_to_py_type, py_to_clips_type
-
-from akashic.exceptions import AkashicError, ErrType
-
 import re
 import json
 from jsonpath_ng import jsonpath, parse
 
+from akashic.util.type_converter import clips_to_py_type, py_to_clips_type
+
+from akashic.exceptions import AkashicError, ErrType
 
 
 class DataChecker(object):
