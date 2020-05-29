@@ -10,7 +10,7 @@
     "then": [
         {
            "return": {
-               "test": "?till_course_start"
+               "time_untill_course": "?till_course_start"
             }
         }
     ]

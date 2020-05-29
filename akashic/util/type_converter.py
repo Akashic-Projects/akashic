@@ -82,7 +82,7 @@ def translate_if_c_bool(value):
 
 
 
-def string_to_py_type(self, s, to_type):
+def string_to_py_type(s, to_type):
     if to_type == "INTEGER":
         return int(s)
     elif to_type == "FLOAT":

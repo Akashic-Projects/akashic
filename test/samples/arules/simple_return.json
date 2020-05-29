@@ -1,0 +1,16 @@
+{
+    "rule-name": "Test_count_rule",
+    "salience": 100,
+    "when": [
+    ],
+    "then": [
+        {
+           "return": {
+               "test": "This is some text",
+               "number": 345,
+               "boolean": true,
+               "float": 343.567
+            }
+        }
+    ]
+}

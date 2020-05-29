@@ -39,7 +39,8 @@ class Transpiler(object):
         5. Loads Akashic meta-model.
         6. Loads CLIPS Pattern Builder module.
         """
-
+        
+        self.env_provider = env_provider
         self.data_providers = env_provider.data_providers
         self.functions = env_provider.functions
 
@@ -889,18 +890,20 @@ class Transpiler(object):
                           result_content + ' ' + \
                           current_content + ')'
                     resolved_c_type = resolve_expr_type(
-                                        "plus_minus", 
-                                        result["content_type"], 
-                                        current["content_type"])
+                        "plus_minus", 
+                        result["content_type"], 
+                        current["content_type"]
+                    )
 
                 else:
                     val = '(' + operator + ' ' + \
                         str(result["content"]) + ' ' + \
                         str(current["content"]) + ')'
                     resolved_c_type = resolve_expr_type(
-                                        "plus_minus", 
-                                        result["content_type"], 
-                                        current["content_type"])
+                        "plus_minus", 
+                        result["content_type"], 
+                        current["content_type"]
+                    )
 
                 result = {
                     "content": val,
@@ -1370,7 +1373,8 @@ class Transpiler(object):
         return None
 
 
-    def build_clips_func_call_args(self, data_json_fields, data_provider=None):
+    def build_clips_func_call_args(self, data_json_fields, data_provider=None,
+                                   add_type_as_arg=False):
         arg_list = []
         for json_field in data_json_fields:
             
@@ -1387,6 +1391,10 @@ class Transpiler(object):
                     arg_list.append('(str-cat (fact-slot-value ' + 
                                     json_field.value.var_name + ' ' + 
                                     json_field.value.field_name + '))')
+                    
+                    if add_type_as_arg:
+                        var_entry = self.variable_table.lookup(json_field.value.var_name)
+                        arg_list.append('"' + var_entry.value["content_type"] + '"')
                                     
                 elif json_field.value.__class__.__name__ == "RHS_VARIABLE":
                     dp_field = self.get_dp_field(json_field.name,
@@ -1400,11 +1408,19 @@ class Transpiler(object):
                     # Build clips command args
                     arg_list.append('"' + json_field.name + '"')
                     arg_list.append('(str-cat ' + value["content"] + ')')
+
+                    if add_type_as_arg:
+                        var_entry = self.variable_table.lookup(json_field.value.var_name)
+                        arg_list.append('"' + var_entry.value["content_type"] + '"')
             else:
                 # Add field name
                 arg_list.append('"' + json_field.name + '"')
                 # Add field value
                 arg_list.append('"' + str(json_field.value) + '"')
+
+                if add_type_as_arg:
+                    clips_type = py_to_clips_type(json_field.value.__class__)
+                    arg_list.append('"' + clips_type + '"')
 
         return arg_list
 
@@ -1487,7 +1503,10 @@ class Transpiler(object):
         ])
 
         clips_command = "(create_func " + " ".join(arg_array) + ")"
-        self.rhs_clips_command_list.append(clips_command)
+        # self.rhs_clips_command_list.append(clips_command)
+
+        # Use direct call to bridge - for debugging
+        self.env_provider.bridges["DataBridge"].create_func(*arg_array)
 
 
 
@@ -1498,7 +1517,10 @@ class Transpiler(object):
 
         # Build DATA argument list
         data_arg_list = self.build_clips_func_call_args(
-            return_s.json_object.field_list)
+            return_s.json_object.field_list,
+            None,
+            True
+        )
 
         arg_array = list([
             "\"data-len\"",
@@ -1509,6 +1531,8 @@ class Transpiler(object):
         clips_command = "(return_func " + " ".join(arg_array) + ")"
         self.rhs_clips_command_list.append(clips_command)
 
+        # Use direct call to bridge - for debugging
+        #self.env_provider.bridges["DataBridge"].return_func(*arg_array)
 
     
     def update_statement(self, update_s):

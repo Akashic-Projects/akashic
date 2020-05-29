@@ -34,7 +34,7 @@ class EnvProvider(object):
         self.built_in_functions = ["not", "count", "str"]
 
         # Init default bridges
-        data_bridge = DataBridge(self.data_providers)
+        data_bridge = DataBridge(self.data_providers, self)
         time_bridge = TimeBridge()
 
         # Init default brigdes functions

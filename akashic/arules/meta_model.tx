@@ -250,7 +250,7 @@ FieldEntry:
     name=STRING ':' value=FieldValue
 ;
 FieldValue:
-   ValueLocator | RHS_VARIABLE | STRING | INT| FLOAT | BOOL
+     ValueLocator | RHS_VARIABLE | FLOAT | INT | BOOL | STRING 
 ;
 
 ValueLocator:

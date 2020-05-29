@@ -118,8 +118,11 @@ def test_rule_transpiler():
 
     # Load Akashic rule
     this_folder = dirname(__file__)
-    # time+return
-    sample_path = abspath(join(this_folder, '..', 'test', 'samples', 'arules', 'rhs_return.json'))
+    
+    # time_return
+    # rhs_create
+    # simple_return
+    sample_path = abspath(join(this_folder, '..', 'test', 'samples', 'arules', 'time_return.json'))
     with open(sample_path, 'r') as sample:
         akashic_rule = sample.read()
         transpiler.load(akashic_rule)
@@ -128,8 +131,9 @@ def test_rule_transpiler():
     print("\n----------------")
     print("Transpiled Rule:")
     print()
-    print(transpiler.tranpiled_rule)        
-    print()
+    print(transpiler.tranpiled_rule)
+    print("\n----------------")
+    print("\n")
 
     # Insert transpiled rule in env_provider
     env_provider.insert_rule(transpiler.tranpiled_rule)
