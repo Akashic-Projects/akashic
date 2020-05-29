@@ -2,7 +2,7 @@
     "rule-name": "Test_count_rule",
     "salience": 100,
     "when": [
-        { "assert": "test[count(((4 + 5) * count(Course.id > 2)) > 2) >2]"}
+        { "assert": "test[count(((4 + 5) * count(Course.id > 2)) > 2) > 2]"}
 
     ],
     "then": [

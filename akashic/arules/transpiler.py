@@ -67,7 +67,10 @@ class Transpiler(object):
             'TestSingularLogicExpression': \
                 self.test_singular_logic_expression,
 
-            'Function':         self.function,
+            'ZeroArgFunction':      self.zero_arg_function,
+            'OneArgFunction':       self.one_arg_function,
+            'OnePlusArgFunction':   self.one_plus_arg_function,
+
             'LogicExpression':  self.logic_expression,
             'CompExpression':   self.comp_expression,
             'PlusMinusExpr':    self.plus_minus_expr,
@@ -185,6 +188,28 @@ class Transpiler(object):
         
         self.data_locator_vars = new_data_locator_vars
         return 0
+
+
+
+    def check_func_num_of_args(self,func, n):
+        line, col = get_model(func)._tx_parser \
+                    .pos_to_linecol(func._tx_position)
+
+        length = 0
+        if isinstance(func.args, list): 
+            length = len(func.args)
+        else:
+            length = 1
+
+        if int(n) >= 0 and length != int(n):
+            message = "Function '{0}' must have {1} arguments." \
+                        .format(func.func_name, int(n))
+            raise AkashicError(message, line, col, ErrType.SEMANTIC)
+
+        if int(n) <= -1 and length < (-1) * int(n):
+            message = "Function '{0}' must have at least {1} arguments." \
+                        .format(func.func_name, (-1) * int(n))
+            raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
 
 
@@ -434,46 +459,57 @@ class Transpiler(object):
 
 
 
-    def function(self, func):
-        def check_num_of_args(func, n):
-            line, col = get_model(func)._tx_parser \
-                        .pos_to_linecol(func._tx_position)
+    def zero_arg_function(self, func):
+        if not func.func_name in self.functions:
+            line, col = get_model(obj)._tx_parser \
+                        .pos_to_linecol(obj._tx_position)
+            message = "Function '{0}' is not defined in any bridge." \
+                        .format(func.func_name)
+            raise AkashicError(message, line, col, ErrType.SEMANTIC)
+            
+        self.check_func_num_of_args(func, 0)
+        return self.generic_function(func)
 
-            if int(n) >= 0 and len(func.args) != int(n):
-                message = "Function '{0}' must have {1} arguments." \
-                          .format(func.func_name, int(n))
-                raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
-            if int(n) <= -1 and len(func.args) < (-1) * int(n):
-                message = "Function '{0}' must have at least {1} arguments." \
-                          .format(func.func_name, (-1) * int(n))
-                raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
+    def one_arg_function(self, func):
         if func.func_name == "not":
-            check_num_of_args(func, 1)
+            self.check_func_num_of_args(func, 1)
             return self.negation_function(func)
         elif func.func_name == 'count':
-            check_num_of_args(func, 1)
+            self.check_func_num_of_args(func, 1)
             return self.count_function(func)
         elif func.func_name == 'str':
-            check_num_of_args(func, 1)
+            self.check_func_num_of_args(func, 1)
             return self.str_function(func)
         else:
             if not func.func_name in self.functions:
-                line, col = get_model(obj)._tx_parser \
-                        .pos_to_linecol(obj._tx_position)
+                line, col = get_model(func)._tx_parser \
+                            .pos_to_linecol(func._tx_position)
                 message = "Function '{0}' is not defined in any bridge." \
                           .format(func.func_name)
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
             
-            check_num_of_args(func, 
-                              self.functions[func.func_name]["num_of_args"])
-
+            self.check_func_num_of_args(func, 1)
             return self.generic_function(func)
 
 
+
+    def one_plus_arg_function(self, func):
+        if not func.func_name in self.functions:
+            line, col = get_model(func)._tx_parser \
+                        .pos_to_linecol(func._tx_position)
+            message = "Function '{0}' is not defined in any bridge." \
+                        .format(func.func_name)
+            raise AkashicError(message, line, col, ErrType.SEMANTIC)
+        
+        self.check_func_num_of_args(func, len(func.args))
+        return self.generic_function(func)
+
+
+
     def negation_function(self, neg_f):
-        result = neg_f.args[0]
+        result = neg_f.args
         bline, bcol = get_model(neg_f)._tx_parser \
                       .pos_to_linecol(neg_f._tx_position)
 
@@ -508,7 +544,7 @@ class Transpiler(object):
 
 
     def count_function(self, count_f):
-        result = count_f.args[0]
+        result = count_f.args
         bline, bcol = get_model(count_f)._tx_parser \
                       .pos_to_linecol(count_f._tx_position)
 
@@ -536,7 +572,7 @@ class Transpiler(object):
 
 
     def str_function(self, str_f):
-        result = str_f.args[0]
+        result = str_f.args
         bline, bcol = get_model(str_f)._tx_parser \
                       .pos_to_linecol(str_f._tx_position)
 
@@ -566,15 +602,21 @@ class Transpiler(object):
                       .pos_to_linecol(generic._tx_position)
 
         clips_args = []
-        for arg in generic.args:
-            c_arg = ""
-            if arg["construct_type"] == ConstructType.WORKABLE:
-                c_arg = '"' + str(arg["content"]) + '"'
+        if hasattr(generic, "args"):
+            args = []
+            if isinstance(generic.args, list):
+                args = generic.args
             else:
-                c_arg = str(arg["content"])
-            clips_args.append(c_arg)
+                args.append(generic.args)
 
-        
+            for arg in args:
+                c_arg = ""
+                if arg["construct_type"] == ConstructType.WORKABLE:
+                    c_arg = '"' + str(arg["content"]) + '"'
+                else:
+                    c_arg = str(arg["content"])
+                clips_args.append(c_arg)
+
         clips_content = "(" + \
                         generic.func_name + ' ' + \
                         " ".join(clips_args) + \

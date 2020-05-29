@@ -29,26 +29,39 @@ LHSStatement:
 ;
 
 SYMBOLIC_VAR:
-    '{' '"' var_name=/\?[^\d\W]\w*\b/ '"' ':' '"' expr=Root '"' '}'
+    '{' 
+        '"' var_name=/\?[^\d\W]\w*\b/ '"' ':' 
+        '"' expr=Root '"' 
+    '}'
 ;
 
 BINDING_VAR:
-      '{' '"' var_name=/\?[^\d\W]\w*\b/ '=' '"' ':' '"' expr=Root '"' '}'
+    '{' 
+        '"' var_name=/\?[^\d\W]\w*\b/ '=' '"' ':' 
+        '"' expr=Root '"' 
+    '}'
 ;
 
 FACT_ADDRESS_VAR:
-      '{' 
-            '"' var_name=/\?[^\d\W]\w*\b/ '<-' '"' ':' '"' expr=SpecialSingularLogicExpression '"' '}'
+    '{' 
+        '"' var_name=/\?[^\d\W]\w*\b/ '<-' '"' ':' 
+        '"' expr=SpecialSingularLogicExpression '"' 
+    '}'
 ;
 
 ASSERTION:
     '{' ASSERT_KW ':' '"' 
-        (expr=SpecialBinaryLogicExpression | expr=TestSingularLogicExpression) '"' '}'
+        (expr=SpecialBinaryLogicExpression | 
+        expr=TestSingularLogicExpression) '"' 
+    '}'
 ;
 
 
 CLIPS_CODE:
-     '{' CLIPS_KW ':' clips_code=/(\")(.*)(\")/  '}'
+    '{' 
+        CLIPS_KW ':' 
+        clips_code=/(\")(.*)(\")/ 
+    '}'
 ;
 
 
@@ -65,18 +78,20 @@ NOT:            'not' ;
 EXISTS:         'exists' ;
 FORALL:         'forall' ;
 TEST:           'test' ;
+
 COUNT:          'count' ;
 STR:            'str' ;
 TIME_TO_STR:    'time_to_str' ;
 STR_TO_TIME:    'str_to_time' ;
-SUB_TIMES:       'sub_times' ;
+SUB_TIMES:      'sub_times' ;
 
 
 SPECIAL_SINGULAR: NOT | EXISTS | FORALL ;
 
 
 SpecialBinaryLogicExpression:
-    operands=SpecialSingularLogicExpression (operator=LOGIC operands=SpecialSingularLogicExpression)*
+    operands=SpecialSingularLogicExpression 
+    (operator=LOGIC operands=SpecialSingularLogicExpression)*
 ;
 
 SpecialSingularLogicExpression:
@@ -95,9 +110,31 @@ Root:
 ;
 
 
+// Always from less specific to more specific
 Function:
-    func_name=ID LPAR args=Factor (COMMA args=Factor)* RPAR
+    OnePlusArgFunction |
+    OneArgFunction //|
+    // ZeroArgFunction
 ;
+
+//ZeroArgFuncNames: ;
+OneArgFuncNames: NOT | COUNT | STR ;
+OnePlusArgFuncNames: 
+    TIME_TO_STR | 
+    STR_TO_TIME |
+    SUB_TIMES
+;
+
+//ZeroArgFunction:
+//    func_name=ZeroArgFuncNames LPAR RPAR
+//;
+OneArgFunction:
+    func_name=OneArgFuncNames args=Factor
+;
+OnePlusArgFunction:
+    func_name=OnePlusArgFuncNames LPAR args=Factor COMMA args=Factor RPAR
+;
+
 
 LogicExpression:
     operands=CompExpression (operator=LOGIC operands=CompExpression)*
@@ -137,7 +174,7 @@ RPAR:   ')' ;
 STRING_C: val=/(\')([^\']*)(\')/ ; //'
 VARIABLE: var_name=/\?[^\d\W]\w*\b/;
 
-DataLocator: template_conn_expr=TEMPLATE_CONNECTION_EXPRESSION ('.' field=ID)? ;
+DataLocator: template_conn_expr=TEMPLATE_CONNECTION_EXPRESSION ('.' field=ID)?;
 TEMPLATE_CONNECTION_EXPRESSION: templates=ID ('~' templates=ID)* ;
 
 
