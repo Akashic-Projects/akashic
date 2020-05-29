@@ -5,7 +5,7 @@ from enum import Enum
 class Template(object):
     """ Template class
 
-    This class represents single CLIPS template: name and .
+    This class represents single CLIPS template / data source model
     """
 
     def __init__(self):
@@ -22,7 +22,7 @@ class Template(object):
 class Field(object):
     """ Field class
 
-    This class represents single CLIPS fact inside of CLIPS template: 
+    This class represents single CLIPS fact inside of CLIPS template:
     name and variable name
     """
 
@@ -43,7 +43,8 @@ class Field(object):
 class DataLocatorTable(object):
     """ DataLocatorTable class
 
-        Class that contains all usages of data locators and variables ascribed to them.
+        Class that contains all usages of data locators and variables 
+        ascribed to them.
     """
 
     def __init__(self):
@@ -57,7 +58,8 @@ class DataLocatorTable(object):
 
 
     def add(self, template_name, field_name, var_name, dp_field):
-        """ Adds data locator to the table, pair [tempalte_name][field_name] : var_name
+        """ Adds data locator to the table, 
+            pair [tempalte_name][field_name] : var_name
 
         Parameters
         ----------

@@ -29,8 +29,9 @@ class VariableTable(object):
     """ VariableTable class
 
     This class Is wrapper and storage of symbolic and data locator variables.
-    It provides methods for searching, adding names and auto-generted variables and their values,
-    along with list of variables that are used in expression that is value of defined variable. 
+    It provides methods for searching, adding names and auto-generted variables
+    and their values, along with list of variables that are used in expression
+    that is value of defined variable. 
     """
 
     def __init__(self):
@@ -82,7 +83,8 @@ class VariableTable(object):
 
 
     def add_helper_var(self, value, var_type=VarType.SYMBOLIC):
-        """ Adds helper variable to the table - variable with unique generated name
+        """ Adds helper variable to the table - variable with
+            unique generated name
 
         Parameters
         ----------
