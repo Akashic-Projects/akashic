@@ -1,7 +1,6 @@
 
-import requests
 import json
-
+import requests
 
 
 class DataFetcher(object):

@@ -1,6 +1,8 @@
 
-from os.path import join, dirname
 import re
+import json
+from jsonpath_ng import jsonpath, parse
+from os.path import join, dirname
 
 from textx import metamodel_from_file
 from textx.export import metamodel_export, model_export
@@ -9,10 +11,6 @@ from textx.exceptions import TextXSyntaxError, TextXSemanticError
 from akashic.exceptions import AkashicError, ErrType
 from akashic.ads.data_checker import DataChecker
 from akashic.ads.data_fetcher import DataFetcher
-
-import json
-from jsonpath_ng import jsonpath, parse
-
 
 
 class DataProvider(object):
@@ -31,11 +29,11 @@ class DataProvider(object):
         """
 
         this_folder = dirname(__file__)
-        self.meta_model = metamodel_from_file(join(this_folder, 'meta_model.tx'), debug=False)
+        self.meta_model = metamodel_from_file(
+                            join(this_folder, 'meta_model.tx'), debug=False)
         self.dsd = None
         self.checker = None
         self.fetcher = None
-
 
 
 
@@ -59,14 +57,25 @@ class DataProvider(object):
             self.dsd = self.meta_model.model_from_str(dsd_string)
             return 0
         except TextXSyntaxError as syntaxError:
-            raise AkashicError(syntaxError.message, syntaxError.line, syntaxError.col, "syntactic")
+            raise AkashicError(
+                syntaxError.message, 
+                syntaxError.line, 
+                syntaxError.col, 
+                ErrType.SYNTACTIC
+            )
         except TextXSemanticError as semanticError:
-            raise AkashicError(semanticError.message, semanticError.line, semanticError.col, "semantic")
+            raise AkashicError(
+                semanticError.message, 
+                semanticError.line, 
+                semanticError.col, 
+                ErrType.SYNTACTIC
+            )
     
 
 
     def setup(self):
-        """ Setup DataChecker and DataFetcher based on loaded data source definition
+        """ Setup DataChecker and DataFetcher based on 
+            loaded data source definition
 
         """
         self.checker = DataChecker(self.dsd)
@@ -74,7 +83,8 @@ class DataProvider(object):
         if self.dsd.can_reflect:
             self.checker.check_web_reflection_data()
             self.checker.check_url_mappings()
-            self.fetcher = DataFetcher(self.dsd.auth_header, self.dsd.additional_headers)
+            self.fetcher = DataFetcher(
+                self.dsd.auth_header, self.dsd.additional_headers)
 
         return 0
         
@@ -82,6 +92,7 @@ class DataProvider(object):
 
     # EXTERNAL OPERATIONS SECTION
     ################################################################
+
     def field_lookup(self, field_name):
         """ Searches field with given name
         
@@ -102,6 +113,7 @@ class DataProvider(object):
 
     # CLIPS STATEMENTS GENERATION SECTION 
     ################################################################
+
     def generate_clips_template(self):
         """ Generates CLIPS template from loaded data source definition
 
@@ -125,7 +137,8 @@ class DataProvider(object):
                 resolved_type = "INTEGER"
             else:
                 resolved_type = field.type
-            slot_defs.append("\t(slot " + str(field.field_name) + " (type " + str(resolved_type) + "))")
+            slot_defs.append("\t(slot " + str(field.field_name) + \
+                             " (type " + str(resolved_type) + "))")
         
         clips_tempalte_def += "\n".join(slot_defs) + ")"
 
@@ -134,15 +147,17 @@ class DataProvider(object):
 
 
     def generate_clips_fact(self, json_object, json_path_func):
-        """ Generic method that generates CLIPS fact from given parsed JSON object
+        """ Generic method that generates CLIPS fact 
+            from given parsed JSON object
 
         Parameters
         ----------
         json_object : object
             Parsed JSON object
         json_path_func: function
-            Function which determines which JSON path expression will be used,
-            possible functions: for single object & for multitude of objects inside of array
+            Function which determines which JSON path expression 
+            will be used, possible functions: for single object & 
+            for multitude of objects inside of array
 
         Details
         -------
@@ -165,11 +180,15 @@ class DataProvider(object):
 
         for field in self.dsd.fields:
             jsonpath_expr = parse(str(json_path_func(field)))
-            field_loc = [match.value for match in jsonpath_expr.find(json_object)]
+            field_loc = [match.value for match in jsonpath_expr \
+                                                  .find(json_object)]
 
             if not field_loc or len(field_loc) < 1:
-                line, col = self.dsd._tx_parser.pos_to_linecol(field._tx_position)
-                message = f"Field '{field.field_name}' in DSD is not matched in provided JSON data."
+                line, col = self.dsd._tx_parser \
+                            .pos_to_linecol(field._tx_position)
+                message = "Field '{0}' in DSD is not " \
+                          "matched in provided JSON data." \
+                          .format(field.field_name)
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
             result = field_loc[0]
@@ -186,7 +205,8 @@ class DataProvider(object):
             elif field.type == "STRING":
                 resolved_value = f"\"{result}\""
 
-            clips_fields.append("\t(" + str(field.field_name) + " " + str(resolved_value) + ")")
+            clips_fields.append("\t(" + str(field.field_name) + " " + \
+                                str(resolved_value) + ")")
 
         clips_fact += "\n".join(clips_fields) + ")"
         return clips_fact
@@ -194,8 +214,8 @@ class DataProvider(object):
 
 
     def generate_one_clips_fact(self, json_object):
-        """ Generate single CLIPS fact from given single parsed JSON object originating
-        from web service's RESPONSE!
+        """ Generate single CLIPS fact from given single parsed 
+            JSON object originating from web service's RESPONSE!
 
         Parameters
         ----------
@@ -204,8 +224,10 @@ class DataProvider(object):
 
         Details
         -------
-        We define lambda func which extracts 'response_one_json_path' field from given field object.
-        We feed the generic CLIPS fact generator with JSON object and this lambda function.
+        - We define lambda func which extracts 'response_one_json_path' 
+        field from given field object.
+        - We feed the generic CLIPS fact generator with JSON object and 
+        this lambda function.
 
         Returns
         -------
@@ -219,8 +241,8 @@ class DataProvider(object):
 
 
     def generate_multiple_clips_facts(self, json_object, array_len):
-        """ Generate multiple CLIPS facts from given parsed JSON array of object originating
-        from web service's RESPONSE!
+        """ Generate multiple CLIPS facts from given parsed JSON array
+            of object originating from web service's RESPONSE!
 
         Parameters
         ----------
@@ -229,8 +251,10 @@ class DataProvider(object):
 
         Details
         -------
-        We define lambda func which extracts 'response_mul_json_path' field from given field object.
-        We feed the generic CLIPS fact generator with JSON object and this lambda function.
+        - We define lambda func which extracts 'response_mul_json_path' 
+        field from given field object.
+        - We feed the generic CLIPS fact generator with JSON object and
+        this lambda function.
 
         Returns
         -------
@@ -240,34 +264,40 @@ class DataProvider(object):
 
         facts = []
         for i in range(0, array_len):
-            json_path_func = lambda field : self.fill_data_map(field.response_mul_json_path, index=i)
-            clips_fact = self.generate_clips_fact(json_object, json_path_func)
+            json_path_func = lambda field : self.fill_data_map(
+                                                field.response_mul_json_path, 
+                                                index=i)
+            clips_fact = self.generate_clips_fact(json_object, 
+                                                  json_path_func)
             facts.append(clips_fact)
         return facts
 
 
 
-
     # API OPERATIONS SECTION 
     ################################################################
+
     def fill_data_map(self, url_map, **kwargs):
         """ Generates real URL by filling given URL with provided dict data
 
         Parameters
         ----------
         url_map : str
-            URL map is regular URL string containing '{variable_name}' in places of real key data
+            URL map is regular URL string containing '{variable_name}' 
+            in places of real key data
         **kwargs: dict
             Dictionary of pairs 'variable_name: value'
 
         Details
         -------
-        Here we use regular expression matcher to find all occurences like '{variable_name}'.
+        Here we use regular expression matcher to find all occurences 
+        like '{variable_name}'.
         
         Returns
         -------
         1 : int
-            If number of provided variables does not match number of variables in url_map
+            If number of provided variables does not match number of 
+            variables in url_map
         url_map : str
             Built real url
         """
@@ -285,16 +315,23 @@ class DataProvider(object):
         
         return url_map
 
+
+
     def check_if_dsd_provides_web_op(self, operation):
         if not hasattr(self.dsd, 'apis'):
-            line, col = self.dsd._tx_parser.pos_to_linecol(self.dsd._tx_position)
-            message = f"Data source '{self.dsd.model_id}' does not provide web operations."
+            line, col = self.dsd._tx_parser \
+                        .pos_to_linecol(self.dsd._tx_position)
+            message = "Data source '{0}' does not provide web operations." \
+                      .format(self.dsd.model_id)
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
         if not hasattr(self.dsd.apis, operation):
-            line, col = self.dsd._tx_parser.pos_to_linecol(self.dsd.apis._tx_position)
-            message = f"Data source '{self.dsd.model_id}' does not provide '{operation}' operation."
+            line, col = self.dsd._tx_parser \
+                        .pos_to_linecol(self.dsd.apis._tx_position)
+            message = "Data source '{0}' does not provide '{1}' operation." \
+                      .format(self.dsd.model_id, operation)
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
+
 
 
     def construct_query(self, **kwargs):
@@ -307,7 +344,8 @@ class DataProvider(object):
 
         Details
         -------
-        First we define default search query, then we override them with given fields
+        First we define default search query, then we override 
+        them with given fields
         
         Returns
         -------
@@ -324,8 +362,10 @@ class DataProvider(object):
 
         default_kwargs = {
             
-            self.dsd.apis.read_multiple.page_index_url_placement: self.dsd.apis.read_multiple.default_page_index,
-            self.dsd.apis.read_multiple.page_row_count_url_placement: self.dsd.apis.read_multiple.default_page_row_count,
+            self.dsd.apis.read_multiple.page_index_url_placement: \
+                self.dsd.apis.read_multiple.default_page_index,
+            self.dsd.apis.read_multiple.page_row_count_url_placement: \
+                self.dsd.apis.read_multiple.default_page_row_count,
 
             self.dsd.apis.read_multiple.search_fields_url_placement:    "",
             self.dsd.apis.read_multiple.search_strings_url_placement:   "",
@@ -338,8 +378,12 @@ class DataProvider(object):
             if key in default_kwargs:
                 default_kwargs[key] = value
             else:
-                line, col = self.dsd._tx_parser.pos_to_linecol(self.dsd.apis.read_multiple._tx_position)
-                message = f"Query field {key} is not defined in data source definition."
+                line, col = \
+                    self.dsd._tx_parser \
+                    .pos_to_linecol(self.dsd.apis.read_multiple._tx_position)
+                message = "Query field {0} is not defined " \
+                          "in data source definition." \
+                          .format(key)
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
         return default_kwargs
@@ -347,7 +391,7 @@ class DataProvider(object):
 
 
     def create(self, json_object, **kwargs):
-        """ Constructs 'create' web service request, as specified in DSD 
+        """ Constructs 'create' web service request, as specified in DSD
 
         Parameters
         ----------
@@ -375,19 +419,28 @@ class DataProvider(object):
 
         self.check_if_dsd_provides_web_op("create")
        
-        self.checker.check_field_types(use_json_as="request", operation="create", json_object=json_object)
+        self.checker.check_field_types(
+            use_json_as="request", 
+            operation="create", 
+            json_object=json_object
+        )
         
         url_map = self.dsd.apis.create.url_map
         url = self.fill_data_map(url_map, **kwargs)
         
         # We set required JSON header
-        result = self.fetcher.create(url, json_object, {"Content-Type": "application/json"})
+        result = self.fetcher.create(
+            url, 
+            json_object, 
+            {"Content-Type": "application/json"}
+        )
         return json.loads(result)
 
 
 
     def read_one(self, **kwargs):
-        """ Constructs 'read_one' web service request, as specified in DSD 
+        """ Constructs 'read_one' web service request,
+            as specified in DSD
 
         Parameters
         ----------
@@ -421,7 +474,8 @@ class DataProvider(object):
 
 
     def read_multiple(self, **kwargs):
-        """ Constructs 'read_multiple' web service request, as specified in DSD 
+        """ Constructs 'read_multiple' web service request,
+            as specified in DSD 
 
         Parameters
         ----------
@@ -455,7 +509,7 @@ class DataProvider(object):
 
 
     def update(self, json_object, **kwargs):
-        """ Constructs 'update' web service request, as specified in DSD 
+        """ Constructs 'update' web service request, as specified in DSD
 
         Parameters
         ----------
@@ -483,20 +537,28 @@ class DataProvider(object):
 
         self.check_if_dsd_provides_web_op("update")
         
-        self.checker.check_field_types(use_json_as="request", operation="update", json_object=json_object)
+        self.checker.check_field_types(
+            use_json_as="request", 
+            operation="update", 
+            json_object=json_object
+        )
         
         url_map = self.dsd.apis.update.url_map
         url = self.fill_data_map(url_map, **kwargs)
         
         # We set required JSON header
-        result = self.fetcher.update(url, json_object, {"Content-Type": "application/json"})
+        result = self.fetcher.update(
+            url, 
+            json_object, 
+            {"Content-Type": "application/json"}
+        )
         return json.loads(result)
 
 
 
     # TODO: There might be problem if response is empty
     def delete(self, **kwargs):
-        """ Constructs 'delete' web service request, as specified in DSD 
+        """ Constructs 'delete' web service request, as specified in DSD
 
         Parameters
         ----------
