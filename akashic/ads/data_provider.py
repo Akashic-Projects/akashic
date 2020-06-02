@@ -281,7 +281,7 @@ class DataProvider(object):
         facts = []
         for i in range(0, array_len):
             json_path_func = lambda field : self.fill_data_map(
-                                                check_existance(field)
+                                                check_existance(field),
                                                 index=i)
             clips_fact = self.generate_clips_fact(json_object, 
                                                   json_path_func)

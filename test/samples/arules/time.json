@@ -1,5 +1,5 @@
 {
-    "rule-name": "Test_count_rule",
+    "rule-name": "Test_time",
     "salience": 100,
     "when": [
         { "?time": "str_to_time('29.05.2020. 14:0:0', '%d.%m.%Y. %H:%M:%S')"},

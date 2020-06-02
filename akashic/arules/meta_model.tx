@@ -4,6 +4,7 @@ Rule:
         ((RULE_NAME_KW        ':' '"'  rule_name=ID  '"'        )
         (RULE_SALIENCE_OR_KW  ':'      salience_override=INT    )?
         (RULE_SALIENCE_KW     ':'      salience=INT             )?
+        (RUN_ONCE_KW          ':'      run_once=BOOL            )?
         (lhs=LHS                                                )
         (rhs=RHS                                                ))#[',']
     '}'
@@ -12,6 +13,7 @@ Rule:
 RULE_NAME_KW:        /\"rule-name\"/ ;
 RULE_SALIENCE_KW:    /\"salience\"/ ;
 RULE_SALIENCE_OR_KW: /\"salience-override\"/ ;
+RUN_ONCE_KW:         /\"run-once\"/ ;
 
 LHS:
     WHEN_KW ':' '['

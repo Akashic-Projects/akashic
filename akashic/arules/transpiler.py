@@ -219,6 +219,7 @@ class Transpiler(object):
 # ----------------------------------------------------------------
 
     def rule(self, rule):
+        # Read salience
         clips_salience = ""
         if hasattr(rule, 'salience_override') and \
         rule.salience_override != None:
@@ -240,6 +241,36 @@ class Transpiler(object):
                                  str(rule.salience) + "))\n"
 
         rule = "(defrule " + rule.rule_name + clips_salience
+
+        # Read run_once data
+        if hasattr(rule, 'run_once') and \
+        rule.run_once == True:
+            run_once_lhs_expression = \
+                """
+                (not 
+                    (__RuleToRemove
+                        (rule_name ?rn&: (= (str-compare ?rn {0}) 0))
+                    )
+                )
+                """.format(rule.rule_name)
+            run_once_rhs_expression = \
+                """
+                (assert (__RuleToRemove (rule_name "{0}")) )
+                """.format(rule.rule_name)
+            self.lhs_clips_command_list.insert(0, run_once_lhs_expression)
+            self.rhs_clips_command_list.append(run_once_rhs_expression)
+
+        
+        # Check if rule is blocked
+        block_check_lhs_expression = \
+            """
+            (not 
+                (__RuleToBlock
+                    (rule_name ?rn&: (= (str-compare ?rn {0}) 0))
+                )
+            )
+            """.format(rule.rule_name)
+         self.lhs_clips_command_list.insert(0, block_check_lhs_expression)
         
         lhs_commands = ["\t" + comm for comm in self.lhs_clips_command_list]
         rhs_commands = ["\t" + comm for comm in self.rhs_clips_command_list]

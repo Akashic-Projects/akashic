@@ -2,9 +2,9 @@
 RULE_TO_REMOVE = \
 """
 {
-    "data-source-definition-name": "Rule_to_remove",
-    "model-name": "Rule_to_remove",
-    "model-description": "System rule which is used to enable one-time rules.",
+    "data-source-definition-name": "__RuleToRemove",
+    "model-name": "__RuleToRemove",
+    "model-description": "System DSD for marking rules to be removed.",
     "can-reflect-on-web": false,
     "fields": [
         {

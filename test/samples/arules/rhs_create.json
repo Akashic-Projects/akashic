@@ -1,5 +1,5 @@
 {
-    "rule-name": "Test_count_rule",
+    "rule-name": "Test_rhs_create",
     "salience": 100,
     "when": [
     ],
