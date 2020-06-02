@@ -52,9 +52,9 @@ PrimaryKeyField:
         ((FIELD_NAME_KW             ':' '"' field_name              = ID       '"'  )
         (TYPE_KW                    ':' '"' type                    = Type     '"'  )
         (USE_AS_KW                  ':'     use_as = /\"primary-key\"/              )
-        (REQUEST_JSON_PATH_KW       ':'     request_json_path       = STRING        )
-        (RESPONSE_ONE_JSON_PATH_KW  ':'     response_one_json_path  = STRING        )
-        (RESPONSE_MUL_JSON_PATH_KW  ':'     response_mul_json_path  = STRING        )
+        (REQUEST_JSON_PATH_KW       ':'     request_json_path       = STRING        )?
+        (RESPONSE_ONE_JSON_PATH_KW  ':'     response_one_json_path  = STRING        )?
+        (RESPONSE_MUL_JSON_PATH_KW  ':'     response_mul_json_path  = STRING        )?
         (USE_FOR_CREATE_KW          ':'     use_for_create          = BOOL          )?
         (USE_FOR_UPDATE_KW          ':'     use_for_update          = BOOL          )?)#[',']
     '}'
@@ -66,9 +66,9 @@ ForeignKeyField:
         (USE_AS_KW                   ':'     use_as = /\"foreign-key\"/              )
         (REF_FOREIGN_MODEL_NAME_KW   ':' '"' ref_foreign_model_name  = ID        '"' )
         (REF_FOREIGN_FIELD_NAME_KW   ':' '"' ref_foreign_field_name  = ID        '"' )
-        (REQUEST_JSON_PATH_KW        ':'     request_json_path       = STRING        )
-        (RESPONSE_ONE_JSON_PATH_KW   ':'     response_one_json_path  = STRING        )
-        (RESPONSE_MUL_JSON_PATH_KW   ':'     response_mul_json_path  = STRING        )
+        (REQUEST_JSON_PATH_KW        ':'     request_json_path       = STRING        )?
+        (RESPONSE_ONE_JSON_PATH_KW   ':'     response_one_json_path  = STRING        )?
+        (RESPONSE_MUL_JSON_PATH_KW   ':'     response_mul_json_path  = STRING        )?
         (USE_FOR_CREATE_KW           ':'     use_for_create          = BOOL          )?
         (USE_FOR_UPDATE_KW           ':'     use_for_update          = BOOL          )?)#[',']
     '}'
@@ -78,9 +78,9 @@ DataField:
         ((FIELD_NAME_KW             ':' '"' field_name              = ID       '"'  )
         (TYPE_KW                    ':' '"' type                    = Type     '"'  )
         (USE_AS_KW                  ':'     use_as = /\"data\"/                     )
-        (REQUEST_JSON_PATH_KW       ':'     request_json_path       = STRING        )
-        (RESPONSE_ONE_JSON_PATH_KW  ':'     response_one_json_path  = STRING        )
-        (RESPONSE_MUL_JSON_PATH_KW  ':'     response_mul_json_path  = STRING        )
+        (REQUEST_JSON_PATH_KW       ':'     request_json_path       = STRING        )?
+        (RESPONSE_ONE_JSON_PATH_KW  ':'     response_one_json_path  = STRING        )?
+        (RESPONSE_MUL_JSON_PATH_KW  ':'     response_mul_json_path  = STRING        )?
         (USE_FOR_CREATE_KW          ':'     use_for_create          = BOOL          )?
         (USE_FOR_UPDATE_KW          ':'     use_for_update          = BOOL          )?)#[',']
     '}'

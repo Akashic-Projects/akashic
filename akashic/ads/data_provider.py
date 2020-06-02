@@ -234,8 +234,16 @@ class DataProvider(object):
         str
             Generated single CLIPS fact definition statement
         """
+        
+        def check_existance(field):
+            if hasattr(field, "response_one_json_path") and \
+            field.response_one_json_path != None and \
+            field.response_one_json_path != "":
+                return field.response_one_json_path
+            else:
+                return "$.data.id"
 
-        json_path_func = lambda field : field.response_one_json_path
+        json_path_func = lambda field : check_existance(field)
         return self.generate_clips_fact(json_object, json_path_func)
 
 
@@ -262,10 +270,18 @@ class DataProvider(object):
             Generated array of CLIPS fact definition statements
         """
 
+        def check_existance(field):
+            if hasattr(field, "response_mul_json_path") and \
+            field.response_mul_json_path != None and \
+            field.response_mul_json_path != "":
+                return field.response_mul_json_path
+            else:
+                return "$.data[{index}].id"
+
         facts = []
         for i in range(0, array_len):
             json_path_func = lambda field : self.fill_data_map(
-                                                field.response_mul_json_path, 
+                                                check_existance(field)
                                                 index=i)
             clips_fact = self.generate_clips_fact(json_object, 
                                                   json_path_func)
