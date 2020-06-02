@@ -220,11 +220,20 @@ class Transpiler(object):
 
     def rule(self, rule):
         clips_salience = ""
-        if hasattr(rule, 'salience'):
-            if (rule.salience < 0):
+        if hasattr(rule, 'salience_override') and \
+        rule.salience_override != None:
+            clips_salience = "\n\t(declare (salience " + \
+                             str(rule.salience_override) + "))\n"
+        elif hasattr(rule, 'salience'):
+            if rule.salience < 0:
                 line, col = get_model(rule)._tx_parser \
                             .pos_to_linecol(rule._tx_position)
                 message = "Rule salience cannot be negative."
+                raise AkashicError(message, line, col, ErrType.SEMANTIC)
+            elif rule.salience >= 100000:
+                line, col = get_model(rule)._tx_parser \
+                            .pos_to_linecol(rule._tx_position)
+                message = "Rule salience cannot higher than 99999."
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
             else:
                 clips_salience = "\n\t(declare (salience " + \
@@ -1535,7 +1544,7 @@ class Transpiler(object):
         #self.env_provider.bridges["DataBridge"].return_func(*arg_array)
 
     
-    
+
     def update_statement(self, update_s):
         pass
 
