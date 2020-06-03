@@ -29,7 +29,7 @@ LHSStatement:
     stat=BINDING_VAR |
     stat=FACT_ADDRESS_VAR |
     stat=ASSERTION |
-    stat=CLIPS_CODE
+    stat=LHS_CLIPS_CODE
 ;
 
 SYMBOLIC_VAR:
@@ -61,7 +61,7 @@ ASSERTION:
 ;
 
 
-CLIPS_CODE:
+LHS_CLIPS_CODE:
     '{' 
         CLIPS_KW ':' 
         clips_code=/(\")(.*)(\")/ 
@@ -196,7 +196,7 @@ RHSStatement:
     stat=ReturnStatement | 
     stat=UpdateStatement | 
     stat=DeleteStatement |
-    stat=CLIPS_CODE
+    stat=RHS_CLIPS_CODE
 ;
 
 
@@ -263,6 +263,13 @@ ValueLocator:
     '"' var_name=/\?[^\d\W]\w*\b/ '.' field_name=ID  '"';
 
 RHS_VARIABLE: '"' var_name=/\?[^\d\W]\w*\b/ '"';
+
+RHS_CLIPS_CODE:
+    '{' 
+        CLIPS_KW ':' 
+        clips_code=/(\")(.*)(\")/ 
+    '}'
+;
 
 
 Comment:

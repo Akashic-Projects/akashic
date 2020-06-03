@@ -7,7 +7,7 @@ REMOVE_RULE = \
         { "clips": "?rtr <- (__RuleToRemove)"}
     ],
     "then": [
-        { "clips": "(undefrule ?rtr->rule_name)" },
+        { "clips": "(undefrule (sym-cat (fact-slot-value ?rtr rule_name)))" },
         { "clips": "(retract ?rtr)"}
     ]
 }

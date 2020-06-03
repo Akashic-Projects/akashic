@@ -60,7 +60,8 @@ class Transpiler(object):
             'SYMBOLIC_VAR':     self.symbolic_var,
             'FACT_ADDRESS_VAR': self.fact_address_var,
             'BINDING_VAR':      self.binding_var,
-            'CLIPS_CODE':       self.clips_code,
+            'LHS_CLIPS_CODE':   self.lhs_clips_code,
+            'RHS_CLIPS_CODE':   self.rhs_clips_code,
 
             'SpecialBinaryLogicExpression': \
                 self.special_binary_logic_expression,
@@ -253,7 +254,7 @@ class Transpiler(object):
             run_once_lhs_expression = \
                     "(not " \
                         "(__RuleToRemove " \
-                            "(rule_name ?rn&: (= (str-compare ?rn {0}) 0))" \
+                            "(rule_name ?rn&: (= (str-compare ?rn \"{0}\") 0))" \
                         ")" \
                     ")".format(rule.rule_name)
             run_once_rhs_expression = \
@@ -267,7 +268,7 @@ class Transpiler(object):
         block_check_lhs_expression = \
             "(not " \
                 "(__RuleToBlock " \
-                   "(rule_name ?rn&: (= (str-compare ?rn {0}) 0))" \
+                   "(rule_name ?rn&: (= (str-compare ?rn \"{0}\") 0))" \
                 ")" \
             ")".format(rule.rule_name)
         self.lhs_clips_command_list.insert(0, block_check_lhs_expression)
@@ -312,11 +313,18 @@ class Transpiler(object):
 
 
 
-    def clips_code(self, cc):
+    def lhs_clips_code(self, cc):
         clips_command = remove_quotes(cc.clips_code)
         self.lhs_clips_command_list.append(to_clips_quotes(clips_command))
         return 0
 
+
+
+    def rhs_clips_code(self, cc):
+        clips_command = remove_quotes(cc.clips_code)
+        self.rhs_clips_command_list.append(to_clips_quotes(clips_command))
+        return 0
+    
 
 
     def symbolic_var(self, sv):

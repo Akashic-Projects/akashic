@@ -160,6 +160,13 @@ def test_rule_transpiler():
         print(r)
         print("-------------------------END")
 
+    print("\n")
+    print("FACTS: ")
+    print("-------------------------START")
+    for f in env_provider.env.facts():
+        print(f)
+        print("-------------------------END")
+
 
     # Run CLIPS engine
     env_provider.run()
@@ -169,6 +176,13 @@ def test_rule_transpiler():
     print("-------------------------START")
     for r in env_provider.env.rules():
         print(r)
+        print("-------------------------END")
+
+    print("\n")
+    print("FACTS: ")
+    print("-------------------------START")
+    for f in env_provider.env.facts():
+        print(f)
         print("-------------------------END")
        
 
