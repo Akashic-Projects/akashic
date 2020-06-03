@@ -1455,6 +1455,16 @@ class Transpiler(object):
 
 
 
+    def get_value_locator_type(self, var_name, field_name, web_op_object):
+        var_entry = self.variable_table.lookup(var_name)
+
+
+        data_provider = self.find_data_provider(var_entry.value["model_id"], web_op_object)
+        dp_field = self.get_dp_field(field_name, data_provider)
+
+        return dp_field.type
+
+
     def build_clips_func_call_args(self, data_json_fields, data_provider=None,
                                    add_type_as_arg=False):
         arg_list = []
@@ -1475,8 +1485,12 @@ class Transpiler(object):
                                     json_field.value.field_name + '))')
                     
                     if add_type_as_arg:
-                        var_entry = self.variable_table.lookup(json_field.value.var_name)
-                        arg_list.append('"' + var_entry.value["content_type"] + '"')
+                        vl_field_type = self.get_value_locator_type(
+                            json_field.value.var_name,
+                            json_field.value.field_name,
+                            json_field.value
+                        )
+                        arg_list.append('"' + vl_field_type + '"')
                                     
                 elif json_field.value.__class__.__name__ == "RHS_VARIABLE":
                     dp_field = self.get_dp_field(json_field.name,

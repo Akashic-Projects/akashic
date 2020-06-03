@@ -1,0 +1,15 @@
+{
+    "rule-name": "Test_rhs_update",
+    "salience": 100,
+    "when": [
+        { "?course<-": "[Course.id == 1]"}
+
+    ],
+    "then": [
+        {
+           "return": {
+               "course": "?course.name"
+            }
+        }
+    ]
+}
