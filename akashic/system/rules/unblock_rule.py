@@ -1,14 +1,14 @@
-UNBLOCK_RULE = 
+UNBLOCK_RULE = \
 """
 {
     "rule-name": "__unblock_rule",
-    "salience-override": 100000,
+    "salience": "system",
     "run-once": true,
     "when": [
-        { "clips": "$rtb <- (__RuleToBlock (rule_name ?rn&: (= (str-compare ?rn {0}) 0) ))"}
+        { "clips": "?rtb <- (__RuleToBlock (rule_name ?rn&: (= (str-compare ?rn {0}) 0) ))"}
     ],
     "then": [
-        { "clips": "(retract $rtb)"}
+        { "clips": "(retract ?rtb)"}
     ]
 }
 

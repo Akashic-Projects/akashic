@@ -1,18 +1,18 @@
 
 Rule:
     '{'
-        ((RULE_NAME_KW        ':' '"'  rule_name=ID  '"'        )
-        (RULE_SALIENCE_OR_KW  ':'      salience_override=INT    )?
-        (RULE_SALIENCE_KW     ':'      salience=INT             )?
-        (RUN_ONCE_KW          ':'      run_once=BOOL            )?
-        (lhs=LHS                                                )
-        (rhs=RHS                                                ))#[',']
+        ((RULE_NAME_KW        ':' '"'  rule_name=ID  '"'            )
+        (RULE_SALIENCE_KW     ':'      (salience=SYSTEM_SALIENCE_KW | 
+                                        salience=INT)               )?
+        (RUN_ONCE_KW          ':'      run_once=BOOL                )?
+        (lhs=LHS                                                    )
+        (rhs=RHS                                                    ))#[',']
     '}'
 ;
 
 RULE_NAME_KW:        /\"rule-name\"/ ;
 RULE_SALIENCE_KW:    /\"salience\"/ ;
-RULE_SALIENCE_OR_KW: /\"salience-override\"/ ;
+SYSTEM_SALIENCE_KW:  /\"system"/ ;
 RUN_ONCE_KW:         /\"run-once\"/ ;
 
 LHS:
@@ -226,13 +226,15 @@ RETURN_KW:    /\"return\"/ ;
 UpdateStatement:
     '{' 
         UPDATE_KW ':' '{'
-            ((MODEL_NAME_KW     ':'       model_name   = STRING  )
-            (REFLECT_ON_WEB     ':'       reflect      = BOOL    )
-            (DATA_KW            ':'       json_object  = JSONObject))#[',']
+            ((MODEL_NAME_KW     ':'   model_name   = STRING          )
+            (FACT_ADDRESS_KW    ':'   fact_address = RHS_VARIABLE    )
+            (REFLECT_ON_WEB     ':'   reflect      = BOOL            )
+            (DATA_KW            ':'   json_object  = JSONObject      ))#[',']
         '}' 
     '}'
 ;
-UPDATE_KW:  /\"update\"/ ;
+UPDATE_KW:          /\"update\"/ ;
+FACT_ADDRESS_KW:    /\"fact-address\"/ ;
 
 
 DeleteStatement:

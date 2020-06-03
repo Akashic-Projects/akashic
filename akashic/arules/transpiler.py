@@ -60,6 +60,7 @@ class Transpiler(object):
             'SYMBOLIC_VAR':     self.symbolic_var,
             'FACT_ADDRESS_VAR': self.fact_address_var,
             'BINDING_VAR':      self.binding_var,
+            'CLIPS_CODE':       self.clips_code,
 
             'SpecialBinaryLogicExpression': \
                 self.special_binary_logic_expression,
@@ -221,66 +222,66 @@ class Transpiler(object):
     def rule(self, rule):
         # Read salience
         clips_salience = ""
-        if hasattr(rule, 'salience_override') and \
-        rule.salience_override != None:
-            clips_salience = "\n\t(declare (salience " + \
-                             str(rule.salience_override) + "))\n"
-        elif hasattr(rule, 'salience'):
-            if rule.salience < 0:
-                line, col = get_model(rule)._tx_parser \
-                            .pos_to_linecol(rule._tx_position)
-                message = "Rule salience cannot be negative."
-                raise AkashicError(message, line, col, ErrType.SEMANTIC)
-            elif rule.salience >= 100000:
-                line, col = get_model(rule)._tx_parser \
-                            .pos_to_linecol(rule._tx_position)
-                message = "Rule salience cannot higher than 99999."
-                raise AkashicError(message, line, col, ErrType.SEMANTIC)
+        if hasattr(rule, 'salience'):
+            if isinstance(rule.salience, str) and rule.salience == "\"system\"":
+                clips_salience = "\n\t(declare (salience 10000))\n"
+        
+            elif isinstance(rule.salience, int) :
+                if rule.salience < -10000:
+                    line, col = get_model(rule)._tx_parser \
+                                .pos_to_linecol(rule._tx_position)
+                    message = "Rule salience cannot be lower than -10 000."
+                    raise AkashicError(message, line, col, ErrType.SEMANTIC)
+                elif rule.salience > 9000:
+                    line, col = get_model(rule)._tx_parser \
+                                .pos_to_linecol(rule._tx_position)
+                    message = "Rule salience cannot higher than 9 000."
+                    raise AkashicError(message, line, col, ErrType.SEMANTIC)
+                else:
+                    clips_salience = "\n\t(declare (salience " + \
+                                    str(rule.salience) + "))\n"
             else:
-                clips_salience = "\n\t(declare (salience " + \
-                                 str(rule.salience) + "))\n"
-
-        rule = "(defrule " + rule.rule_name + clips_salience
+                line, col = get_model(rule)._tx_parser \
+                            .pos_to_linecol(rule._tx_position)
+                message = "Salience must be integer between " \
+                          "-10 000 and 9 000 or \"system\""
+                raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
         # Read run_once data
         if hasattr(rule, 'run_once') and \
         rule.run_once == True:
             run_once_lhs_expression = \
-                """
-                (not 
-                    (__RuleToRemove
-                        (rule_name ?rn&: (= (str-compare ?rn {0}) 0))
-                    )
-                )
-                """.format(rule.rule_name)
+                    "(not " \
+                        "(__RuleToRemove " \
+                            "(rule_name ?rn&: (= (str-compare ?rn {0}) 0))" \
+                        ")" \
+                    ")".format(rule.rule_name)
             run_once_rhs_expression = \
-                """
-                (assert (__RuleToRemove (rule_name "{0}")) )
-                """.format(rule.rule_name)
+                "(assert (__RuleToRemove (rule_name \"{0}\")) )" \
+                .format(rule.rule_name)
             self.lhs_clips_command_list.insert(0, run_once_lhs_expression)
             self.rhs_clips_command_list.append(run_once_rhs_expression)
 
         
         # Check if rule is blocked
         block_check_lhs_expression = \
-            """
-            (not 
-                (__RuleToBlock
-                    (rule_name ?rn&: (= (str-compare ?rn {0}) 0))
-                )
-            )
-            """.format(rule.rule_name)
-         self.lhs_clips_command_list.insert(0, block_check_lhs_expression)
+            "(not " \
+                "(__RuleToBlock " \
+                   "(rule_name ?rn&: (= (str-compare ?rn {0}) 0))" \
+                ")" \
+            ")".format(rule.rule_name)
+        self.lhs_clips_command_list.insert(0, block_check_lhs_expression)
         
         lhs_commands = ["\t" + comm for comm in self.lhs_clips_command_list]
         rhs_commands = ["\t" + comm for comm in self.rhs_clips_command_list]
 
-        rule += "\n" + \
-                "\n".join(lhs_commands) + \
-                "\n\t=>\n" + \
-                "\n".join(rhs_commands) + "\n)"
+        clips_rule = "(defrule " + rule.rule_name + clips_salience + \
+                     "\n" + \
+                     "\n".join(lhs_commands) + \
+                     "\n\t=>\n" + \
+                     "\n".join(rhs_commands) + "\n)"
 
-        self.tranpiled_rule = rule
+        self.tranpiled_rule = clips_rule
         return 0
 
 
@@ -1224,10 +1225,42 @@ class Transpiler(object):
 
 
 
+    def check_fact_address_var(self, rhs_var, expected_model_id):
+        # Check if variable is [address variable]
+        var_entry = self.variable_table.lookup(rhs_var.var_name)
+        # Get token location of rhs_var
+        line, col = get_model(rhs_var)._tx_parser \
+                    .pos_to_linecol(rhs_var._tx_position)
+
+        if not var_entry:
+            message = "Variable '{0}' is not defined." \
+                      .format(rhs_var.var_name)
+            raise AkashicError(message, line, col, ErrType.SEMANTIC)
+        
+        if var_entry.var_type != VarType.FACT_ADDRESS:
+            message = "Variable '{0}' is not fact address." \
+                      .format(rhs_var.var_name)
+            raise AkashicError(message, line, col, ErrType.SEMANTIC)
+
+        if not "model_id" in var_entry.value:
+            message = "Variable '{0}' does not point to any fact." \
+                      .format(rhs_var.var_name)
+            raise AkashicError(message, line, col, ErrType.SEMANTIC) 
+
+        if expected_model_id != var_entry.value["model_id"]:
+            message = "Variable {0} is expected to address the model " \
+                      "{1}, but {2} found." \
+                      .format(rhs_var.var_name,
+                              expected_model_id,
+                              var_entry.value["model_id"])
+            raise AkashicError(message, line, col, ErrType.SEMANTIC) 
+
+
+
     def check_fact_address_def(self, json_field, dp_field=None):
         # Check if variable is [address variable]
         var_entry = self.variable_table.lookup(json_field.value.var_name)
-        # Get token json_field value token location
+        # Get token location of json_field
         line, col = get_model(json_field.value)._tx_parser \
                     .pos_to_linecol(json_field.value._tx_position)
 
@@ -1390,10 +1423,9 @@ class Transpiler(object):
                                             ErrType.SEMANTIC)
                     break 
 
-            if (((dp_field.use_for_create and web_op_name == "CREATE") or \
+            if ((dp_field.use_for_create and web_op_name == "CREATE") or \
             (dp_field.use_for_update and web_op_name == "UPDATE")) and \
-            (not json_field_ok) and can_reflect) or \
-            ((not json_field_ok) and not can_reflect):
+            (not json_field_ok and can_reflect):
 
                 line, col = get_model(json_field)._tx_parser \
                 .pos_to_linecol(json_field._tx_position)
@@ -1401,6 +1433,7 @@ class Transpiler(object):
                           "request on model '{1}'." \
                           .format(dp_field.field_name, model_name)
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
+
 
 
     def get_dp_field(self, field_name, data_provider):
@@ -1411,6 +1444,7 @@ class Transpiler(object):
             if dp_field.field_name == field_name:
                 return dp_field
         return None
+
 
 
     def build_clips_func_call_args(self, data_json_fields, data_provider=None,
@@ -1576,8 +1610,105 @@ class Transpiler(object):
 
     
 
+    def generate_clips_fact_update_expr(self, address_var_name, args):
+
+        clips_field_mods = []
+        length = len(args)
+        i = 0
+        while i < length:
+            clips_field_mods.append("(" + args[i] + " " + args[i+1] + ")")
+            i += 2
+        
+        return "(modify " + address_var_name + \
+               " ".join(clips_field_mods) + \
+               ")"
+
+
+
     def update_statement(self, update_s):
-        pass
+        # Find data provider for given model
+        data_provider = self.find_data_provider(update_s.model_name, update_s)
+
+        # Exit if reflection is needed, but DSD cannot reflect
+        if update_s.reflect and not data_provider.dsd.can_reflect:
+            line, col = get_model(update_s)._tx_parser \
+            .pos_to_linecol(update_s._tx_position)
+            message = "Model '{0}' does not support " \
+                      "web reflection." \
+                      .format(update_s.model_name)
+            raise AkashicError(message, line, col, ErrType.SEMANTIC)
+
+        # Exit if reflects on web, but does not have updateApi
+        if (update_s.reflect) and \
+        not hasattr(data_provider.dsd.apis, 'update'):
+            line, col = get_model(update_s)._tx_parser \
+            .pos_to_linecol(update_s._tx_position)
+            message = "Model '{0}' does not support " \
+                      "UPDATE operation." \
+                      .format(update_s.model_name)
+            raise AkashicError(message, line, col, ErrType.SEMANTIC)
+
+        # Check 'fact-address' variable entry
+        self.check_fact_address_var(update_s.fact_address, update_s.model_name)
+
+        # Check field list for duplicate fileds
+        self.check_field_list_for_duplicates(update_s.json_object.field_list, 
+                                             update_s)
+
+        # Split data into data fields and other fields
+        data_json_fields, other_json_fields = \
+            self.separate_data_from_other_fields(update_s.json_object,
+                                                 data_provider.dsd.fields)
+
+        for a in data_json_fields:
+            print("-- " + a.name)
+
+        # Check DATA field names and types
+        self.check_data_fields(
+            data_json_fields,
+            data_provider.dsd.fields,
+            update_s.reflect,
+            update_s.model_name,
+            "UPDATE")
+
+        # Build DATA argument list
+        data_arg_list = self.build_clips_func_call_args(data_json_fields,
+                                                        data_provider)
+
+        ref_arg_list = []
+        if (data_provider.dsd.can_reflect and \
+        hasattr(data_provider.dsd.apis.update, 'ref_foreign_models')):
+            ref_arg_list = \
+                self.check_model_refs_and_build_clips_func_call_args(
+                    other_json_fields, 
+                    data_provider.dsd.apis.update.ref_foreign_models,
+                    update_s.json_object,
+                    update_s.model_name)
+
+        arg_array = list([
+            update_s.model_name,
+            "\"reflect\"",
+            '"' + str(update_s.reflect) + '"',
+            "\"data-len\"",
+            '"' + str(len(data_arg_list)) + '"',
+            *data_arg_list,
+            "\"ref-len\"",
+            '"' + str(len(ref_arg_list)) + '"',
+            *ref_arg_list
+        ])
+
+        #clips_command = "(update_func " + " ".join(arg_array) + ")"
+        # self.rhs_clips_command_list.append(clips_command)
+
+        # Use direct call to bridge - for debugging
+        self.env_provider.bridges["DataBridge"].update_func(*arg_array)
+
+        update_clips_comm = generate_clips_fact_update_expr(
+            update_s.fact_address.var_name,
+            [*ref_arg_list, *data_arg_list]
+        )
+
+        print(update_clips_comm)
 
 
 

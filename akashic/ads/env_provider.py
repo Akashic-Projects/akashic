@@ -2,6 +2,13 @@
 import clips
 from clips.agenda import Agenda
 
+from akashic.ads.data_provider import DataProvider
+from akashic.arules.transpiler import Transpiler
+
+from akashic.system.dsds.rule_to_block import RULE_TO_BLOCK
+from akashic.system.dsds.rule_to_remove import RULE_TO_REMOVE
+from akashic.system.rules.remove_rule import REMOVE_RULE
+
 from akashic.bridges.data_bridge import DataBridge
 from akashic.bridges.time_bridge import TimeBridge
 
@@ -28,7 +35,11 @@ class EnvProvider(object):
 
         self.env = clips.Environment()
 
-        self.data_providers = data_providers
+        self.data_providers = [*data_providers, 
+                               *self.build_system_providers()]
+
+        self.define_templates_of_dsds(self.data_providers)
+
         self.bridges = {}
         self.functions = {}
         self.built_in_functions = ["not", "count", "str"]
@@ -43,6 +54,34 @@ class EnvProvider(object):
 
         # Import custom bridges
         self.import_custom_bridges(custom_bridges)
+
+        # Insert system rules
+        self.insert_system_rules()
+
+
+    def build_system_providers(self):
+        # Setup system data providers
+        rtb_data_provider = DataProvider()
+        rtb_data_provider.load(RULE_TO_BLOCK)
+        rtb_data_provider.setup()
+
+        rtr_data_provider = DataProvider()
+        rtr_data_provider.load(RULE_TO_REMOVE)
+        rtr_data_provider.setup()
+
+        return [rtb_data_provider, rtr_data_provider]
+
+    
+    def insert_system_rules(self):
+        transpiler = Transpiler(self)
+        transpiler.load(REMOVE_RULE)
+        self.insert_rule(transpiler.tranpiled_rule)
+
+
+    def define_templates_of_dsds(self, data_providers):
+        for dp in data_providers:
+            clips_template = dp.generate_clips_template()
+            self.define_template(clips_template)
 
 
 

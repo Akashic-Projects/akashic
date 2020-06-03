@@ -162,4 +162,60 @@ class DataBridge(object):
 
         print(json.dumps(data_json_construct, indent=4))
 
+        return 
+
+
+
+    def update_func(self, *args):
+        args = map(lambda arg: arg.replace('"', ''), args)
+        args = list(args)
+
+        print("\n-------------------")
+        for a in args:
+            print(a)
+        print()
+
+        MODEL_NAME_POS      = 0
+        REFLECT_INFO_POS    = 2
+        DATA_LEN_POS        = 4
+        DATA_START_POS      = 5
+
+        data_provider = self.data_providers_map[args[MODEL_NAME_POS]]
+        reflect_on_web = string_to_py_type(args[REFLECT_INFO_POS], "BOOLEAN")
+        data_len = string_to_py_type(args[DATA_LEN_POS], "INTEGER")
+        data_json_construct = self.data_arg_list_to_request_body(
+            args[DATA_START_POS:DATA_START_POS+data_len],
+            data_provider
+        )
+
+        if reflect_on_web:
+            REF_LEN_POS = DATA_START_POS + data_len + 1
+            ref_len = string_to_py_type(args[REF_LEN_POS], "INTEGER")
+
+            REF_START_POS = REF_LEN_POS + 1
+            url_map_args = self.ref_arg_list_to_url_map(
+                args[REF_START_POS:REF_START_POS+ref_len], 
+                data_provider.dsd.apis.update.ref_foreign_models
+            )
+
+            response_obj = data_provider.update(data_json_construct, 
+                                                **url_map_args)
+            
+            # Create full CLIPS fact from response and add it to CLIPS env
+            clips_fact = data_provider.generate_one_clips_fact(response_obj)
+            print(clips_fact)
+            self.env_provider.insert_fact(clips_fact)
+        
+        else:
+            clips_fact = data_provider.generate_one_clips_fact(
+                            data_json_construct)
+            self.env_provider.insert_fact(clips_fact)
+
+
+        for f in self.env_provider.env.facts():
+            print("---------")
+            print(f)
+
+        print("****")
+
         return 0

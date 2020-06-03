@@ -1,14 +1,14 @@
-REMOVE_RULE = 
+REMOVE_RULE = \
 """
 {
     "rule-name": "__remove_rule",
-    "salience-override": 100001,
+    "salience": "system",
     "when": [
-        { "clips": "$rtr <- (__RuleToRemove)"}
+        { "clips": "?rtr <- (__RuleToRemove)"}
     ],
     "then": [
-        { "clips": "(undefrule $rtr->rule_name)" },
-        { "clips": "(retract $rtr)"}
+        { "clips": "(undefrule ?rtr->rule_name)" },
+        { "clips": "(retract ?rtr)"}
     ]
 }
 

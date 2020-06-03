@@ -102,27 +102,25 @@ def test_rule_transpiler():
     course_data_provider.load(dsd_string)
     course_data_provider.setup()
 
+
+    
+
     # Create CLIPS env_provider
     env_provider = EnvProvider([user_data_provider, course_data_provider])
     
-    # Insert COURSE tempalte
-    course_template = course_data_provider.generate_clips_template() 
-    env_provider.define_template(course_template)
-
-    # Insert USER tempalte
-    user_template = user_data_provider.generate_clips_template() 
-    env_provider.define_template(user_template)
 
     # Setup akashic transpiler
     transpiler = Transpiler(env_provider)
 
     # Load Akashic rule
-    this_folder = dirname(__file__)
+    
     
     # time_return
     # rhs_create
     # simple_return
-    sample_path = abspath(join(this_folder, '..', 'test', 'samples', 'arules', 'time_return.json'))
+    # run_once
+    this_folder = dirname(__file__)
+    sample_path = abspath(join(this_folder, '..', 'test', 'samples', 'arules', 'run_once.json'))
     with open(sample_path, 'r') as sample:
         akashic_rule = sample.read()
         transpiler.load(akashic_rule)
@@ -139,7 +137,7 @@ def test_rule_transpiler():
     env_provider.insert_rule(transpiler.tranpiled_rule)
 
 
-    #####  1. TEST OF THE SYSTEM
+    #####  ADD FACTS FROM THE WEB
 
     # Read users from DS
     multiple_courses = course_data_provider.read_multiple()
@@ -150,18 +148,28 @@ def test_rule_transpiler():
         env_provider.insert_fact(u)
 
 
-    # env_provider.env.eval("(undefrule Test_count_rule)")
+    ###### RUN CLIPS ENGINE
+
+    # Run CLIPS engine
+    env_provider.run()
+
+    print("\n")
+    print("RULES: ")
+    print("-------------------------START")
+    for r in env_provider.env.rules():
+        print(r)
+        print("-------------------------END")
 
 
     # Run CLIPS engine
     env_provider.run()
 
-    # print("\n")
-    # print("RULES: ")
-    # print("-------------------------")
-    # for r in env_provider.env.rules():
-    #     print(r)
-    #     print("+++++++++++++++++++++++++")
+    print("\n")
+    print("RULES: ")
+    print("-------------------------START")
+    for r in env_provider.env.rules():
+        print(r)
+        print("-------------------------END")
        
 
 

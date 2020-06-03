@@ -1,4 +1,4 @@
-BLOCK_RULE = 
+BLOCK_RULE = \
 """
 {
     "rule-name": "__block_rule",
