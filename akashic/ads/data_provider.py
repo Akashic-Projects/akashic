@@ -79,6 +79,7 @@ class DataProvider(object):
 
         """
         self.checker = DataChecker(self.dsd)
+        self.checker.check_field_list()
         
         if self.dsd.can_reflect:
             self.checker.check_web_reflection_data()
@@ -322,8 +323,14 @@ class DataProvider(object):
         for m in re.finditer(r"\{(((?!\{|\}).)*)\}", url_map):
             url_fields.append(m.group(1))
         
-        if len(url_fields) != len(kwargs):
-            return 1
+        if len(url_fields) != len(kwargs.items()):
+            message = "Failed to fill url map '{0}'. " \
+                      "Insufficient number of arguments. " \
+                      "Expected {1}, but found {2}" \
+                      .format(url_map, 
+                              len(url_fields), 
+                              len(kwargs.items()))
+            raise AkashicError(message, 0, 0, ErrType.SYSTEM)
 
         for key, value in kwargs.items():
             pattern = re.compile("\{" + key + "\}")
@@ -348,6 +355,11 @@ class DataProvider(object):
                       .format(self.dsd.model_id, operation)
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
+
+    def get_primary_key_field(self):
+        for field in self.dsd.fields:
+            if field.use_as == "\"primary-key\"":
+                return field
 
 
     def construct_query(self, **kwargs):
@@ -385,8 +397,9 @@ class DataProvider(object):
 
             self.dsd.apis.read_multiple.search_fields_url_placement:    "",
             self.dsd.apis.read_multiple.search_strings_url_placement:   "",
-            self.dsd.apis.read_multiple.sort_field_url_placement:       "",
-            self.dsd.apis.read_multiple.sort_order_url_placement:       ""
+            self.dsd.apis.read_multiple.sort_field_url_placement: \
+                self.get_primary_key_field().field_name,
+            self.dsd.apis.read_multiple.sort_order_url_placement:       "ASC"
         }
 
         # Check if field url placements are right

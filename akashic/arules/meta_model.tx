@@ -162,8 +162,8 @@ SqrExpr:
 
 Factor:
     (value=Function) |
-    (value=INT) | 
-    (value=FLOAT) | 
+    (value=STRICTFLOAT) |
+    (value=INT) |
     (value=BOOL) | 
     (value=STRING_C) | 
     (value=VARIABLE) | 
@@ -227,7 +227,7 @@ UpdateStatement:
     '{' 
         UPDATE_KW ':' '{'
             ((MODEL_NAME_KW     ':'   model_name   = STRING          )
-            (FACT_ADDRESS_KW    ':'   fact_address = RHS_VARIABLE    )
+            //(FACT_ADDRESS_KW    ':'   fact_address = RHS_VARIABLE    )
             (REFLECT_ON_WEB     ':'   reflect      = BOOL            )
             (DATA_KW            ':'   json_object  = JSONObject      ))#[',']
         '}' 
@@ -256,7 +256,7 @@ FieldEntry:
     name=STRING ':' value=FieldValue
 ;
 FieldValue:
-     ValueLocator | RHS_VARIABLE | FLOAT | INT | BOOL | STRING 
+     ValueLocator | RHS_VARIABLE | STRICTFLOAT | INT | BOOL | STRING 
 ;
 
 ValueLocator:

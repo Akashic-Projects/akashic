@@ -25,6 +25,22 @@ class DataChecker(object):
 
 
 
+    def check_field_list(self):
+        num_of_primary_keys = 0
+        for field in self.dsd.fields:
+            if field.use_as == "\"primary-key\"":
+                num_of_primary_keys += 1
+            
+        if num_of_primary_keys != 1:
+            line, col = self.dsd._tx_parser \
+                        .pos_to_linecol(self.dsd._tx_position)
+            message = "There must be one and only one primary-key field " \
+                      "in DSD field list, but {0} found." \
+                      .format(str(num_of_primary_keys))
+            raise AkashicError(message, line, col, ErrType.SEMANTIC)
+
+
+
     def check_web_reflection_data(self):
         if not hasattr(self.dsd, 'apis'):
             line, col = self.dsd._tx_parser \

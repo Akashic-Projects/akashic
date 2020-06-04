@@ -1,23 +1,22 @@
 {
     "rule-name": "Test_rhs_update",
     "salience": 100,
-    "run-once": true,
+    "run-once": false,
     "when": [
-        { "?course<-": "[Course.id == 1]"}
-
+        { "?course<-": "[Course.id == 2]"}
     ],
     "then": [
         {
            "update": {
                 "model-name": "Course",
                 "reflect-on-web": true,
-
                 "data": {
-                    "id": "?course.id",
-                    "name": "Novo ime kursa.",
-                    "start_date": "?course.start_date",
-                    "end_date": "?course.end_date"
+                    "id": 1,
+                    "name": "Novo ime kursa. TTTT.",
+                    "start_date": "12.3.2020.",
+                    "end_date": "12.3.2021."
                 }
+               
             }
         }
     ]

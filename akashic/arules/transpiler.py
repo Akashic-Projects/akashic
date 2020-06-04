@@ -283,7 +283,6 @@ class Transpiler(object):
                      "\n".join(rhs_commands) + "\n)"
 
         self.tranpiled_rule = clips_rule
-        return 0
 
 
 
@@ -1348,35 +1347,46 @@ class Transpiler(object):
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
 
-    def separate_data_from_other_fields(self, json_object, dp_field_list):
-        # Collect all non-data fields
-        other_json_fields = []
+    def separate_data_from_other_fields(self, 
+                                        json_object, 
+                                        dp_field_list, 
+                                        operation):
+        # Collect all data fields
+        data_json_fields = []
         for json_field in json_object.field_list:
             json_field_ok = False
             for dp_field in dp_field_list:
                 if json_field.name == dp_field.field_name:
-                    json_field_ok = True
-                    break
-            if not json_field_ok:
-                other_json_fields.append(json_field)
-
-        # Create json_field_list without 'other-json-fields'
-        data_json_fields = []
-        for json_field in json_object.field_list:
-            if not json_field in other_json_fields:
+                    if (hasattr(dp_field, "use_for_create") and \
+                    dp_field.use_for_create and operation == "CREATE") or \
+                    (hasattr(dp_field, "use_for_update") and \
+                    dp_field.use_for_update and operation == "UPDATE"):
+                        json_field_ok = True
+                        break
+            if json_field_ok:
                 data_json_fields.append(json_field)
+
+       
+       # Collect all NON-data fields
+        other_json_fields = []
+        for json_field in json_object.field_list:
+            if not json_field in data_json_fields:
+                other_json_fields.append(json_field)
 
         return (data_json_fields, other_json_fields)
 
 
 
-    def check_model_refs_and_build_clips_func_call_args(
-        self, other_json_fields, dp_ref_foreign_models,
-        json_object, model_name):
+    def check_model_refs_and_build_clips_func_call_args(self, 
+                                                        other_json_fields, 
+                                                        dsd_api_object,
+                                                        json_object, 
+                                                        model_name,
+                                                        data_provider=None):
 
         # Check refs and collect actual refs from non-data fields
         json_refs = []
-        for ref in dp_ref_foreign_models:
+        for ref in dsd_api_object.ref_foreign_models:
             ref_ok = False
 
             for o_json_field in other_json_fields:
@@ -1394,17 +1404,33 @@ class Transpiler(object):
                           .format(ref.field_name, model_name)
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
-        arg_list = []
-        for ref in json_refs:
-            arg_list.append('"' + json_field.name + '"')
-            arg_list.append('"' + str(json_field.value) + '"')
+        if hasattr(dsd_api_object, "data_indexing_up"):
+            main_ref_ok = False
+            for o_json_field in other_json_fields:
+                if dsd_api_object.data_indexing_up == o_json_field.name:
+                    main_ref_ok = True
+                    json_refs.append(o_json_field)
+                    break
+            if not main_ref_ok:
+                line, col = get_model(json_object)._tx_parser \
+                            .pos_to_linecol(json_object._tx_position)
+                message = "Data indexing url placement field" \
+                          "'{0}' is omitted from the " \
+                          "operation request for model '{1}'." \
+                          .format(dsd_api_object.data_indexing_up, 
+                                  model_name)
+                raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
-        return arg_list
+        return self.build_clips_func_call_args(json_refs, data_provider)
 
 
 
-    def check_data_fields(self, data_json_fields, dp_field_list,
-                          can_reflect, model_name, web_op_name):
+    def check_data_fields(self, 
+                          data_json_fields,
+                          dp_field_list,
+                          can_reflect, 
+                          model_name,
+                          web_op_name):
 
         # Check types and create args
         for dp_field in dp_field_list:
@@ -1465,8 +1491,9 @@ class Transpiler(object):
         return dp_field.type
 
 
-    def build_clips_func_call_args(self, data_json_fields, data_provider=None,
-                                   add_type_as_arg=False):
+    def build_clips_func_call_args(self, 
+                                   data_json_fields, 
+                                   data_provider=None):
         arg_list = []
         for json_field in data_json_fields:
             
@@ -1484,13 +1511,14 @@ class Transpiler(object):
                                     json_field.value.var_name + ' ' + 
                                     json_field.value.field_name + '))')
                     
-                    if add_type_as_arg:
-                        vl_field_type = self.get_value_locator_type(
-                            json_field.value.var_name,
-                            json_field.value.field_name,
-                            json_field.value
-                        )
-                        arg_list.append('"' + vl_field_type + '"')
+                
+                    vl_field_type = self.get_value_locator_type(
+                        json_field.value.var_name,
+                        json_field.value.field_name,
+                        json_field.value
+                    )
+                    arg_list.append('"' + vl_field_type + '"')
+
                                     
                 elif json_field.value.__class__.__name__ == "RHS_VARIABLE":
                     dp_field = self.get_dp_field(json_field.name,
@@ -1500,23 +1528,21 @@ class Transpiler(object):
                     var_entry = self.variable_table \
                                 .lookup(json_field.value.var_name)
                     value = var_entry.value
-
+                   
                     # Build clips command args
                     arg_list.append('"' + json_field.name + '"')
                     arg_list.append('(str-cat ' + value["content"] + ')')
+                  
+                    var_entry = self.variable_table.lookup(json_field.value.var_name)
+                    arg_list.append('"' + var_entry.value["content_type"] + '"')
 
-                    if add_type_as_arg:
-                        var_entry = self.variable_table.lookup(json_field.value.var_name)
-                        arg_list.append('"' + var_entry.value["content_type"] + '"')
             else:
-                # Add field name
+                # Add field name and field value
                 arg_list.append('"' + json_field.name + '"')
-                # Add field value
                 arg_list.append('"' + str(json_field.value) + '"')
-
-                if add_type_as_arg:
-                    clips_type = py_to_clips_type(json_field.value.__class__)
-                    arg_list.append('"' + clips_type + '"')
+                
+                clips_type = py_to_clips_type(json_field.value.__class__)
+                arg_list.append('"' + clips_type + '"')
 
         return arg_list
 
@@ -1559,7 +1585,8 @@ class Transpiler(object):
         # Split data into data fields and other fields
         data_json_fields, other_json_fields = \
             self.separate_data_from_other_fields(create_s.json_object,
-                                                 data_provider.dsd.fields)
+                                                 data_provider.dsd.fields,
+                                                 "CREATE")
 
         for a in data_json_fields:
             print("-- " + a.name)
@@ -1582,12 +1609,13 @@ class Transpiler(object):
             ref_arg_list = \
                 self.check_model_refs_and_build_clips_func_call_args(
                     other_json_fields, 
-                    data_provider.dsd.apis.create.ref_foreign_models,
+                    data_provider.dsd.apis.create,
                     create_s.json_object,
-                    create_s.model_name)
+                    create_s.model_name,
+                    data_provider)
 
         arg_array = list([
-            create_s.model_name,
+            '"' + create_s.model_name + '"',
             "\"reflect\"",
             '"' + str(create_s.reflect) + '"',
             "\"data-len\"",
@@ -1614,8 +1642,7 @@ class Transpiler(object):
         # Build DATA argument list
         data_arg_list = self.build_clips_func_call_args(
             return_s.json_object.field_list,
-            None,
-            True
+            None
         )
 
         arg_array = list([
@@ -1629,21 +1656,6 @@ class Transpiler(object):
 
         # Use direct call to bridge - for debugging
         #self.env_provider.bridges["DataBridge"].return_func(*arg_array)
-
-    
-
-    def generate_clips_fact_update_expr(self, address_var_name, args):
-
-        clips_field_mods = []
-        length = len(args)
-        i = 0
-        while i < length:
-            clips_field_mods.append("(" + args[i] + " " + args[i+1] + ")")
-            i += 2
-        
-        return "(modify " + address_var_name + \
-               " ".join(clips_field_mods) + \
-               ")"
 
 
 
@@ -1671,7 +1683,9 @@ class Transpiler(object):
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
         # Check 'fact-address' variable entry
-        self.check_fact_address_var(update_s.fact_address, update_s.model_name)
+        # This is depricated - it was used to get fact-index for modify
+        #self.check_fact_address_var(update_s.fact_address, 
+        #                            update_s.model_name)
 
         # Check field list for duplicate fileds
         self.check_field_list_for_duplicates(update_s.json_object.field_list, 
@@ -1680,9 +1694,14 @@ class Transpiler(object):
         # Split data into data fields and other fields
         data_json_fields, other_json_fields = \
             self.separate_data_from_other_fields(update_s.json_object,
-                                                 data_provider.dsd.fields)
+                                                 data_provider.dsd.fields,
+                                                 "UPDATE")
 
         for a in data_json_fields:
+            print("-- " + a.name)
+
+        print("*******")
+        for a in other_json_fields:
             print("-- " + a.name)
 
         # Check DATA field names and types
@@ -1703,12 +1722,13 @@ class Transpiler(object):
             ref_arg_list = \
                 self.check_model_refs_and_build_clips_func_call_args(
                     other_json_fields, 
-                    data_provider.dsd.apis.update.ref_foreign_models,
+                    data_provider.dsd.apis.update,
                     update_s.json_object,
-                    update_s.model_name)
+                    update_s.model_name,
+                    data_provider)
 
         arg_array = list([
-            update_s.model_name,
+            '"' + update_s.model_name + '"',
             "\"reflect\"",
             '"' + str(update_s.reflect) + '"',
             "\"data-len\"",
@@ -1719,18 +1739,11 @@ class Transpiler(object):
             *ref_arg_list
         ])
 
-        #clips_command = "(update_func " + " ".join(arg_array) + ")"
-        # self.rhs_clips_command_list.append(clips_command)
+        clips_command = "(update_func " + " ".join(arg_array) + ")"
+        self.rhs_clips_command_list.append(clips_command)
 
         # Use direct call to bridge - for debugging
-        self.env_provider.bridges["DataBridge"].update_func(*arg_array)
-
-        update_clips_comm = generate_clips_fact_update_expr(
-            update_s.fact_address.var_name,
-            [*ref_arg_list, *data_arg_list]
-        )
-
-        print(update_clips_comm)
+        # self.env_provider.bridges["DataBridge"].update_func(*arg_array)
 
 
 
