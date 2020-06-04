@@ -1,6 +1,6 @@
 {
     "data-source-definition-name": "Course",
-    "model-name": "Course",
+    "model-id": "Course",
     "model-description": "Holds general coure data",
     "can-reflect-on-web": true,
     "authentication-header": {
@@ -16,9 +16,7 @@
             "use-as": "primary-key",
             "request-json-path": "$.id",
             "response-one-json-path": "$.data.id",
-            "response-multiple-json-path": "$.data[{index}].id",
-            "use-for-create": false,
-            "use-for-update": false
+            "response-multiple-json-path": "$.data[{index}].id"
         },
         {
             "field-name": "name",
@@ -26,9 +24,7 @@
             "use-as": "data",
             "request-json-path": "$.name",
             "response-one-json-path": "$.data.name",
-            "response-multiple-json-path": "$.data[{index}].name",
-            "use-for-create": true,
-            "use-for-update": true
+            "response-multiple-json-path": "$.data[{index}].name"
         },
         {
             "field-name": "start_date",
@@ -36,9 +32,7 @@
             "use-as": "data",
             "request-json-path": "$.start_date",
             "response-one-json-path": "$.data.start_date",
-            "response-multiple-json-path": "$.data[{index}].start_date",
-            "use-for-create": true,
-            "use-for-update": true
+            "response-multiple-json-path": "$.data[{index}].start_date"
         },
         {
             "field-name": "end_date",
@@ -46,9 +40,7 @@
             "use-as": "data",
             "request-json-path": "$.end_date",
             "response-one-json-path": "$.data.end_date",
-            "response-multiple-json-path": "$.data[{index}].end_date",
-            "use-for-create": true,
-            "use-for-update": true
+            "response-multiple-json-path": "$.data[{index}].end_date"
         }
     ],
 
@@ -62,7 +54,13 @@
             "operation": "read-one",
             "method": "GET",
             "url-map": "http://localhost:80/api/courses/{id}",
-            "data-indexing-url-placement": "id"
+            "referenced-models": [
+                {
+                    "model-id": "Course",
+                    "field-name": "id",
+                    "url-placement": "id"
+                }
+            ]
         },
         {
             "operation": "read-multiple",
@@ -88,13 +86,25 @@
             "operation": "update",
             "method": "PUT",
             "url-map": "http://localhost:80/api/courses/{id}",
-            "data-indexing-url-placement": "id"
+            "referenced-models": [
+                {
+                    "model-id": "Course",
+                    "field-name": "id",
+                    "url-placement": "id"
+                }
+            ]
         },
         {
             "operation": "delete",
             "method": "DELETE",
             "url-map": "http://localhost:80/api/courses/{id}",
-            "data-indexing-url-placement": "id"
+            "referenced-models": [
+                {
+                    "model-id": "Course",
+                    "field-name": "id",
+                    "url-placement": "id"
+                }
+            ]
         }
     ]
 }

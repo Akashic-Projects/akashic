@@ -10,12 +10,6 @@ from akashic.exceptions import AkashicError, ErrType
 from akashic.system.rules.generic_rule import GENERIC_RULE
 
 
-#TODO: Add variable-value binding - so save count result for example
-#TODO: Add onetime option for rule execution
-#TODO: Add date-time support
-#TODO: ??? query system
-
-
 class DataBridge(object):
     """ DataBridge class
         
@@ -59,6 +53,7 @@ class DataBridge(object):
             self.data_providers_map[dp.dsd.model_id] = dp
 
 
+
     def data_arg_list_to_request_body(self, arg_list, data_provider):
         json_construct = {}
         i = 0
@@ -76,18 +71,14 @@ class DataBridge(object):
 
 
     def ref_arg_list_to_url_map(self, arg_list, dsd_api_object):
-
         url_map_args = {}
         i = 0
         l = len(arg_list)
         while i < l:
-            for ref in dsd_api_object.ref_foreign_models:
+            
+            for ref in dsd_api_object.ref_models:
                 if arg_list[i] == ref.field_name:
                     url_map_args[ref.url_placement] = arg_list[i + 1]
-
-            if hasattr(dsd_api_object, "data_indexing_up") and \
-            arg_list[i] == dsd_api_object.data_indexing_up:
-                url_map_args[dsd_api_object.data_indexing_up] = arg_list[i + 1]
 
             i += 2
 
@@ -109,12 +100,12 @@ class DataBridge(object):
 
         self.print_args(args, "CREATE")
 
-        MODEL_NAME_POS      = 0
+        MODEL_ID_POS      = 0
         REFLECT_INFO_POS    = 2
         DATA_LEN_POS        = 4
         DATA_START_POS      = 5
 
-        data_provider = self.data_providers_map[args[MODEL_NAME_POS]]
+        data_provider = self.data_providers_map[args[MODEL_ID_POS]]
         reflect_on_web = string_to_py_type(args[REFLECT_INFO_POS], "BOOLEAN")
         data_len = string_to_py_type(args[DATA_LEN_POS], "INTEGER")
         data_json_construct = self.data_arg_list_to_request_body(
@@ -226,13 +217,13 @@ class DataBridge(object):
 
         self.print_args(args, "UPDATE")
 
-        MODEL_NAME_POS      = 0
+        MODEL_ID_POS      = 0
         REFLECT_INFO_POS    = 2
         DATA_LEN_POS        = 4
         DATA_START_POS      = 5
 
         # Obtain data from args
-        data_provider = self.data_providers_map[args[MODEL_NAME_POS]]
+        data_provider = self.data_providers_map[args[MODEL_ID_POS]]
         reflect_on_web = string_to_py_type(args[REFLECT_INFO_POS], "BOOLEAN")
         data_len = string_to_py_type(args[DATA_LEN_POS], "INTEGER")
 

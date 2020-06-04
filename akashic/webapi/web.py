@@ -93,11 +93,11 @@ def create_dsd():
     # Check is this even exists, prevent: 
     # ---NoneType' object is not subscriptable---
 
-    # Check if DSD with given model-name already exists
+    # Check if DSD with given model-id already exists
     if mongo.db.dsds.count_documents(
-            {'model-name': { '$eq': akashic_dsd['model-name']}}) > 0:
+            {'model-id': { '$eq': akashic_dsd['model-id']}}) > 0:
 
-        message = "DSD with given model-name already exists."
+        message = "DSD with given model-id already exists."
         return resp(None, message, 0, 0, RespType.ERROR)
 
     # Create DSD provider -> syntactic and semnatic check
@@ -110,7 +110,7 @@ def create_dsd():
         return resp(None, e.message, e.line, e.col, RespType.ERROR)
     
     # Add new DSD provider to dict
-    dsd_providers_dict[akashic_dsd['model-name']] = data_provider
+    dsd_providers_dict[akashic_dsd['model-id']] = data_provider
 
     # Generate CLIPS tempalte and add it to CLIPS enviroment
     clips_template = data_provider.generate_clips_template()
@@ -119,51 +119,51 @@ def create_dsd():
     # Add to mongo database
     dsd_entry = {}
     dsd_entry['dsd-name'] = akashic_dsd['data-source-definition-name']
-    dsd_entry['model-name'] = akashic_dsd['model-name']
+    dsd_entry['model-id'] = akashic_dsd['model-id']
     dsd_entry['active'] = True
     dsd_entry['dsd'] = akashic_dsd
     dsd_entry['clips_code'] = clips_template
     mongo.db.dsds.insert_one(dsd_entry)
 
-    message = "New DSD with model-name '{0}' " \
+    message = "New DSD with model-id '{0}' " \
               "is successfully created." \
-              .format(akashic_dsd['model-name'])
+              .format(akashic_dsd['model-id'])
     return resp(dsd_entry, message, 0, 0, RespType.SUCCESS)
 
 
 
-@app.route('/dsds/<string:old_model_name>', methods=['PUT'])
-def update_dsd(old_model_name):
+@app.route('/dsds/<string:old_model_id>', methods=['PUT'])
+def update_dsd(old_model_id):
     # Get JSON data
     akashic_dsd = request.json
 
-    # Check if DSD with given model-name exists
+    # Check if DSD with given model-id exists
     foundDSD = mongo.db.dsds.find_one(
-                {'model-name': {'$eq': old_model_name}})
+                {'model-id': {'$eq': old_model_id}})
 
     if not foundDSD:
-        message = "DSD with given model-name does not exists."
+        message = "DSD with given model-id does not exists."
         return resp(None, message, 0, 0, RespType.ERROR)
 
     # Create DSD provider -> syntactic and semnatic check
     data_provider = DataProvider()
     data_provider.load(dumps(akashic_dsd))
     data_provider.setup()
-    dsd_providers_dict[akashic_dsd['model-name']] = data_provider
+    dsd_providers_dict[akashic_dsd['model-id']] = data_provider
 
     # Remove old DSD provider from dict
     try:
-        dsd_providers_dict.pop(old_model_name)    
+        dsd_providers_dict.pop(old_model_id)    
     except KeyError:
         message = "E345: dsd_providers_dict - " \
                   "entity with given key not found."
         return resp(None, message, 0, 0, RespType.ERROR)
 
     # Add new DSD provider to dict
-    dsd_providers_dict[akashic_dsd['model-name']] = data_provider
+    dsd_providers_dict[akashic_dsd['model-id']] = data_provider
 
     # Remove old CLIPS template from CLIPS env
-    env_provider.undefine_template(old_model_name)
+    env_provider.undefine_template(old_model_id)
 
     # Generate CLIPS tempalte and add it to CLIPS enviroment
     clips_template = data_provider.generate_clips_template()
@@ -172,53 +172,53 @@ def update_dsd(old_model_name):
     # Create DSD db-entry
     dsd_entry = {}
     dsd_entry['dsd-name'] = akashic_dsd['data-source-definition-name']
-    dsd_entry['model-name'] = akashic_dsd['model-name']
+    dsd_entry['model-id'] = akashic_dsd['model-id']
     dsd_entry['active'] = foundDSD['active']
     dsd_entry['dsd'] = akashic_dsd
 
     # Repalce old db-entry
-    mongo.db.dsds.replace_one({"model-name": old_model_name}, dsd_entry)
+    mongo.db.dsds.replace_one({"model-id": old_model_id}, dsd_entry)
 
-    message = "DSD with model-name '{0}' is successfully updated." \
-              .format(old_model_name)
+    message = "DSD with model-id '{0}' is successfully updated." \
+              .format(old_model_id)
     return resp(dsd_entry, message, 0, 0, RespType.SUCCESS)
 
 
 
-@app.route('/dsds/enable/<string:model_name>', methods=['PUT'])
-def enable_dsd(model_name):
+@app.route('/dsds/enable/<string:model_id>', methods=['PUT'])
+def enable_dsd(model_id):
     result = mongo.db.dsds.find_one_and_update(
-                {"model-name": model_name}, 
+                {"model-id": model_id}, 
                 {"$set": {"active": True}},
                 return_document=ReturnDocument.AFTER
     )
 
-    message = "DSD with model-name '{0}' is " \
-              "successfully enabled.".format(model_name)
+    message = "DSD with model-id '{0}' is " \
+              "successfully enabled.".format(model_id)
     return resp(result, message, 0, 0, RespType.SUCCESS)
 
 
 
-@app.route('/dsds/disable/<string:model_name>', methods=['PUT'])
-def disable_dsd(model_name):
+@app.route('/dsds/disable/<string:model_id>', methods=['PUT'])
+def disable_dsd(model_id):
     result = mongo.db.dsds.find_one_and_update(
-                {"model-name": model_name}, 
+                {"model-id": model_id}, 
                 {"$set": {"active": False}},
                 return_document=ReturnDocument.AFTER
     )
 
-    message = "DSD with model-name '{0}' is " \
-              "successfully disabled.".format(model_name)
+    message = "DSD with model-id '{0}' is " \
+              "successfully disabled.".format(model_id)
     return resp(result, message, 0, 0, RespType.SUCCESS)
 
 
 
-@app.route('/dsds/<string:model_name>', methods=['DELETE'])
-def remove_dsd(model_name):
-    result = mongo.db.dsds.delete_one({"model-name": model_name})
+@app.route('/dsds/<string:model_id>', methods=['DELETE'])
+def remove_dsd(model_id):
+    result = mongo.db.dsds.delete_one({"model-id": model_id})
     
-    message = "DSD with model-name '{0}' is " \
-              "successfully deleted.".format(model_name)
+    message = "DSD with model-id '{0}' is " \
+              "successfully deleted.".format(model_id)
     return resp(None, message, 0, 0, RespType.SUCCESS)
 
 
@@ -268,7 +268,7 @@ def update_rule(old_rule_name):
     # Get JSON data
     akashic_rule = request.json
 
-    # Check if DSD with given model-name exists
+    # Check if DSD with given model-id exists
     foundRule = mongo.db.rules.find_one({'rule-name': {'$eq': old_rule_name}})
     if not foundRule:
 

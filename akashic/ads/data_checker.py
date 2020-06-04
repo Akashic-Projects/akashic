@@ -49,16 +49,6 @@ class DataChecker(object):
                       "be at least one defined api in DSD."
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
-        for field in self.dsd.fields:
-            if not hasattr(field, 'use_for_create') or not \
-            hasattr(field, 'use_for_update'):
-                line, col = self.dsd._tx_parser \
-                            .pos_to_linecol(field._tx_position)
-                message = "Web reflection is turned on. Every " \
-                          "field must contain 'use_for_create'" \
-                          "and 'use_for_update' data."
-                raise AkashicError(message, line, col, ErrType.SEMANTIC)
-
 
 
     def check_url_mapping(self, operation, url_map, field_refs):
@@ -74,7 +64,7 @@ class DataChecker(object):
             URL map is regular URL string containing '{variable_name}'
             in places of real key data
         field_refs : list
-            The list of referenced-foreign-models url-placements
+            The list of referenced-models url-placements
 
         Raises
         ------
@@ -126,9 +116,9 @@ class DataChecker(object):
             if hasattr(self.dsd.apis, 'create'):
                 create = self.dsd.apis.create
                 if create is not None:
-                    if create.ref_foreign_models is not None:
+                    if create.ref_models is not None:
                         field_refs = []
-                        for ref in create.ref_foreign_models:
+                        for ref in create.ref_models:
                             field_refs.append(ref.url_placement)
 
                         try:
@@ -147,11 +137,10 @@ class DataChecker(object):
             if hasattr(self.dsd.apis, 'read_one'):
                 read_one = self.dsd.apis.read_one
                 if read_one is not None:
-                    if read_one.ref_foreign_models is not None:
+                    if read_one.ref_models is not None:
                         field_refs = []
-                        for ref in read_one.ref_foreign_models:
+                        for ref in read_one.ref_models:
                             field_refs.append(ref.url_placement)
-                        field_refs.append(read_one.data_indexing_up)
                         
                         try:
                             self.check_url_mapping("read-one", 
@@ -169,9 +158,9 @@ class DataChecker(object):
             if hasattr(self.dsd.apis, 'read_multiple'):
                 read_mul = self.dsd.apis.read_multiple
                 if read_mul is not None:
-                    if read_mul.ref_foreign_models is not None:
+                    if read_mul.refmodels is not None:
                         field_refs = []
-                        for ref in read_mul.ref_foreign_models:
+                        for ref in read_mul.ref_models:
                             field_refs.append(ref.url_placement)
                         field_refs.append(
                             read_mul.page_index_url_placement)
@@ -202,11 +191,10 @@ class DataChecker(object):
             if hasattr(self.dsd.apis, 'update'):
                 update = self.dsd.apis.update
                 if update is not None:
-                    if update.ref_foreign_models is not None:
+                    if update.ref_models is not None:
                         field_refs = []
-                        for ref in update.ref_foreign_models:
+                        for ref in update.ref_models:
                             field_refs.append(ref.url_placement)
-                        field_refs.append(update.data_indexing_up)
                         
                         try:
                             self.check_url_mapping("update", 
@@ -224,11 +212,10 @@ class DataChecker(object):
             if hasattr(self.dsd.apis, 'delete'):
                 delete = self.dsd.apis.delete
                 if delete is not None:
-                    if delete.ref_foreign_models is not None:
+                    if delete.ref_models is not None:
                         field_refs = []
-                        for ref in delete.ref_foreign_models:
+                        for ref in delete.ref_models:
                             field_refs.append(ref.url_placement)
-                        field_refs.append(delete.data_indexing_up)
                         
                         try:
                             self.check_url_mapping("delete", 
@@ -272,13 +259,6 @@ class DataChecker(object):
             json_path = lambda field : field.request_json_path
 
         for field in self.dsd.fields:
-            if (
-                (not (use_json_as == "request" and operation == "create" \
-                and field.use_for_create)) and
-                (not (use_json_as == "request" and operation == "update" \
-                and field.use_for_update))
-            ): 
-                continue
             
             jsonpath_expr = parse(json_path(field))
             result = [match.value for match in jsonpath_expr.find(json_object)]

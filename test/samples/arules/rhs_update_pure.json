@@ -8,7 +8,7 @@
     "then": [
         {
            "update": {
-                "model-name": "Course",
+                "model-id": "Course",
                 "reflect-on-web": true,
                 "data": {
                     "id": 1,

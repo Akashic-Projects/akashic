@@ -1201,75 +1201,65 @@ class Transpiler(object):
 # RIGHT HAND SIDE SECTION
 # ----------------------------------------------------------------
 
-### TODO: TEST THIS SECTION!
 
-    def find_data_provider(self, model_name, web_op_object):
+    def get_data_provider(self, model_id, err_line, err_col):
         data_provider = None
         for ds in self.data_providers:
-            if ds.dsd.model_id == model_name:
+            if ds.dsd.model_id == model_id:
                 data_provider = ds
 
         if not data_provider:
-            line, col = get_model(web_op_object)._tx_parser \
-                        .pos_to_linecol(web_op_object._tx_position)
             message = "DSD model with name '{0}' does not exist." \
-                      .format(model_name)
-            raise AkashicError(message, line, col, ErrType.SEMANTIC)
+                        .format(model_id)
+            raise AkashicError(message, err_line, err_col, ErrType.SEMANTIC)
 
         return data_provider
 
 
 
-    def check_field_list_for_duplicates(self, json_field_list, web_op_object):
-        for i in range(0, len(json_field_list)):
-            for j in range(i+1, len(json_field_list)):
-                if json_field_list[i].name == json_field_list[j].name:
-                    line, col = get_model(web_op_object)._tx_parser \
-                                .pos_to_linecol(web_op_object._tx_position)
-                    message = "Duplicate fields '{0}' detected." \
-                              .format(json_field_list[i].name)
-                    raise AkashicError(message, line, col, ErrType.SEMANTIC)
+    def get_dp_field(self, field_name, data_provider):
+        if data_provider == None:
+            return None
+
+        for dp_field in data_provider.dsd.fields:
+            if dp_field.field_name == field_name:
+                return dp_field
+        return None
 
 
 
-    def check_fact_address_var(self, rhs_var, expected_model_id):
-        # Check if variable is [address variable]
-        var_entry = self.variable_table.lookup(rhs_var.var_name)
-        # Get token location of rhs_var
-        line, col = get_model(rhs_var)._tx_parser \
-                    .pos_to_linecol(rhs_var._tx_position)
+    def get_json_field(self, field_name, json_field_list):
+        if json_field_list == None:
+            return None
 
-        if not var_entry:
-            message = "Variable '{0}' is not defined." \
-                      .format(rhs_var.var_name)
-            raise AkashicError(message, line, col, ErrType.SEMANTIC)
-        
-        if var_entry.var_type != VarType.FACT_ADDRESS:
-            message = "Variable '{0}' is not fact address." \
-                      .format(rhs_var.var_name)
-            raise AkashicError(message, line, col, ErrType.SEMANTIC)
-
-        if not "model_id" in var_entry.value:
-            message = "Variable '{0}' does not point to any fact." \
-                      .format(rhs_var.var_name)
-            raise AkashicError(message, line, col, ErrType.SEMANTIC) 
-
-        if expected_model_id != var_entry.value["model_id"]:
-            message = "Variable {0} is expected to address the model " \
-                      "{1}, but {2} found." \
-                      .format(rhs_var.var_name,
-                              expected_model_id,
-                              var_entry.value["model_id"])
-            raise AkashicError(message, line, col, ErrType.SEMANTIC) 
+        for json_field in json_field_list:
+            if json_field.name == field_name:
+                return json_field
+        return None
 
 
 
-    def check_fact_address_def(self, json_field, dp_field=None):
-        # Check if variable is [address variable]
-        var_entry = self.variable_table.lookup(json_field.value.var_name)
-        # Get token location of json_field
+    def get_value_locator_type(self, var_name, field_name, err_line, err_col):
+        var_entry = self.variable_table.lookup(var_name)
+        data_provider = self.get_data_provider(var_entry.value["model_id"], 
+                                               err_line, 
+                                               err_col)
+        dp_field = self.get_dp_field(field_name, data_provider)
+        return dp_field.type
+
+    
+
+    def get_binding_var_type(self, var_name):
+        var_entry = self.variable_table.lookup(var_name)
+        return var_entry.value["content_type"]
+
+
+
+    def check_fact_address_def(self, json_field, dp_field):
         line, col = get_model(json_field.value)._tx_parser \
                     .pos_to_linecol(json_field.value._tx_position)
+
+        var_entry = self.variable_table.lookup(json_field.value.var_name)
 
         if not var_entry:
             message = "Variable '{0}' is not defined." \
@@ -1287,24 +1277,23 @@ class Transpiler(object):
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
         # Extract information 
-        fact_address_template_name = var_entry.value["model_id"]
+        fact_address_model_id = var_entry.value["model_id"]
         fact_address_field_name = json_field.value.field_name
         
-        # Check semantics of fact_address_template_name and 
-        # fact_address_field_name
-        found_data_provider = None
-        for data_provider in self.data_providers:
-            if data_provider.dsd.model_id == fact_address_template_name:
-                found_data_provider = data_provider
+        # Check semantics of fact_address model name and 
+        # fact_address field name
+        found_data_provider = self.get_data_provider(fact_address_model_id,
+                                                     line, 
+                                                     col)
         if found_data_provider == None:
             message = "There is no data provider defined for " \
                       "fact address template '{0}'." \
                       .format(fact_address_template_name)
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
-        found_dp_field = found_data_provider \
-                         .field_lookup(fact_address_field_name)
-        if not found_dp_field:
+        found_dp_field = self.get_dp_field(fact_address_field_name,
+                                           found_data_provider)
+        if found_dp_field == None:
             message = "Fact address field '{0}' is not defined in " \
                       "data provider's template '{1}'" \
                       .format(fact_address_field_name,
@@ -1321,15 +1310,17 @@ class Transpiler(object):
                               dp_field.type,
                               found_dp_field.type)
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
-  
 
-    def check_binding_variable(self, var, dp_field=None):
-        var_entry = self.variable_table.lookup(var.var_name)
-        line, col = get_model(var)._tx_parser \
-                    .pos_to_linecol(var._tx_position)
 
+
+    def check_binding_variable(self, var_obj, dp_field=None):
+        line, col = get_model(var_obj)._tx_parser \
+                    .pos_to_linecol(var_obj._tx_position)
+
+        var_entry = self.variable_table.lookup(var_obj.var_name)
+        
         if var_entry == None:
-            message = "Undefined variable {0}.".format(var.var_name)
+            message = "Undefined variable {0}.".format(var_obj.var_name)
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
         if var_entry.var_type != VarType.BINDING:
@@ -1347,277 +1338,236 @@ class Transpiler(object):
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
 
-    def separate_data_from_other_fields(self, 
-                                        json_object, 
-                                        dp_field_list, 
-                                        operation):
-        # Collect all data fields
-        data_json_fields = []
-        for json_field in json_object.field_list:
-            json_field_ok = False
-            for dp_field in dp_field_list:
-                if json_field.name == dp_field.field_name:
-                    if (hasattr(dp_field, "use_for_create") and \
-                    dp_field.use_for_create and operation == "CREATE") or \
-                    (hasattr(dp_field, "use_for_update") and \
-                    dp_field.use_for_update and operation == "UPDATE"):
-                        json_field_ok = True
-                        break
-            if json_field_ok:
-                data_json_fields.append(json_field)
-
-       
-       # Collect all NON-data fields
-        other_json_fields = []
-        for json_field in json_object.field_list:
-            if not json_field in data_json_fields:
-                other_json_fields.append(json_field)
-
-        return (data_json_fields, other_json_fields)
 
 
 
-    def check_model_refs_and_build_clips_func_call_args(self, 
-                                                        other_json_fields, 
-                                                        dsd_api_object,
-                                                        json_object, 
-                                                        model_name,
-                                                        data_provider=None):
-
-        # Check refs and collect actual refs from non-data fields
-        json_refs = []
-        for ref in dsd_api_object.ref_foreign_models:
-            ref_ok = False
-
-            for o_json_field in other_json_fields:
-                if ref.field_name == o_json_field.name:
-                    ref_ok = True
-                    json_refs.append(o_json_field)
-                    break
-            
-            if not ref_ok:
+    def get_data_fields(self, json_object, data_provider):
+        data_fields = []
+        for dp_field in data_provider.dsd.fields:
+            json_field = self.get_json_field(dp_field.field_name
+                                             json_object.field_list)
+            if json_field != None:
+                data_fields.append((json_field, dp_field))
+            else:
                 line, col = get_model(json_object)._tx_parser \
                             .pos_to_linecol(json_object._tx_position)
+                message = "Field '{0}' is omitted from the " \
+                          "operation request." \
+                          .format(dp_field.field_name)
+                raise AkashicError(message, line, col, ErrType.SEMANTIC)
+
+        return data_fields
+
+
+
+    def get_ref_fields(self, json_object, api_operation_obj):
+        ref_fields = []
+        for ref in api_operation_obj.ref_models:
+            json_field = self.get_json_field(dp_field.field_name
+                                             json_object.field_list)
+
+            if json_field == None:
+                line, col = get_model(json_object)._tx_parser \
+                    .pos_to_linecol(json_object._tx_position)
                 message = "Foreign model reference field " \
                           "'{0}' is omitted from the " \
-                          "operation request for model '{1}'." \
-                          .format(ref.field_name, model_name)
+                          "operation request." \
+                          .format(ref.field_name)
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
-        if hasattr(dsd_api_object, "data_indexing_up"):
-            main_ref_ok = False
-            for o_json_field in other_json_fields:
-                if dsd_api_object.data_indexing_up == o_json_field.name:
-                    main_ref_ok = True
-                    json_refs.append(o_json_field)
-                    break
-            if not main_ref_ok:
-                line, col = get_model(json_object)._tx_parser \
-                            .pos_to_linecol(json_object._tx_position)
-                message = "Data indexing url placement field" \
-                          "'{0}' is omitted from the " \
-                          "operation request for model '{1}'." \
-                          .format(dsd_api_object.data_indexing_up, 
-                                  model_name)
-                raise AkashicError(message, line, col, ErrType.SEMANTIC)
+            line, col = get_model(json_field)._tx_parser \
+                    .pos_to_linecol(json_field._tx_position)
 
-        return self.build_clips_func_call_args(json_refs, data_provider)
+            data_provider = self.get_data_provider(ref.model_id, line, col)
+            dp_field = self.get_dp_field(ref.field_name, data_provider)
 
+            ref_fields.append((json_field, dp_field))
+        
+        return ref_fields
 
+    
 
-    def check_data_fields(self, 
-                          data_json_fields,
-                          dp_field_list,
-                          can_reflect, 
-                          model_name,
-                          web_op_name):
-
-        # Check types and create args
-        for dp_field in dp_field_list:
-            json_field_ok = False
-
-            for json_field in data_json_fields:
-                if json_field.name == dp_field.field_name:
-                    json_field_ok = True
-
-                    given_type = py_to_clips_type(
-                                    json_field.value.__class__)
-
-                    if (given_type != None) and (given_type != dp_field.type):
-                        line, col = get_model(json_field)._tx_parser \
+    def analyse_fields(self, fields):
+        analysed_fields = []
+        for json_field, dp_field in fields:
+            err_line, err_col = get_model(json_field)._tx_parser \
                                 .pos_to_linecol(json_field._tx_position)
 
-                        message = "Field '{0}' contains data with " \
-                                  "wrong type. Expected type is {1}. " \
-                                  "Found type is {2}." \
-                                  .format(json_field.name,
-                                          dp_field.type,
-                                          given_type)
-                        raise AkashicError(message, line, col, 
-                                            ErrType.SEMANTIC)
-                    break 
-
-            if ((dp_field.use_for_create and web_op_name == "CREATE") or \
-            (dp_field.use_for_update and web_op_name == "UPDATE")) and \
-            (not json_field_ok and can_reflect):
-
-                line, col = get_model(json_field)._tx_parser \
-                .pos_to_linecol(json_field._tx_position)
-                message = "Field '{0}' is omitted from the operation " \
-                          "request on model '{1}'." \
-                          .format(dp_field.field_name, model_name)
-                raise AkashicError(message, line, col, ErrType.SEMANTIC)
-
-
-
-    def get_dp_field(self, field_name, data_provider):
-        if data_provider == None:
-            return None
-
-        for dp_field in data_provider.dsd.fields:
-            if dp_field.field_name == field_name:
-                return dp_field
-        return None
-
-
-
-    def get_value_locator_type(self, var_name, field_name, web_op_object):
-        var_entry = self.variable_table.lookup(var_name)
-
-
-        data_provider = self.find_data_provider(var_entry.value["model_id"], web_op_object)
-        dp_field = self.get_dp_field(field_name, data_provider)
-
-        return dp_field.type
-
-
-    def build_clips_func_call_args(self, 
-                                   data_json_fields, 
-                                   data_provider=None):
-        arg_list = []
-        for json_field in data_json_fields:
-            
             given_type = py_to_clips_type(json_field.value.__class__)
+            json_field_type = None
+            json_field_class = None
+
             if given_type == None:
-                # If json_field_value is FACT_ADDRESS_VAR
                 if json_field.value.__class__.__name__ == "ValueLocator":
-                    dp_field = self.get_dp_field(json_field.name,
-                                                 data_provider)
                     self.check_fact_address_def(json_field, dp_field)
 
-                    # Build clips command args
-                    arg_list.append('"' + json_field.name + '"')
-                    arg_list.append('(str-cat (fact-slot-value ' + 
-                                    json_field.value.var_name + ' ' + 
-                                    json_field.value.field_name + '))')
-                    
-                
-                    vl_field_type = self.get_value_locator_type(
+                    json_field_type = self.get_value_locator_type(
                         json_field.value.var_name,
                         json_field.value.field_name,
-                        json_field.value
+                        err_line,
+                        err_col
                     )
-                    arg_list.append('"' + vl_field_type + '"')
+                    json_field_class = "ValueLocator"
 
-                                    
-                elif json_field.value.__class__.__name__ == "RHS_VARIABLE":
-                    dp_field = self.get_dp_field(json_field.name,
-                                                 data_provider)
-                    self.check_binding_variable(json_field.value, dp_field)
+            elif json_field.value.__class__.__name__ == "RHS_VARIABLE":
+                self.check_binding_variable(json_field.value, dp_field)
 
-                    var_entry = self.variable_table \
-                                .lookup(json_field.value.var_name)
-                    value = var_entry.value
-                   
-                    # Build clips command args
-                    arg_list.append('"' + json_field.name + '"')
-                    arg_list.append('(str-cat ' + value["content"] + ')')
-                  
-                    var_entry = self.variable_table.lookup(json_field.value.var_name)
-                    arg_list.append('"' + var_entry.value["content_type"] + '"')
-
+                json_field_type = self.get_binding_var_type(
+                    json_field.value.var_name
+                )
+                json_field_class = "RHS_VARIABLE"
+            
             else:
-                # Add field name and field value
+                if dp_field != None and given_type != dp_field.type:
+                    message = "Field '{0}' contains data with " \
+                              "wrong type. Expected type is {1}. " \
+                              "Found type is {2}." \
+                              .format(json_field.name,
+                                      dp_field.type,
+                                      given_type)
+                    raise AkashicError(message, err_line, err_col, 
+                                        ErrType.SEMANTIC)
+                json_field_type = py_to_clips_type(json_field.value.__class__)
+                json_field_class = "NORMAL"
+
+            analysed_fields.append(
+                (json_field,
+                 json_field_type,
+                 json_field_class,
+                 dp_field)
+            )
+
+        return analysed_fields
+
+
+
+    def compile_fields(self, fields):
+        arg_list = []
+
+        for json_field, \
+        json_field_type, \
+        json_field_class, \
+        dp_field in fields:
+
+            if json_field_class == "ValueLocator":
+                arg_list.append('"' + json_field.name + '"')
+                arg_list.append('(str-cat (fact-slot-value ' + 
+                                json_field.value.var_name + ' ' + 
+                                json_field.value.field_name + '))')
+                args_list.append('"' + json_field_type + '"')
+
+            elif json_field_class == "RHS_VARIABLE":
+                arg_list.append('"' + json_field.name + '"')
+
+                var_entry = self.variable_table \
+                                .lookup(json_field.value.var_name)
+                arg_list.append('(str-cat ' + var_entry.value["content"] + ')')
+                arg_list.append('"' + json_field_type + '"')
+
+            elif json_field_class == "NORMAL":
                 arg_list.append('"' + json_field.name + '"')
                 arg_list.append('"' + str(json_field.value) + '"')
-                
-                clips_type = py_to_clips_type(json_field.value.__class__)
-                arg_list.append('"' + clips_type + '"')
+                arg_list.append('"' + json_field_type + '"')
 
         return arg_list
 
 
+
+    def checkout_duplicates(self, json_field_list, err_line, err_col):
+        for i in range(0, len(json_field_list)):
+            for j in range(i+1, len(json_field_list)):
+                if json_field_list[i].name == json_field_list[j].name:
+                    message = "Duplicate fields with name '{0}' detected." \
+                              .format(json_field_list[i].name)
+                    raise AkashicError(message, 
+                                       err_line, 
+                                       err_col, 
+                                       ErrType.SEMANTIC)
+
+
+    def check_api_vs_reflect(self, 
+                            data_provider,
+                            rhs_operation_obj, 
+                            api_operation_name):
+
+        # Exit if reflection is needed,
+        # but DSD cannot reflect
+        if rhs_operation_obj.reflect and \
+        not data_provider.dsd.can_reflect:
+            line, col = get_model(rhs_operation_obj)._tx_parser \
+            .pos_to_linecol(rhs_operation_obj._tx_position)
+            message = "Model '{0}' does not support " \
+                      "web reflection." \
+                      .format(rhs_operation_obj.model_id)
+            raise AkashicError(message, line, col, ErrType.SEMANTIC)
+
+        # Exit if reflection is needed, 
+        # but DSD does not have given operation api
+        if (rhs_operation_obj.reflect) and \
+        not hasattr(data_provider.dsd.apis, api_operation_name):
+            line, col = get_model(rhs_operation_obj)._tx_parser \
+            .pos_to_linecol(rhs_operation_obj._tx_position)
+            message = "Model '{0}' does not support " \
+                      "'{1}' operation." \
+                      .format(rhs_operation_obj.model_id,
+                              api_operation_name)
+            raise AkashicError(message, line, col, ErrType.SEMANTIC)
+
+
+
+##############################################################
+#### Model processors
 
     def rhs_statement(self, rhs):
         if rhs.stat.__class__.__name__ == "CLIPS_CODE":
             clips_command = remove_quotes(rhs.stat.clips_code)
             self.rhs_clips_command_list.append(to_clips_quotes(clips_command))
 
+    
 
+     def create_update_generic(self, 
+                               rhs_operation_obj, 
+                               api_operation_name):
 
-    def create_statement(self, create_s):
+        line, col = get_model(rhs_operation_obj)._tx_parser \
+                    .pos_to_linecol(rhs_operation_obj._tx_position)
+
         # Find data provider for given model
-        data_provider = self.find_data_provider(create_s.model_name, create_s)
+        data_provider = self.get_data_provider(rhs_operation_obj.id,
+                                               line, 
+                                               col)
 
-        # Exit if reflection is needed, but DSD cannot reflect
-        if create_s.reflect and not data_provider.dsd.can_reflect:
-            line, col = get_model(create_s)._tx_parser \
-            .pos_to_linecol(create_s._tx_position)
-            message = "Model '{0}' does not support " \
-                      "web reflection." \
-                      .format(create_s.model_name)
-            raise AkashicError(message, line, col, ErrType.SEMANTIC)
-
-        # Exit if reflects on web, but does not have createApi
-        if (create_s.reflect) and \
-        not hasattr(data_provider.dsd.apis, 'create'):
-            line, col = get_model(create_s)._tx_parser \
-            .pos_to_linecol(create_s._tx_position)
-            message = "Model '{0}' does not support " \
-                      "CREATE operation." \
-                      .format(create_s.model_name)
-            raise AkashicError(message, line, col, ErrType.SEMANTIC)
+        # Check reflection option against settings in DSD
+        self.check_api_vs_reflect(data_provider,
+                                  rhs_operation_obj, 
+                                  api_operation_name)
 
         # Check field list for duplicate fileds
-        self.check_field_list_for_duplicates(create_s.json_object.field_list, 
-                                             create_s)
+        self.checkout_duplicates(rhs_operation_obj.json_object.field_list,
+                                 line, 
+                                 col)
 
-        # Split data into data fields and other fields
-        data_json_fields, other_json_fields = \
-            self.separate_data_from_other_fields(create_s.json_object,
-                                                 data_provider.dsd.fields,
-                                                 "CREATE")
+        # Separate data and do primary field checks
+        data_fields = self.get_data_fields(rhs_operation_obj.json_object,
+                                           data_provider)
+        ref_fields = self.get_ref_fields(rhs_operation_obj.json_object, 
+                                         getattr(data_provider.dsd.apis, 
+                                                 api_operation_name))
 
-        for a in data_json_fields:
-            print("-- " + a.name)
+        # Do forther analysis and checks on data,
+        # and generate prep structure for compilation
+        a_data_fields = self.analyse_fields(data_fields)
+        a_ref_fields = self.analyse_fields(ref_fields)
 
-        # Check DATA field names and types
-        self.check_data_fields(
-            data_json_fields,
-            data_provider.dsd.fields,
-            create_s.reflect,
-            create_s.model_name,
-            "CREATE")
 
-        # Build DATA argument list
-        data_arg_list = self.build_clips_func_call_args(data_json_fields,
-                                                        data_provider)
-
-        ref_arg_list = []
-        if (data_provider.dsd.can_reflect and \
-        hasattr(data_provider.dsd.apis.create, 'ref_foreign_models')):
-            ref_arg_list = \
-                self.check_model_refs_and_build_clips_func_call_args(
-                    other_json_fields, 
-                    data_provider.dsd.apis.create,
-                    create_s.json_object,
-                    create_s.model_name,
-                    data_provider)
+        # Compile prep structure to the list of CLIPS function args
+        data_arg_list = self.compile_fields(a_data_fields)
+        ref_arg_list = self.compile_fields(a_ref_fields)
 
         arg_array = list([
-            '"' + create_s.model_name + '"',
+            '"' + rhs_operation_obj.model_id + '"',
             "\"reflect\"",
-            '"' + str(create_s.reflect) + '"',
+            '"' + str(rhs_operation_obj.reflect) + '"',
             "\"data-len\"",
             '"' + str(len(data_arg_list)) + '"',
             *data_arg_list,
@@ -1626,29 +1576,59 @@ class Transpiler(object):
             *ref_arg_list
         ])
 
+        return arg_array
+
+
+
+
+    def create_statement(self, create_s):
+        arg_array = self.create_update_generic(
+            create_s,
+            'create'
+        )
+
         clips_command = "(create_func " + " ".join(arg_array) + ")"
         # self.rhs_clips_command_list.append(clips_command)
 
         # Use direct call to bridge - for debugging
         self.env_provider.bridges["DataBridge"].create_func(*arg_array)
+    
+
+
+    def update_statement(self, update_s):
+        arg_array = self.create_update_generic(
+            update_s,
+            'update'
+        )
+
+        clips_command = "(update_func " + " ".join(arg_array) + ")"
+        # self.rhs_clips_command_list.append(clips_command)
+
+        # Use direct call to bridge - for debugging
+        self.env_provider.bridges["DataBridge"].update_func(*arg_array)
 
 
 
     def return_statement(self, return_s):
         # Check field list for duplicate fileds
-        self.check_field_list_for_duplicates(return_s.json_object.field_list,
-                                             return_s)
+        self.checkout_duplicates(return_s.json_object.field_list,
+                                 line, 
+                                 col)
 
-        # Build DATA argument list
-        data_arg_list = self.build_clips_func_call_args(
-            return_s.json_object.field_list,
-            None
-        )
+        all_fields = [(json_field, None) for json_field in \
+                     return_s.json_object.field_list]
+
+        # Do forther analysis and checks on data,
+        # and generate prep structure for compilation
+        a_all_fields = self.analyse_fields(all_fields)
+
+        # Compile prep structure to the list of CLIPS function args
+        all_arg_list = self.compile_fields(a_all_fields)
 
         arg_array = list([
             "\"data-len\"",
-            '"' + str(len(data_arg_list)) + '"',
-            *data_arg_list
+            '"' + str(len(all_arg_list)) + '"',
+            *all_arg_list
         ])
 
         clips_command = "(return_func " + " ".join(arg_array) + ")"
@@ -1659,93 +1639,6 @@ class Transpiler(object):
 
 
 
-    def update_statement(self, update_s):
-        # Find data provider for given model
-        data_provider = self.find_data_provider(update_s.model_name, update_s)
-
-        # Exit if reflection is needed, but DSD cannot reflect
-        if update_s.reflect and not data_provider.dsd.can_reflect:
-            line, col = get_model(update_s)._tx_parser \
-            .pos_to_linecol(update_s._tx_position)
-            message = "Model '{0}' does not support " \
-                      "web reflection." \
-                      .format(update_s.model_name)
-            raise AkashicError(message, line, col, ErrType.SEMANTIC)
-
-        # Exit if reflects on web, but does not have updateApi
-        if (update_s.reflect) and \
-        not hasattr(data_provider.dsd.apis, 'update'):
-            line, col = get_model(update_s)._tx_parser \
-            .pos_to_linecol(update_s._tx_position)
-            message = "Model '{0}' does not support " \
-                      "UPDATE operation." \
-                      .format(update_s.model_name)
-            raise AkashicError(message, line, col, ErrType.SEMANTIC)
-
-        # Check 'fact-address' variable entry
-        # This is depricated - it was used to get fact-index for modify
-        #self.check_fact_address_var(update_s.fact_address, 
-        #                            update_s.model_name)
-
-        # Check field list for duplicate fileds
-        self.check_field_list_for_duplicates(update_s.json_object.field_list, 
-                                             update_s)
-
-        # Split data into data fields and other fields
-        data_json_fields, other_json_fields = \
-            self.separate_data_from_other_fields(update_s.json_object,
-                                                 data_provider.dsd.fields,
-                                                 "UPDATE")
-
-        for a in data_json_fields:
-            print("-- " + a.name)
-
-        print("*******")
-        for a in other_json_fields:
-            print("-- " + a.name)
-
-        # Check DATA field names and types
-        self.check_data_fields(
-            data_json_fields,
-            data_provider.dsd.fields,
-            update_s.reflect,
-            update_s.model_name,
-            "UPDATE")
-
-        # Build DATA argument list
-        data_arg_list = self.build_clips_func_call_args(data_json_fields,
-                                                        data_provider)
-
-        ref_arg_list = []
-        if (data_provider.dsd.can_reflect and \
-        hasattr(data_provider.dsd.apis.update, 'ref_foreign_models')):
-            ref_arg_list = \
-                self.check_model_refs_and_build_clips_func_call_args(
-                    other_json_fields, 
-                    data_provider.dsd.apis.update,
-                    update_s.json_object,
-                    update_s.model_name,
-                    data_provider)
-
-        arg_array = list([
-            '"' + update_s.model_name + '"',
-            "\"reflect\"",
-            '"' + str(update_s.reflect) + '"',
-            "\"data-len\"",
-            '"' + str(len(data_arg_list)) + '"',
-            *data_arg_list,
-            "\"ref-len\"",
-            '"' + str(len(ref_arg_list)) + '"',
-            *ref_arg_list
-        ])
-
-        clips_command = "(update_func " + " ".join(arg_array) + ")"
-        self.rhs_clips_command_list.append(clips_command)
-
-        # Use direct call to bridge - for debugging
-        # self.env_provider.bridges["DataBridge"].update_func(*arg_array)
-
-
-
     def delete_statement(self, delete_s):
         pass
+

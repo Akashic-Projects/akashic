@@ -1,6 +1,6 @@
 {
     "data-source-definition-name": "User",
-    "model-name": "User",
+    "model-id": "User",
     "model-description": "Holds general user data",
     "can-reflect-on-web": true,
     "authentication-header": {
@@ -16,9 +16,7 @@
             "use-as": "primary-key",
             "request-json-path": "$.id",
             "response-one-json-path": "$.data.id",
-            "response-multiple-json-path": "$.data[{index}].id",
-            "use-for-create": false,
-            "use-for-update": false
+            "response-multiple-json-path": "$.data[{index}].id"
         },
         {
             "field-name": "name",
@@ -26,9 +24,7 @@
             "use-as": "data",
             "request-json-path": "$.name",
             "response-one-json-path": "$.data.name",
-            "response-multiple-json-path": "$.data[{index}].name",
-            "use-for-create": true,
-            "use-for-update": true
+            "response-multiple-json-path": "$.data[{index}].name"
         },
         {
             "field-name": "email",
@@ -36,9 +32,7 @@
             "use-as": "data",
             "request-json-path": "$.email",
             "response-one-json-path": "$.data.email",
-            "response-multiple-json-path": "$.data[{index}].email",
-            "use-for-create": true,
-            "use-for-update": true
+            "response-multiple-json-path": "$.data[{index}].email"
         },
         {
             "field-name": "age",
@@ -46,9 +40,7 @@
             "use-as": "data",
             "request-json-path": "$.age",
             "response-one-json-path": "$.data.age",
-            "response-multiple-json-path": "$.data[{index}].age",
-            "use-for-create": true,
-            "use-for-update": true
+            "response-multiple-json-path": "$.data[{index}].age"
         }
     ],
 
@@ -62,7 +54,13 @@
             "operation": "read-one",
             "method": "GET",
             "url-map": "http://localhost:80/api/users/{id}",
-            "data-indexing-url-placement": "id"
+            "referenced-models": [
+                {
+                    "model-id": "User",
+                    "field-name": "id",
+                    "url-placement": "id"
+                }
+            ]
         },
         {
             "operation": "read-multiple",
@@ -88,13 +86,25 @@
             "operation": "update",
             "method": "PUT",
             "url-map": "http://localhost:80/api/users/{id}",
-            "data-indexing-url-placement": "id"
+            "referenced-models": [
+                {
+                    "model-id": "User",
+                    "field-name": "id",
+                    "url-placement": "id"
+                }
+            ]
         },
         {
             "operation": "delete",
             "method": "DELETE",
             "url-map": "http://localhost:80/api/users/{id}",
-            "data-indexing-url-placement": "id"
+            "referenced-models": [
+                {
+                    "model-id": "User",
+                    "field-name": "id",
+                    "url-placement": "id"
+                }
+            ]
         }
     ]
 }

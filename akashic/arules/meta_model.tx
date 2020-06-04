@@ -203,14 +203,14 @@ RHSStatement:
 CreateStatement:
     '{' 
         CREATE_KW ':' '{'
-            ((MODEL_NAME_KW     ':'     model_name  = STRING  )
-            (REFLECT_ON_WEB     ':'     reflect     = BOOL    )
-            ( DATA_KW           ':'     json_object = JSONObject))#[',']
+            ((MODEL_ID_KW       ':'     model_id    = ID            )
+            (REFLECT_ON_WEB     ':'     reflect     = BOOL        )
+            ( DATA_KW           ':'     json_object = JSONObject  ))#[',']
         '}' 
     '}'
 ;
 CREATE_KW:       /\"create\"/ ;
-MODEL_NAME_KW:   /\"model-name\"/ ;
+MODEL_ID_KW:     /\"model-id\"/ ;
 REFLECT_ON_WEB:  /\"reflect-on-web\"/ ;
 DATA_KW:         /\"data\"/ ;
 
@@ -226,10 +226,9 @@ RETURN_KW:    /\"return\"/ ;
 UpdateStatement:
     '{' 
         UPDATE_KW ':' '{'
-            ((MODEL_NAME_KW     ':'   model_name   = STRING          )
-            //(FACT_ADDRESS_KW    ':'   fact_address = RHS_VARIABLE    )
-            (REFLECT_ON_WEB     ':'   reflect      = BOOL            )
-            (DATA_KW            ':'   json_object  = JSONObject      ))#[',']
+            ((MODEL_ID_KW       ':'   model_id     = ID          )
+            (REFLECT_ON_WEB     ':'   reflect      = BOOL        )
+            (DATA_KW            ':'   json_object  = JSONObject  ))#[',']
         '}' 
     '}'
 ;
@@ -240,9 +239,9 @@ FACT_ADDRESS_KW:    /\"fact-address\"/ ;
 DeleteStatement:
     '{' 
         DELETE_KW ':' '{'
-            ((MODEL_NAME_KW     ':'     model_name  = STRING  )
-            (REFLECT_ON_WEB     ':'     reflect     = BOOL    )
-            ( DATA_KW           ':'     json_object = JSONObject))#[',']
+            ((MODEL_ID_KW       ':'     model_if    = ID          )
+            (REFLECT_ON_WEB     ':'     reflect     = BOOL        )
+            ( DATA_KW           ':'     json_object = JSONObject  ))#[',']
         '}'
     '}'
 ;

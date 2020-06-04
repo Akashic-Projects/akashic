@@ -6,7 +6,7 @@
     "then": [
         {
             "create": {
-                "model-name": "Course",
+                "model-id": "Course",
                 "reflect-on-web": true,
                 "data": {
                     "name": "Moj kursss Pan",
