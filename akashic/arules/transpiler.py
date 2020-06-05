@@ -1652,5 +1652,48 @@ class Transpiler(object):
 
 
     def delete_statement(self, delete_s):
-        pass
+        line, col = get_model(delete_s)._tx_parser \
+                    .pos_to_linecol(delete_s._tx_position)
+
+        # Find data provider for given model
+        data_provider = self.get_data_provider(delete_s.model_id,
+                                               line, 
+                                               col)
+
+        # Check reflection option against settings in DSD
+        self.check_api_vs_reflect(data_provider,
+                                  delete_s, 
+                                  'delete')
+
+        # Check field list for duplicate fileds
+        self.checkout_duplicates(delete_s.json_object.field_list,
+                                 line, 
+                                 col)
+
+        # Take only refs
+        ref_fields = self.get_ref_fields(delete_s.json_object, 
+                                         getattr(data_provider.dsd.apis, 
+                                                 'delete'))
+        
+        # Do forther analysis and checks on data,
+        # and generate prep structure for compilation
+        a_ref_fields = self.analyse_fields(ref_fields)
+
+        # Compile prep structure to the list of CLIPS function args
+        ref_arg_list = self.compile_fields(a_ref_fields)
+
+        arg_array = list([
+            '"' + delete_s.model_id + '"',
+            "\"reflect\"",
+            '"' + str(delete_s.reflect) + '"',
+            "\"ref-len\"",
+            '"' + str(len(ref_arg_list)) + '"',
+            *ref_arg_list
+        ])
+
+        clips_command = "(delete_func " + " ".join(arg_array) + ")"
+        self.rhs_clips_command_list.append(clips_command)
+
+        # Use direct call to bridge - for debugging
+        # self.env_provider.bridges["DataBridge"].delete_func(*arg_array)
 

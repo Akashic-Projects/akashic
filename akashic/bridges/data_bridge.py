@@ -44,6 +44,11 @@ class DataBridge(object):
                 "function":     self.update_func,
                 "num_of_args":  -1,
                 "return_type":  "INTEGER"
+            },
+            {
+                "function":     self.delete_func,
+                "num_of_args":  -1,
+                "return_type":  "INTEGER"
             }
         ]
 
@@ -253,8 +258,7 @@ class DataBridge(object):
             )
 
             url_map_args = self.ref_arg_list_to_url_map(
-                [*args[REF_START_POS:REF_START_POS+ref_len],
-                *args[DATA_START_POS:DATA_START_POS+data_len]],  
+                *args[REF_START_POS:REF_START_POS+ref_len], 
                 data_provider.dsd.apis.update
             )
 
@@ -291,4 +295,77 @@ class DataBridge(object):
         )
 
         print(json.dumps(data_json_construct, indent=4))
+        return 0
+
+
+
+    def delete_func(self, *args):
+        args = map(lambda arg: arg.replace('"', ''), args)
+        args = list(args)
+
+        self.print_args(args, "DELETE")
+
+        MODEL_ID_POS     = 0
+        REFLECT_INFO_POS = 2
+        REF_LEN_POS      = 4
+        REF_START_POS    = 5
+
+        # Obtain data from args
+        data_provider = self.data_providers_map[args[MODEL_ID_POS]]
+        reflect_on_web = string_to_py_type(args[REFLECT_INFO_POS], "BOOLEAN")        
+        ref_len = string_to_py_type(args[REF_LEN_POS], "INTEGER")
+        
+        # Build and deploy modification rule
+        primary_key_field_name = \
+            self.get_primary_key_field(data_provider).field_name
+        primary_key_field_value = self.get_field_value_from_args(
+            args[REF_START_POS:REF_START_POS+ref_len],
+            primary_key_field_name
+        )
+        rhs = """{{ "?to_delete<-": "[{0}.{1} == {2}]" }}""".format(
+                data_provider.dsd.model_id,
+                str(primary_key_field_name),
+                str(primary_key_field_value)
+            )
+        lhs = """{{ "clips": "{0}" }}""".format(
+            "(retract ?to_delete)"
+        )
+        tmp_update_rule = GENERIC_RULE.format(
+            "__delete_fact_" + str(uuid.uuid4()).replace('-', ''),
+            "\"system\"",
+            "true",
+            rhs,
+            lhs
+        )
+        print("\nDELETION FULE: " + tmp_update_rule)
+
+        print("\nDEL. RULE TRANSPILATION PRINT:")
+        transpiler = Transpiler(self.env_provider)
+        transpiler.load(tmp_update_rule)
+
+        self.env_provider.insert_rule(transpiler.rule.rule_name, 
+                                      transpiler.tranpiled_rule)
+        
+        # Reflect modification on web if required
+        if reflect_on_web:
+            url_map_args = self.ref_arg_list_to_url_map(
+                args[REF_START_POS:REF_START_POS+ref_len],
+                data_provider.dsd.apis.update
+            )
+
+            print("\nMAP: " + str(url_map_args))
+
+            response_obj = data_provider.delete(**url_map_args)
+
+            print("\nDELETION RESPONSE:\n" + str(response_obj) + "\n\n")
+
+        # Print all facts
+        print("FACTS - print from bridge:")
+        for f in self.env_provider.env.facts():
+            print("---------")
+            print(f)
+
+        print("****")
+        return 0
+
         return 0

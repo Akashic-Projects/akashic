@@ -55,8 +55,10 @@ def test_rule_transpiler():
     # rhs_update
     # rhs_update_pure
 
+    # rhs_delete
+
     this_folder = dirname(__file__)
-    sample_path = abspath(join(this_folder, '..', 'test', 'samples', 'arules', 'rhs_return.json'))
+    sample_path = abspath(join(this_folder, '..', 'test', 'samples', 'arules', 'rhs_delete.json'))
     with open(sample_path, 'r') as sample:
         akashic_rule = sample.read()
         transpiler.load(akashic_rule)

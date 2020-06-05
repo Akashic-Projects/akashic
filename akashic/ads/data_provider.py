@@ -628,4 +628,4 @@ class DataProvider(object):
         url = self.fill_data_map(url_map, **kwargs)
         
         result = self.fetcher.delete(url, {})
-        return json.loads(result)
+        return ""
