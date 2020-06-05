@@ -1,14 +1,16 @@
 {
     "rule-name": "Test_rhs_create",
     "salience": 100,
+    "run-once": true,
     "when": [
     ],
     "then": [
         {
             "create": {
                 "model-id": "Course",
-                "reflect-on-web": true,
+                "reflect-on-web": false,
                 "data": {
+                    "id": 0,
                     "name": "Moj kursss Pan",
 	                "start_date": "14.11.2020.",
                     "end_date": "13.11.2021."

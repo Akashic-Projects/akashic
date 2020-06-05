@@ -72,6 +72,8 @@ class DataChecker(object):
             If URL map fields missmatches fileds specified in DSD
         """
 
+        # TODO: Add check if model-ids are ok
+
         url_fields = []
         for m in re.finditer(r"\{(((?!\{|\}).)*)\}", url_map):
             url_fields.append(m.group(1))
@@ -158,7 +160,7 @@ class DataChecker(object):
             if hasattr(self.dsd.apis, 'read_multiple'):
                 read_mul = self.dsd.apis.read_multiple
                 if read_mul is not None:
-                    if read_mul.refmodels is not None:
+                    if read_mul.ref_models is not None:
                         field_refs = []
                         for ref in read_mul.ref_models:
                             field_refs.append(ref.url_placement)
@@ -256,7 +258,7 @@ class DataChecker(object):
         if use_json_as == "response":
             json_path = lambda field : field.response_one_json_path
         elif use_json_as == "request":
-            json_path = lambda field : field.request_json_path
+            json_path = lambda field : "$." + field.field_name
 
         for field in self.dsd.fields:
             

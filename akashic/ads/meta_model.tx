@@ -52,7 +52,6 @@ PrimaryKeyField:
         ((FIELD_NAME_KW             ':' '"' field_name              = ID       '"'  )
         (TYPE_KW                    ':' '"' type                    = Type     '"'  )
         (USE_AS_KW                  ':'     use_as = /\"primary-key\"/              )
-        (REQUEST_JSON_PATH_KW       ':'     request_json_path       = STRING        )?
         (RESPONSE_ONE_JSON_PATH_KW  ':'     response_one_json_path  = STRING        )?
         (RESPONSE_MUL_JSON_PATH_KW  ':'     response_mul_json_path  = STRING        )?)#[',']
     '}'
@@ -64,7 +63,6 @@ ForeignKeyField:
         (USE_AS_KW                   ':'     use_as = /\"foreign-key\"/              )
         (REF_FOREIGN_MODEL_ID_KW     ':' '"' ref_foreign_model_id    = ID        '"' )
         (REF_FOREIGN_FIELD_NAME_KW   ':' '"' ref_foreign_field_name  = ID        '"' )
-        (REQUEST_JSON_PATH_KW        ':'     request_json_path       = STRING        )?
         (RESPONSE_ONE_JSON_PATH_KW   ':'     response_one_json_path  = STRING        )?
         (RESPONSE_MUL_JSON_PATH_KW   ':'     response_mul_json_path  = STRING        )?)#[',']
     '}'
@@ -74,7 +72,6 @@ DataField:
         ((FIELD_NAME_KW             ':' '"' field_name              = ID       '"'  )
         (TYPE_KW                    ':' '"' type                    = Type     '"'  )
         (USE_AS_KW                  ':'     use_as = /\"data\"/                     )
-        (REQUEST_JSON_PATH_KW       ':'     request_json_path       = STRING        )?
         (RESPONSE_ONE_JSON_PATH_KW  ':'     response_one_json_path  = STRING        )?
         (RESPONSE_MUL_JSON_PATH_KW  ':'     response_mul_json_path  = STRING        )?)#[',']
     '}'
@@ -82,7 +79,6 @@ DataField:
 FIELD_NAME_KW:                  /\"field-name\"/ ;
 TYPE_KW:                        /\"type\"/ ;
 USE_AS_KW:                      /\"use-as\"/ ;
-REQUEST_JSON_PATH_KW:           /\"request-json-path\"/ ;
 RESPONSE_ONE_JSON_PATH_KW:      /\"response-one-json-path\"/ ;
 RESPONSE_MUL_JSON_PATH_KW:      /\"response-multiple-json-path\"/ ;
 
@@ -156,7 +152,7 @@ DeleteApi:
         ((OPERATION_KW  ':'       /\"delete\"/                               )
         (METHOD_KW      ':'  '"'  method         = Method  '"'               )
         (URL_MAP_KW     ':'       url_map        = STRING                    )
-        (REF_MODELS_KW  ':'  '['  ref__models   *= ReferencedModel[','] ']'  )?)#[',']
+        (REF_MODELS_KW  ':'  '['  ref_models   *= ReferencedModel[','] ']'  )?)#[',']
     '}'
 ;
 

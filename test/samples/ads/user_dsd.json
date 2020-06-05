@@ -14,7 +14,6 @@
             "field-name": "id",
             "type": "INTEGER",
             "use-as": "primary-key",
-            "request-json-path": "$.id",
             "response-one-json-path": "$.data.id",
             "response-multiple-json-path": "$.data[{index}].id"
         },
@@ -22,7 +21,6 @@
             "field-name": "name",
             "type": "STRING",
             "use-as": "data",
-            "request-json-path": "$.name",
             "response-one-json-path": "$.data.name",
             "response-multiple-json-path": "$.data[{index}].name"
         },
@@ -30,7 +28,6 @@
             "field-name": "email",
             "type": "STRING",
             "use-as": "data",
-            "request-json-path": "$.email",
             "response-one-json-path": "$.data.email",
             "response-multiple-json-path": "$.data[{index}].email"
         },
@@ -38,7 +35,6 @@
             "field-name": "age",
             "type": "INTEGER",
             "use-as": "data",
-            "request-json-path": "$.age",
             "response-one-json-path": "$.data.age",
             "response-multiple-json-path": "$.data[{index}].age"
         }

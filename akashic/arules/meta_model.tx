@@ -203,7 +203,7 @@ RHSStatement:
 CreateStatement:
     '{' 
         CREATE_KW ':' '{'
-            ((MODEL_ID_KW       ':'     model_id    = ID            )
+            ((MODEL_ID_KW       ':' '"' model_id    = ID   '"'    )
             (REFLECT_ON_WEB     ':'     reflect     = BOOL        )
             ( DATA_KW           ':'     json_object = JSONObject  ))#[',']
         '}' 
@@ -226,9 +226,9 @@ RETURN_KW:    /\"return\"/ ;
 UpdateStatement:
     '{' 
         UPDATE_KW ':' '{'
-            ((MODEL_ID_KW       ':'   model_id     = ID          )
-            (REFLECT_ON_WEB     ':'   reflect      = BOOL        )
-            (DATA_KW            ':'   json_object  = JSONObject  ))#[',']
+            ((MODEL_ID_KW       ':' '"' model_id     = ID   '"'    )
+            (REFLECT_ON_WEB     ':'     reflect      = BOOL        )
+            (DATA_KW            ':'     json_object  = JSONObject  ))#[',']
         '}' 
     '}'
 ;
@@ -239,7 +239,7 @@ FACT_ADDRESS_KW:    /\"fact-address\"/ ;
 DeleteStatement:
     '{' 
         DELETE_KW ':' '{'
-            ((MODEL_ID_KW       ':'     model_if    = ID          )
+            ((MODEL_ID_KW       ':' '"' model_id    = ID   '"'    )
             (REFLECT_ON_WEB     ':'     reflect     = BOOL        )
             ( DATA_KW           ':'     json_object = JSONObject  ))#[',']
         '}'

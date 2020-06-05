@@ -1,6 +1,7 @@
 
 import re
 import json
+from enum import Enum
 from jsonpath_ng import jsonpath, parse
 from os.path import join, dirname
 
@@ -11,6 +12,15 @@ from textx.exceptions import TextXSyntaxError, TextXSemanticError
 from akashic.exceptions import AkashicError, ErrType
 from akashic.ads.data_checker import DataChecker
 from akashic.ads.data_fetcher import DataFetcher
+
+
+class FactGenType(Enum):
+    def __str__(self):
+        return str(self.name)
+        
+    RESP_FROM_WEB   = 1
+    PLAIN           = 2
+
 
 
 class DataProvider(object):
@@ -214,7 +224,7 @@ class DataProvider(object):
 
 
 
-    def generate_one_clips_fact(self, json_object):
+    def generate_one_clips_fact(self, json_object, add_as=FactGenType.RESP_FROM_WEB):
         """ Generate single CLIPS fact from given single parsed 
             JSON object originating from web service's RESPONSE!
 
@@ -237,19 +247,20 @@ class DataProvider(object):
         """
         
         def check_existance(field):
-            if hasattr(field, "response_one_json_path") and \
+            if add_as == FactGenType.RESP_FROM_WEB and \
+            hasattr(field, "response_one_json_path") and \
             field.response_one_json_path != None and \
             field.response_one_json_path != "":
                 return field.response_one_json_path
             else:
-                return "$.data.id"
+                return "$." + field.field_name
 
         json_path_func = lambda field : check_existance(field)
         return self.generate_clips_fact(json_object, json_path_func)
 
 
 
-    def generate_multiple_clips_facts(self, json_object, array_len):
+    def generate_multiple_clips_facts(self, json_object, array_len, add_as=FactGenType.RESP_FROM_WEB):
         """ Generate multiple CLIPS facts from given parsed JSON array
             of object originating from web service's RESPONSE!
 
@@ -272,12 +283,13 @@ class DataProvider(object):
         """
 
         def check_existance(field):
-            if hasattr(field, "response_mul_json_path") and \
+            if add_as == FactGenType.RESP_FROM_WEB and \
+            hasattr(field, "response_mul_json_path") and \
             field.response_mul_json_path != None and \
             field.response_mul_json_path != "":
                 return field.response_mul_json_path
             else:
-                return "$.data[{index}].id"
+                return "$[{index}]." + field.field_name
 
         facts = []
         for i in range(0, array_len):

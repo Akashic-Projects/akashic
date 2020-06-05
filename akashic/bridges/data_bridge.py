@@ -9,6 +9,8 @@ from akashic.exceptions import AkashicError, ErrType
 
 from akashic.system.rules.generic_rule import GENERIC_RULE
 
+from akashic.ads.data_provider import FactGenType
+
 
 class DataBridge(object):
     """ DataBridge class
@@ -100,18 +102,21 @@ class DataBridge(object):
 
         self.print_args(args, "CREATE")
 
-        MODEL_ID_POS      = 0
-        REFLECT_INFO_POS    = 2
-        DATA_LEN_POS        = 4
-        DATA_START_POS      = 5
+        MODEL_ID_POS       = 0
+        REFLECT_INFO_POS   = 2
+        DATA_LEN_POS       = 4
+        DATA_START_POS     = 5
 
         data_provider = self.data_providers_map[args[MODEL_ID_POS]]
         reflect_on_web = string_to_py_type(args[REFLECT_INFO_POS], "BOOLEAN")
+
         data_len = string_to_py_type(args[DATA_LEN_POS], "INTEGER")
         data_json_construct = self.data_arg_list_to_request_body(
             args[DATA_START_POS:DATA_START_POS+data_len],
             data_provider
         )
+
+        print(json.dumps(data_json_construct, indent=4))
 
         if reflect_on_web:
             REF_LEN_POS = DATA_START_POS + data_len + 1
@@ -128,13 +133,18 @@ class DataBridge(object):
                                                 **url_map_args)
             
             # Create full CLIPS fact from response and add it to CLIPS env
-            clips_fact = data_provider.generate_one_clips_fact(response_obj)
+            clips_fact = data_provider.generate_one_clips_fact(
+                response_obj,
+                FactGenType.RESP_FROM_WEB
+            )
             print(clips_fact)
             self.env_provider.insert_fact(clips_fact)
         
         else:
             clips_fact = data_provider.generate_one_clips_fact(
-                            data_json_construct)
+                data_json_construct,
+                FactGenType.PLAIN
+            )
             self.env_provider.insert_fact(clips_fact)
 
 

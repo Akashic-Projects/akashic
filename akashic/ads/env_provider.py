@@ -22,10 +22,6 @@ class EnvProvider(object):
     and enables to add / remove CLIPS tempaltes and facts.
     """
 
-    # TODO: Implement data queues
-    # TODO: Request to add data (by the rule)
-    # TODO: Request to remove data after it has expired (by the rule)
-
 
     def __init__(self, data_providers=[], custom_bridges=[]):
         """ EnvProvider constructor method

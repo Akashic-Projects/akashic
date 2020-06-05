@@ -1344,7 +1344,7 @@ class Transpiler(object):
     def get_data_fields(self, json_object, data_provider):
         data_fields = []
         for dp_field in data_provider.dsd.fields:
-            json_field = self.get_json_field(dp_field.field_name
+            json_field = self.get_json_field(dp_field.field_name,
                                              json_object.field_list)
             if json_field != None:
                 data_fields.append((json_field, dp_field))
@@ -1363,7 +1363,7 @@ class Transpiler(object):
     def get_ref_fields(self, json_object, api_operation_obj):
         ref_fields = []
         for ref in api_operation_obj.ref_models:
-            json_field = self.get_json_field(dp_field.field_name
+            json_field = self.get_json_field(dp_field.field_name,
                                              json_object.field_list)
 
             if json_field == None:
@@ -1525,7 +1525,7 @@ class Transpiler(object):
 
     
 
-     def create_update_generic(self, 
+    def create_update_generic(self, 
                                rhs_operation_obj, 
                                api_operation_name):
 
@@ -1533,7 +1533,7 @@ class Transpiler(object):
                     .pos_to_linecol(rhs_operation_obj._tx_position)
 
         # Find data provider for given model
-        data_provider = self.get_data_provider(rhs_operation_obj.id,
+        data_provider = self.get_data_provider(rhs_operation_obj.model_id,
                                                line, 
                                                col)
 

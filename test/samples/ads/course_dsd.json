@@ -14,7 +14,6 @@
             "field-name": "id",
             "type": "INTEGER",
             "use-as": "primary-key",
-            "request-json-path": "$.id",
             "response-one-json-path": "$.data.id",
             "response-multiple-json-path": "$.data[{index}].id"
         },
@@ -22,7 +21,6 @@
             "field-name": "name",
             "type": "STRING",
             "use-as": "data",
-            "request-json-path": "$.name",
             "response-one-json-path": "$.data.name",
             "response-multiple-json-path": "$.data[{index}].name"
         },
@@ -30,7 +28,6 @@
             "field-name": "start_date",
             "type": "STRING",
             "use-as": "data",
-            "request-json-path": "$.start_date",
             "response-one-json-path": "$.data.start_date",
             "response-multiple-json-path": "$.data[{index}].start_date"
         },
@@ -38,7 +35,6 @@
             "field-name": "end_date",
             "type": "STRING",
             "use-as": "data",
-            "request-json-path": "$.end_date",
             "response-one-json-path": "$.data.end_date",
             "response-multiple-json-path": "$.data[{index}].end_date"
         }
