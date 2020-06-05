@@ -3,17 +3,19 @@
     "salience": 100,
     "run-once": true,
     "when": [
+        { "?course<-": "[Course.id == 1]"},
+        { "?new_name=": "'This is new name 14'"}
     ],
     "then": [
         {
             "create": {
                 "model-id": "Course",
-                "reflect-on-web": false,
+                "reflect-on-web": true,
                 "data": {
                     "id": 0,
-                    "name": "Moj kursss Pan",
-	                "start_date": "14.11.2020.",
-                    "end_date": "13.11.2021."
+                    "name": "?new_name",
+	                "start_date": "?course.start_date",
+                    "end_date": "?course.start_date"
                 }
             }
         }

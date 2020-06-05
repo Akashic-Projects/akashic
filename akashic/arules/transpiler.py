@@ -1409,13 +1409,13 @@ class Transpiler(object):
                     )
                     json_field_class = "ValueLocator"
 
-            elif json_field.value.__class__.__name__ == "RHS_VARIABLE":
-                self.check_binding_variable(json_field.value, dp_field)
+                elif json_field.value.__class__.__name__ == "RHS_VARIABLE":
+                    self.check_binding_variable(json_field.value, dp_field)
 
-                json_field_type = self.get_binding_var_type(
-                    json_field.value.var_name
-                )
-                json_field_class = "RHS_VARIABLE"
+                    json_field_type = self.get_binding_var_type(
+                        json_field.value.var_name
+                    )
+                    json_field_class = "RHS_VARIABLE"
             
             else:
                 if dp_field != None and given_type != dp_field.type:
@@ -1454,14 +1454,21 @@ class Transpiler(object):
                 arg_list.append('(str-cat (fact-slot-value ' + 
                                 json_field.value.var_name + ' ' + 
                                 json_field.value.field_name + '))')
-                args_list.append('"' + json_field_type + '"')
+                arg_list.append('"' + json_field_type + '"')
 
             elif json_field_class == "RHS_VARIABLE":
                 arg_list.append('"' + json_field.name + '"')
 
                 var_entry = self.variable_table \
                                 .lookup(json_field.value.var_name)
-                arg_list.append('(str-cat ' + var_entry.value["content"] + ')')
+
+                if var_entry.value["content_type"] != "STRING":
+                    arg_list.append('(str-cat ' + var_entry.value["content"] + ')')
+                elif  var_entry.value["construct_type"] == ConstructType.WORKABLE:
+                    arg_list.append('"' + var_entry.value["content"] + '"')
+                else:
+                     arg_list.append(var_entry.value["content"])
+                
                 arg_list.append('"' + json_field_type + '"')
 
             elif json_field_class == "NORMAL":
@@ -1526,8 +1533,8 @@ class Transpiler(object):
     
 
     def create_update_generic(self, 
-                               rhs_operation_obj, 
-                               api_operation_name):
+                              rhs_operation_obj, 
+                              api_operation_name):
 
         line, col = get_model(rhs_operation_obj)._tx_parser \
                     .pos_to_linecol(rhs_operation_obj._tx_position)
@@ -1553,12 +1560,11 @@ class Transpiler(object):
         ref_fields = self.get_ref_fields(rhs_operation_obj.json_object, 
                                          getattr(data_provider.dsd.apis, 
                                                  api_operation_name))
-
+        
         # Do forther analysis and checks on data,
         # and generate prep structure for compilation
         a_data_fields = self.analyse_fields(data_fields)
         a_ref_fields = self.analyse_fields(ref_fields)
-
 
         # Compile prep structure to the list of CLIPS function args
         data_arg_list = self.compile_fields(a_data_fields)
@@ -1588,10 +1594,10 @@ class Transpiler(object):
         )
 
         clips_command = "(create_func " + " ".join(arg_array) + ")"
-        # self.rhs_clips_command_list.append(clips_command)
+        self.rhs_clips_command_list.append(clips_command)
 
         # Use direct call to bridge - for debugging
-        self.env_provider.bridges["DataBridge"].create_func(*arg_array)
+        #self.env_provider.bridges["DataBridge"].create_func(*arg_array)
     
 
 

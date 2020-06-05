@@ -77,7 +77,6 @@ class DataBridge(object):
         i = 0
         l = len(arg_list)
         while i < l:
-            
             for ref in dsd_api_object.ref_models:
                 if arg_list[i] == ref.field_name:
                     url_map_args[ref.url_placement] = arg_list[i + 1]
@@ -116,16 +115,13 @@ class DataBridge(object):
             data_provider
         )
 
-        print(json.dumps(data_json_construct, indent=4))
-
         if reflect_on_web:
             REF_LEN_POS = DATA_START_POS + data_len + 1
             ref_len = string_to_py_type(args[REF_LEN_POS], "INTEGER")
 
             REF_START_POS = REF_LEN_POS + 1
             url_map_args = self.ref_arg_list_to_url_map(
-                [*args[REF_START_POS:REF_START_POS+ref_len],
-                *args[DATA_START_POS:DATA_START_POS+data_len]], 
+                args[REF_START_POS:REF_START_POS+ref_len], 
                 data_provider.dsd.apis.create
             )
 
@@ -137,7 +133,6 @@ class DataBridge(object):
                 response_obj,
                 FactGenType.RESP_FROM_WEB
             )
-            print(clips_fact)
             self.env_provider.insert_fact(clips_fact)
         
         else:
@@ -146,35 +141,6 @@ class DataBridge(object):
                 FactGenType.PLAIN
             )
             self.env_provider.insert_fact(clips_fact)
-
-
-        for f in self.env_provider.env.facts():
-            print("---------")
-            print(f)
-
-        print("****")
-
-        return 0
-        
-
-        
-    def return_func(self, *args):
-        args = map(lambda arg: arg.replace('"', ''), args)
-        args = list(args)
-
-        self.print_args(args, "RETURN")
-
-        DATA_LEN_POS = 1
-        DATA_START_POS = 2
-
-        data_len = string_to_py_type(args[DATA_LEN_POS], "INTEGER")
-        data_json_construct = self.data_arg_list_to_request_body(
-            args[DATA_START_POS : (DATA_START_POS + data_len)],
-            None,
-            True
-        )
-
-        print(json.dumps(data_json_construct, indent=4))
 
         return 0
 
@@ -186,12 +152,14 @@ class DataBridge(object):
         i = 0
         while i < length:
             field_name = args[i]
-            new_value = args[i+1]
-            if args[i+2] == "STRING":
-                new_value = '"' + new_value + '"'
+            field_value = args[i+1]
+            field_type = args[i+2]
+
+            if field_type == "STRING":
+                field_value = '"' + field_value + '"'
             clips_field_mods.append("(" + \
                                     field_name + " " + \
-                                    new_value + \
+                                    field_value + \
                                     ")")
             i += 3
         
@@ -200,10 +168,12 @@ class DataBridge(object):
                ")"
 
 
+
     def get_primary_key_field(self, data_provider):
         for field in data_provider.dsd.fields:
             if field.use_as == "\"primary-key\"":
                 return field
+
 
 
     def get_field_value_from_args(self, args, field_name):
@@ -221,6 +191,7 @@ class DataBridge(object):
             i += 3
 
 
+
     def update_func(self, *args):
         args = map(lambda arg: arg.replace('"', ''), args)
         args = list(args)
@@ -228,9 +199,9 @@ class DataBridge(object):
         self.print_args(args, "UPDATE")
 
         MODEL_ID_POS      = 0
-        REFLECT_INFO_POS    = 2
-        DATA_LEN_POS        = 4
-        DATA_START_POS      = 5
+        REFLECT_INFO_POS  = 2
+        DATA_LEN_POS      = 4
+        DATA_START_POS    = 5
 
         # Obtain data from args
         data_provider = self.data_providers_map[args[MODEL_ID_POS]]
@@ -294,12 +265,31 @@ class DataBridge(object):
 
             print("UPDATE RESPONSE:\n" + str(response_obj))
 
-
         # Print all facts
         for f in self.env_provider.env.facts():
             print("---------")
             print(f)
 
         print("****")
+        return 0
 
+
+
+    def return_func(self, *args):
+        args = map(lambda arg: arg.replace('"', ''), args)
+        args = list(args)
+
+        self.print_args(args, "RETURN")
+
+        DATA_LEN_POS = 1
+        DATA_START_POS = 2
+
+        data_len = string_to_py_type(args[DATA_LEN_POS], "INTEGER")
+        data_json_construct = self.data_arg_list_to_request_body(
+            args[DATA_START_POS : (DATA_START_POS + data_len)],
+            None,
+            True
+        )
+
+        print(json.dumps(data_json_construct, indent=4))
         return 0
