@@ -1,6 +1,7 @@
 {
     "rule-name": "Test_time_return",
     "salience": 100,
+    "run-once": true,
     "when": [
         { "?course_time": "str_to_time(Course.start_date, '%d.%m.%Y.')" },
         { "?now": "str_to_time('now', '')" },

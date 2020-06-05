@@ -1,6 +1,7 @@
 {
     "rule-name": "Test_return_simple",
     "salience": 100,
+    "run-once": true,
     "when": [
     ],
     "then": [

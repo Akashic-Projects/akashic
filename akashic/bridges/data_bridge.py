@@ -56,7 +56,7 @@ class DataBridge(object):
 
 
 
-    def data_arg_list_to_request_body(self, arg_list, data_provider):
+    def data_arg_list_to_request_body(self, arg_list):
         json_construct = {}
         i = 0
         l = len(arg_list)
@@ -111,8 +111,7 @@ class DataBridge(object):
 
         data_len = string_to_py_type(args[DATA_LEN_POS], "INTEGER")
         data_json_construct = self.data_arg_list_to_request_body(
-            args[DATA_START_POS:DATA_START_POS+data_len],
-            data_provider
+            args[DATA_START_POS:DATA_START_POS+data_len]
         )
 
         if reflect_on_web:
@@ -217,8 +216,7 @@ class DataBridge(object):
         primary_key_field_name = \
             self.get_primary_key_field(data_provider).field_name
         primary_key_field_value = self.get_field_value_from_args(
-            [*args[REF_START_POS:REF_START_POS+ref_len],
-            *args[DATA_START_POS:DATA_START_POS+data_len]],
+            args[REF_START_POS:REF_START_POS+ref_len],
             primary_key_field_name
         )
         rhs = """{{ "?to_update<-": "[{0}.{1} == {2}]" }}""".format(
@@ -239,17 +237,19 @@ class DataBridge(object):
             rhs,
             lhs
         )
-        print("MODIFICATION FULE: " + tmp_update_rule)
+        print("\nMODIFICATION FULE: " + tmp_update_rule)
+
+        print("\nMOD. RULE TRANSPILATION PRINT:")
         transpiler = Transpiler(self.env_provider)
         transpiler.load(tmp_update_rule)
+
         self.env_provider.insert_rule(transpiler.rule.rule_name, 
                                       transpiler.tranpiled_rule)
         
         # Reflect modification on web if required
         if reflect_on_web:
             data_json_construct = self.data_arg_list_to_request_body(
-                args[DATA_START_POS:DATA_START_POS+data_len],
-                data_provider
+                args[DATA_START_POS:DATA_START_POS+data_len]
             )
 
             url_map_args = self.ref_arg_list_to_url_map(
@@ -258,14 +258,15 @@ class DataBridge(object):
                 data_provider.dsd.apis.update
             )
 
-            print("MAP: " + str(url_map_args))
+            print("\nMAP: " + str(url_map_args))
 
             response_obj = data_provider.update(data_json_construct, 
                                                 **url_map_args)
 
-            print("UPDATE RESPONSE:\n" + str(response_obj))
+            print("\nUPDATE RESPONSE:\n" + str(response_obj) + "\n\n")
 
         # Print all facts
+        print("FACTS - print from bridge:")
         for f in self.env_provider.env.facts():
             print("---------")
             print(f)
@@ -287,8 +288,6 @@ class DataBridge(object):
         data_len = string_to_py_type(args[DATA_LEN_POS], "INTEGER")
         data_json_construct = self.data_arg_list_to_request_body(
             args[DATA_START_POS : (DATA_START_POS + data_len)],
-            None,
-            True
         )
 
         print(json.dumps(data_json_construct, indent=4))

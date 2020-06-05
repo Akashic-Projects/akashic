@@ -47,13 +47,10 @@ class ClipsStatementBuilder(object):
 
     def count_different_templates(self, data_locator_table, used_vars):
         t_set = set()
-        print("\nBEGIN count")
         for template_name, template in data_locator_table.table.items():
             for field_name, field in template.fields.items():
-                print("inside dlt: " + field.var_name)
                 if field.var_name in used_vars:
                     t_set.add(template_name)
-        print("END count\n")
         return len(t_set)
     
 

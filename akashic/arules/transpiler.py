@@ -1011,8 +1011,11 @@ class Transpiler(object):
                       str(current["content"]) + \
                       ')'
 
+                oper_name = "mul"
+                if operator == '/':
+                    oper_name = "div"
                 resolved_c_type = resolve_expr_type(
-                    "mul_div", 
+                    oper_name, 
                     result["content_type"], 
                     current["content_type"]
                 )
@@ -1363,7 +1366,7 @@ class Transpiler(object):
     def get_ref_fields(self, json_object, api_operation_obj):
         ref_fields = []
         for ref in api_operation_obj.ref_models:
-            json_field = self.get_json_field(dp_field.field_name,
+            json_field = self.get_json_field(ref.field_name,
                                              json_object.field_list)
 
             if json_field == None:
@@ -1597,7 +1600,7 @@ class Transpiler(object):
         self.rhs_clips_command_list.append(clips_command)
 
         # Use direct call to bridge - for debugging
-        #self.env_provider.bridges["DataBridge"].create_func(*arg_array)
+        # self.env_provider.bridges["DataBridge"].create_func(*arg_array)
     
 
 
@@ -1608,14 +1611,17 @@ class Transpiler(object):
         )
 
         clips_command = "(update_func " + " ".join(arg_array) + ")"
-        # self.rhs_clips_command_list.append(clips_command)
+        self.rhs_clips_command_list.append(clips_command)
 
         # Use direct call to bridge - for debugging
-        self.env_provider.bridges["DataBridge"].update_func(*arg_array)
+        # self.env_provider.bridges["DataBridge"].update_func(*arg_array)
 
 
 
     def return_statement(self, return_s):
+        line, col = get_model(return_s)._tx_parser \
+                    .pos_to_linecol(return_s._tx_position)
+
         # Check field list for duplicate fileds
         self.checkout_duplicates(return_s.json_object.field_list,
                                  line, 

@@ -3,8 +3,8 @@
     "salience": 100,
     "run-once": true,
     "when": [
-        { "?course<-": "[Course.id == 1]"}
-
+        { "?course<-": "[Course.id == 1]"},
+        { "?c_name=": "'ime kursa'"}
     ],
     "then": [
         {
@@ -14,7 +14,7 @@
 
                 "data": {
                     "id": "?course.id",
-                    "name": "Novo ime kursa.",
+                    "name": "?c_name",
                     "start_date": "?course.start_date",
                     "end_date": "?course.end_date"
                 }

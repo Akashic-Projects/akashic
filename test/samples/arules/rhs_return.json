@@ -1,6 +1,7 @@
 {
     "rule-name": "Test_rhs_return",
     "salience": 100,
+    "run-once": true,
     "when": [
         { "?other_course=": "Course.id"},
         { "?msg=": "1 + Course.id / 2 + 1 "},

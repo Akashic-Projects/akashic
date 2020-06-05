@@ -6,11 +6,15 @@ def resolve_expr_type(operation_name, o1_type, o2_type):
         else:
             return "INTEGER"
     
-    elif operation_name == 'mul_div':
+    elif operation_name == 'mul':
         if o1_type == "FLOAT" or o2_type == "FLOAT":
             return "FLOAT"
         else:
             return "INTEGER"
+    
+    elif operation_name == 'div':
+        return "FLOAT"
+
     
     elif operation_name == 'plus_minus':
         if o1_type == "FLOAT" or o2_type == "FLOAT":

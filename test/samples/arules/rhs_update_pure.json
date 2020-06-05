@@ -1,7 +1,7 @@
 {
     "rule-name": "Test_rhs_update",
     "salience": 100,
-    "run-once": false,
+    "run-once": true,
     "when": [
         { "?course<-": "[Course.id == 2]"}
     ],
@@ -11,10 +11,10 @@
                 "model-id": "Course",
                 "reflect-on-web": true,
                 "data": {
-                    "id": 1,
-                    "name": "Novo ime kursa. TTTT.",
-                    "start_date": "12.3.2020.",
-                    "end_date": "12.3.2021."
+                    "id": 74,
+                    "name": "OO OO OO OO",
+                    "start_date": "12.3.2021.",
+                    "end_date": "12.3.2022."
                 }
                
             }

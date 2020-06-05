@@ -45,15 +45,18 @@ def test_rule_transpiler():
 
 
     # Load Akashic rule
-    
-    # time_return
-    # rhs_create
+    #--------------------
     # simple_return
-    # run_once
+    # time_return
+    # rhs_return
+
+    # rhs_create
+    
     # rhs_update
     # rhs_update_pure
+
     this_folder = dirname(__file__)
-    sample_path = abspath(join(this_folder, '..', 'test', 'samples', 'arules', 'rhs_create.json'))
+    sample_path = abspath(join(this_folder, '..', 'test', 'samples', 'arules', 'rhs_return.json'))
     with open(sample_path, 'r') as sample:
         akashic_rule = sample.read()
         transpiler.load(akashic_rule)
@@ -136,6 +139,4 @@ def test_rule_transpiler():
 
 
 if __name__ == "__main__":
-    #test_data_provider()
-
     test_rule_transpiler()
