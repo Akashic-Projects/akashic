@@ -49,6 +49,20 @@ class EnvProvider(object):
         # Insert system rules
         self.insert_system_rules()
 
+        # Store return function data
+        self.return_data = []
+
+
+    def clear_return_data(self):
+        self.return_data = []
+
+
+    def get_return_data(self):
+        return self.return_data
+
+    
+    def add_return_data(self, entry):
+        self.return_data.append(entry)
     
 
     def insert_system_bridges(self):

@@ -1638,6 +1638,7 @@ class Transpiler(object):
         all_arg_list = self.compile_fields(a_all_fields)
 
         arg_array = list([
+            '"' + return_s.tag + '"',
             "\"data-len\"",
             '"' + str(len(all_arg_list)) + '"',
             *all_arg_list

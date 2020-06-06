@@ -286,15 +286,22 @@ class DataBridge(object):
 
         self.print_args(args, "RETURN")
 
-        DATA_LEN_POS = 1
-        DATA_START_POS = 2
+        TAG_POS = 0
+        DATA_LEN_POS = 2
+        DATA_START_POS = 3
 
+        tag = string_to_py_type(args[TAG_POS], "STRING")
         data_len = string_to_py_type(args[DATA_LEN_POS], "INTEGER")
         data_json_construct = self.data_arg_list_to_request_body(
             args[DATA_START_POS : (DATA_START_POS + data_len)],
         )
 
-        print(json.dumps(data_json_construct, indent=4))
+        return_body = {}
+        return_body["meta"] = {}
+        return_body["meta"]["origin_tag"] = tag
+        return_body["data"] = data_json_construct
+
+        self.env_provider.add_return_data(json.dumps(return_body, indent=4))
         return 0
 
 

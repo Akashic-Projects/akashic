@@ -164,22 +164,26 @@ Factor:
     (value=Function) |
     (value=STRICTFLOAT) |
     (value=INT) |
-    (value=BOOL) | 
-    (value=STRING_C) | 
-    (value=VARIABLE) | 
+    (value=BOOL) |
+    (value=STRING_C) |
+    (value=VARIABLE) |
+    (value=DataQuery) |
     (value=DataLocator) |
     (LPAR value=LogicExpression RPAR) |
     (value=LogicExpression)
 ;
 
-COMMA: ',';
+COMMA:  ',';
 LPAR:   '(' ;
 RPAR:   ')' ;
 STRING_C: val=/(\')([^\']*)(\')/ ; //'
 VARIABLE: var_name=/\?[^\d\W]\w*\b/;
 
+DataQuery: data_locator=DataLocator /^\?\?*\?$/ ;
+
 DataLocator: template_conn_expr=TEMPLATE_CONNECTION_EXPRESSION ('.' field=ID)?;
 TEMPLATE_CONNECTION_EXPRESSION: templates=ID ('~' templates=ID)* ;
+
 
 
 RHS:
@@ -217,10 +221,14 @@ DATA_KW:         /\"data\"/ ;
 
 ReturnStatement:
     '{' 
-        RETURN_KW ':' json_object = JSONObject
+        RETURN_KW ':' '{' 
+            ((TAG_KW      ':'     tag          = STRING      )
+            (DATA_KW      ':'     json_object  = JSONObject  ))#[',']
+        '}' 
     '}'
 ;
 RETURN_KW:    /\"return\"/ ;
+TAG_KW:       /\"tag\"/ ;
 
 
 UpdateStatement:

@@ -58,7 +58,7 @@ def test_rule_transpiler():
     # rhs_delete
 
     this_folder = dirname(__file__)
-    sample_path = abspath(join(this_folder, '..', 'test', 'samples', 'arules', 'rhs_delete.json'))
+    sample_path = abspath(join(this_folder, '..', 'test', 'samples', 'arules', 'simple_return.json'))
     with open(sample_path, 'r') as sample:
         akashic_rule = sample.read()
         transpiler.load(akashic_rule)
@@ -98,6 +98,14 @@ def test_rule_transpiler():
     # Run CLIPS engine
     env_provider.run()
 
+    print("\n\nREUTRN DATA: ")
+    for e in env_provider.get_return_data():
+        print(e)
+        print("------------------------------")
+    
+    print("\n")
+    env_provider.clear_return_data()
+
     print("\n")
     print("RULES: ")
     print("-------------------------START")
@@ -122,6 +130,13 @@ def test_rule_transpiler():
 
     # Run CLIPS engine
     env_provider.run()
+
+    print("\n\nREUTRN DATA: ")
+    for e in env_provider.get_return_data():
+        print(e)
+        print("------------------------------")
+    
+    print("\n")
 
 
     print("\n")
