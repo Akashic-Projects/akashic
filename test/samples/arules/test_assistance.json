@@ -1,0 +1,22 @@
+{
+    "rule-name": "Test_assistance",
+    "salience": 100,
+    "run-once": true,
+    "when": [
+        { "?other_course=": "Course.id ?????"},
+        { "?msg=": "1 + Course.id / 2 + 1 "},
+        { "?result<-": "[Course.id - ?other_course > 2]"}
+
+    ],
+    "then": [
+        {
+           "return": {
+                "tag": "some tag",
+                "data": {
+                    "MSG": "?msg",
+                    "C2": "?result.id"
+               }
+            }
+        }
+    ]
+}

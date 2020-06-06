@@ -1,0 +1,18 @@
+{
+    "rule-name": "Test_count",
+    "salience": 100,
+    "run-once": false,
+    "when": [
+        { "?cc=": "count(1 > Course.id )" }
+    ],
+    "then": [
+        {
+           "return": {
+                "tag": "test count",
+                "data": {
+                    "count_is": "?cc"
+                }
+            }
+        }
+    ]
+}

@@ -51,10 +51,7 @@ class EnvProvider(object):
 
         # Store return function data
         self.return_data = []
-
-
-    def clear_return_data(self):
-        self.return_data = []
+        
 
 
     def get_return_data(self):
@@ -63,7 +60,7 @@ class EnvProvider(object):
     
     def add_return_data(self, entry):
         self.return_data.append(entry)
-    
+
 
     def insert_system_bridges(self):
         # Init default bridges
@@ -283,4 +280,8 @@ class EnvProvider(object):
 
     def run(self):
         #agenda = Agenda(self.env)
+
+        #Clear data and query data of previous run
+        self.return_data = []
+
         self.env.run()

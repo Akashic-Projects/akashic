@@ -8,6 +8,7 @@ from akashic.util.type_converter import string_to_py_type
 from akashic.exceptions import AkashicError, ErrType
 
 from akashic.system.rules.generic_rule import GENERIC_RULE
+from akashic.system.rules.query_rule import QUERY_RULE
 
 from akashic.ads.data_provider import FactGenType
 
@@ -47,6 +48,11 @@ class DataBridge(object):
             },
             {
                 "function":     self.delete_func,
+                "num_of_args":  -1,
+                "return_type":  "INTEGER"
+            },
+            {
+                "function":     self.process_query,
                 "num_of_args":  -1,
                 "return_type":  "INTEGER"
             }
@@ -298,7 +304,7 @@ class DataBridge(object):
 
         return_body = {}
         return_body["meta"] = {}
-        return_body["meta"]["origin_tag"] = tag
+        return_body["meta"]["tag"] = tag
         return_body["data"] = data_json_construct
 
         self.env_provider.add_return_data(json.dumps(return_body, indent=4))
@@ -374,5 +380,28 @@ class DataBridge(object):
 
         print("****")
         return 0
+
+
+
+
+    def process_query(self, *args):
+        args = map(lambda arg: arg.replace('"', ''), args)
+        args = list(args)
+
+        self.print_args(args, "PROCESS_QUERY")
+
+        template_name = string_to_py_type(args[0], "STRING")
+        field_name = string_to_py_type(args[1], "STRING")
+
+        line_start = string_to_py_type(args[2], "INTEGER")
+        col_start  = string_to_py_type(args[3], "INTEGER")
+        line_end   = string_to_py_type(args[4], "INTEGER")
+        col_end    = string_to_py_type(args[5], "INTEGER")
+
+        # tmp_update_rule = QUERY_RULE.format(
+        #     str(uuid.uuid4()).replace('-', ''),
+        #     template_name,
+        #     field_name,
+        # )
 
         return 0

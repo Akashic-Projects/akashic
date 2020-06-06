@@ -102,6 +102,9 @@ class Transpiler(object):
         self.rule = None
         self.tranpiled_rule = None
 
+        self.is_assistance_rule = False
+        self.assistance_clips_command_list = []
+
 
 
     def load(self, akashic_rule):
@@ -221,6 +224,10 @@ class Transpiler(object):
 # ----------------------------------------------------------------
 
     def rule(self, rule):
+        if self.is_assistance_rule:
+            self.lhs_clips_command_list = []
+            self.rhs_clips_command_list = self.assistance_clips_command_list
+
         # Read salience
         clips_salience = ""
         if hasattr(rule, 'salience'):
@@ -249,8 +256,9 @@ class Transpiler(object):
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
         # Read run_once data
-        if hasattr(rule, 'run_once') and \
-        rule.run_once == True:
+        if (hasattr(rule, 'run_once') and \
+        rule.run_once == True) or \
+        self.is_assistance_rule:
             run_once_lhs_expression = \
                     "(not " \
                         "(__RuleToRemove " \
@@ -430,9 +438,9 @@ class Transpiler(object):
                       .pos_to_linecol(singular._tx_position)
 
         if hasattr(singular, "template") and singular.template != '':
-            self.find_data_provider(singular.template, singular)
+            self.get_data_provider(singular.template, bline, bcol)
             clips_command = '(' + singular.template + ')'
-            if singular.operator:
+            if not singular.operator:
                 clips_content = clips_command
             else:
                 clips_content = "(" + \
@@ -522,6 +530,21 @@ class Transpiler(object):
 
 
     def one_arg_function(self, func):
+        if hasattr(func, "template") and func.template != '':
+            bline, bcol = get_model(func)._tx_parser \
+                         .pos_to_linecol(func._tx_position)
+            self.get_data_provider(func.template, bline, bcol)
+            clips_content = "(length$ (find-all-facts ((?fct {0})) TRUE)))" \
+                            .format(func.template)
+            
+            resolved_c_type = "INTEGER"
+            return {
+                "content": clips_content,
+                "content_type": resolved_c_type,
+                "construct_type": ConstructType.COUNT_FUNC_CALL,
+                "_tx_position": (bline, bcol)
+            }
+
         if func.func_name == "not":
             self.check_func_num_of_args(func, 1)
             return self.negation_function(func)
@@ -1136,6 +1159,35 @@ class Transpiler(object):
 
 
 
+
+    def build_query(self, template_name, field_name, dl_obj):
+        self.is_assistance_rule = True
+
+        line_start, col_start = get_model(dl_obj)._tx_parser.pos_to_linecol(
+                                    dl_obj._tx_position)
+        line_end, col_end = get_model(dl_obj)._tx_parser.pos_to_linecol(
+                                    dl_obj._tx_position_end)
+
+        arg_array = list([
+            '"' + template_name + '"',
+            '"' + field_name + '"',
+            '"' + str(line_start) + '"',
+            '"' + str(col_start) + '"',
+            '"' + str(line_end) + '"',
+            '"' + str(col_end) + '"'
+        ])
+
+        clips_command = "(process_query " + " ".join(arg_array) + ")"
+        self.assistance_clips_command_list.append(clips_command)
+
+        # Use direct call to bridge - for debugging
+        # self.env_provider.bridges["DataBridge"].process_query(*arg_array)
+
+        return 0
+
+
+        
+
     def data_locator(self, data_locator):
         # Get needed data
         template_name = data_locator.template_conn_expr.templates[0]
@@ -1179,7 +1231,7 @@ class Transpiler(object):
             # Generate new variable and add new entry 
             # to the data locator table
             gen_var_name = self.variable_table.add_helper_var({
-                "content": "",
+                "content": template_name + "." + field_name,
                 "content_type": found_dp_field.type,
                 "construct_type": ConstructType.NOTHING,
             })
@@ -1190,6 +1242,12 @@ class Transpiler(object):
                 gen_var_name, 
                 found_dp_field
             )
+
+            # Build data query if needed
+            if hasattr(data_locator, 'is_query') and \
+            data_locator.is_query != None and \
+            data_locator.is_query != "":
+                self.build_query(template_name, field_name, data_locator)
             
             return {
                 "content": gen_var_name,
