@@ -350,7 +350,7 @@ class DataBridge(object):
             rhs,
             lhs
         )
-        print("\nDELETION FULE: " + tmp_update_rule)
+        print("\nDELETION RULE: " + tmp_update_rule)
 
         print("\nDEL. RULE TRANSPILATION PRINT:")
         transpiler = Transpiler(self.env_provider)
@@ -398,10 +398,19 @@ class DataBridge(object):
         line_end   = string_to_py_type(args[4], "INTEGER")
         col_end    = string_to_py_type(args[5], "INTEGER")
 
-        # tmp_update_rule = QUERY_RULE.format(
-        #     str(uuid.uuid4()).replace('-', ''),
-        #     template_name,
-        #     field_name,
-        # )
+        tmp_update_rule = QUERY_RULE.format(
+            str(uuid.uuid4()).replace('-', ''),
+            template_name,
+            field_name
+        )
+
+        print("\nQUERY RULE: " + tmp_update_rule)
+
+        print("\nQUERY RULE TRANSPILATION PRINT:")
+        transpiler = Transpiler(self.env_provider)
+        transpiler.load(tmp_update_rule)
+
+        self.env_provider.insert_rule(transpiler.rule.rule_name, 
+                                      transpiler.tranpiled_rule)
 
         return 0

@@ -256,21 +256,23 @@ class Transpiler(object):
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
         # Read run_once data
-        if (hasattr(rule, 'run_once') and \
-        rule.run_once == True) or \
-        self.is_assistance_rule:
-            run_once_lhs_expression = \
-                    "(not " \
-                        "(__RuleToRemove " \
-                            "(rule_name ?rn&: (= (str-compare ?rn \"{0}\") 0))" \
-                        ")" \
-                    ")".format(rule.rule_name)
+        if hasattr(rule, 'run_once') and \
+        rule.run_once == True:
             run_once_rhs_expression = \
                 "(assert (__RuleToRemove (rule_name \"{0}\")) )" \
                 .format(rule.rule_name)
-            self.lhs_clips_command_list.insert(0, run_once_lhs_expression)
             self.rhs_clips_command_list.append(run_once_rhs_expression)
 
+
+        # Check if rule scheduled for deletion
+        # Prevent it from getting into agenda
+        run_once_lhs_expression = \
+            "(not " \
+                "(__RuleToRemove " \
+                    "(rule_name ?rn&: (= (str-compare ?rn \"{0}\") 0))" \
+                ")" \
+            ")".format(rule.rule_name)
+        self.lhs_clips_command_list.insert(0, run_once_lhs_expression)
         
         # Check if rule is blocked
         block_check_lhs_expression = \

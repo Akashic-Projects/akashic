@@ -61,7 +61,7 @@ def test_rule_transpiler():
     # test_count
 
     this_folder = dirname(__file__)
-    sample_path = abspath(join(this_folder, '..', 'test', 'samples', 'arules', 'test_count.json'))
+    sample_path = abspath(join(this_folder, '..', 'test', 'samples', 'arules', 'test_assistance.json'))
     with open(sample_path, 'r') as sample:
         akashic_rule = sample.read()
         transpiler.load(akashic_rule)
