@@ -1,8 +1,9 @@
 from os.path import join, dirname
 
-from textx import metamodel_from_file
+from textx import metamodel_from_file, metamodel_from_str
 from textx.export import metamodel_export, model_export
 from textx.model import get_model
+from textx.exceptions import TextXSyntaxError, TextXSemanticError
 
 from akashic.arules.variable_table import VariableTable, VarType
 from akashic.arules.data_locator_table import DataLocatorTable
@@ -94,6 +95,8 @@ class Transpiler(object):
         this_folder = dirname(__file__)
         self.meta_model = metamodel_from_file(
                             join(this_folder, 'meta_model.tx'), debug=False)
+        # self.meta_model = metamodel_from_str(self.env_provider.rule_mm, 
+        #                                      debug=False)
         self.meta_model.register_obj_processors(processors)
 
         # Get builder classes
@@ -117,10 +120,30 @@ class Transpiler(object):
 
         Raises
         ------
-        None
+        AkashicError
+            If infinite left recursion is detected.
         """
-        
-        self.rule = self.meta_model.model_from_str(akashic_rule)
+
+        try:
+            self.rule = self.meta_model.model_from_str(akashic_rule)
+        except RecursionError as re:
+            message = "Infinite left recursion is detected. " \
+                      "There was unknown syntactic error."
+            raise AkashicError(message, 0, 0, ErrType.SYNTACTIC)
+        except TextXSyntaxError as syntaxError:
+            raise AkashicError(
+                syntaxError.message, 
+                syntaxError.line, 
+                syntaxError.col, 
+                ErrType.SYNTACTIC
+            )
+        except TextXSemanticError as semanticError:
+            raise AkashicError(
+                semanticError.message, 
+                semanticError.line, 
+                semanticError.col, 
+                ErrType.SEMANTIC
+            )
         return 0
 
 

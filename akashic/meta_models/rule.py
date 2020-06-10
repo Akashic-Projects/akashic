@@ -1,18 +1,20 @@
+RULE_META_MODEL = \
+"""
 
 Rule:
-    '{'
+    '{{'
         ((RULE_NAME_KW        ':' '"'  rule_name=ID  '"'            )
         (RULE_SALIENCE_KW     ':'      (salience=SYSTEM_SALIENCE_KW | 
                                         salience=INT)               )?
         (RUN_ONCE_KW          ':'      run_once=BOOL                )?
         (lhs=LHS                                                    )
         (rhs=RHS                                                    ))#[',']
-    '}'
+    '}}'
 ;
 
 RULE_NAME_KW:        /\"rule-name\"/ ;
 RULE_SALIENCE_KW:    /\"salience\"/ ;
-SYSTEM_SALIENCE_KW:  /\"system"/ ;
+SYSTEM_SALIENCE_KW:  /\"system\"/ ;
 RUN_ONCE_KW:         /\"run-once\"/ ;
 
 LHS:
@@ -33,39 +35,39 @@ LHSStatement:
 ;
 
 SYMBOLIC_VAR:
-    '{' 
+    '{{' 
         '"' var_name=/\?[^\d\W]\w*\b/ '"' ':' 
         '"' expr=Root '"' 
-    '}'
+    '}}'
 ;
 
 BINDING_VAR:
-    '{' 
+    '{{' 
         '"' var_name=/\?[^\d\W]\w*\b/ '=' '"' ':' 
         '"' expr=Root '"' 
-    '}'
+    '}}'
 ;
 
 FACT_ADDRESS_VAR:
-    '{' 
+    '{{' 
         '"' var_name=/\?[^\d\W]\w*\b/ '<-' '"' ':' 
         '"' expr=SpecialSingularLogicExpression '"' 
-    '}'
+    '}}'
 ;
 
 ASSERTION:
-    '{' ASSERT_KW ':'
+    '{{' ASSERT_KW ':'
         '"' (expr=SpecialBinaryLogicExpression | 
              expr=TestSingularLogicExpression) '"' 
-    '}'
+    '}}'
 ;
 
 
 LHS_CLIPS_CODE:
-    '{' 
+    '{{' 
         CLIPS_KW ':' 
         clips_code=/(\")(.*)(\")/ 
-    '}'
+    '}}'
 ;
 
 
@@ -122,17 +124,17 @@ Function:
 ;
 
 ZeroArgFuncNames: 
-    NOW 
+    NOW {0}
 ;
 OneArgFuncNames: 
     NOT | 
     COUNT | 
-    STR
+    STR {1}
 ;
 OnePlusArgFuncNames: 
     TIME_TO_STR | 
     STR_TO_TIME |
-    SUB_TIMES
+    SUB_TIMES {2}
 ;
 
 ZeroArgFunction:
@@ -209,13 +211,13 @@ RHSStatement:
 
 
 CreateStatement:
-    '{' 
-        CREATE_KW ':' '{'
+    '{{' 
+        CREATE_KW ':' '{{'
             ((MODEL_ID_KW       ':' '"' model_id    = ID   '"'    )
             (REFLECT_ON_WEB     ':'     reflect     = BOOL        )
             ( DATA_KW           ':'     json_object = JSONObject  ))#[',']
-        '}' 
-    '}'
+        '}}' 
+    '}}'
 ;
 CREATE_KW:       /\"create\"/ ;
 MODEL_ID_KW:     /\"model-id\"/ ;
@@ -224,44 +226,44 @@ DATA_KW:         /\"data\"/ ;
 
 
 ReturnStatement:
-    '{' 
-        RETURN_KW ':' '{' 
+    '{{' 
+        RETURN_KW ':' '{{' 
             ((TAG_KW      ':'     tag          = STRING      )
             (DATA_KW      ':'     json_object  = JSONObject  ))#[',']
-        '}' 
-    '}'
+        '}}' 
+    '}}'
 ;
 RETURN_KW:    /\"return\"/ ;
 TAG_KW:       /\"tag\"/ ;
 
 
 UpdateStatement:
-    '{' 
-        UPDATE_KW ':' '{'
+    '{{' 
+        UPDATE_KW ':' '{{'
             ((MODEL_ID_KW       ':' '"' model_id     = ID   '"'    )
             (REFLECT_ON_WEB     ':'     reflect      = BOOL        )
             (DATA_KW            ':'     json_object  = JSONObject  ))#[',']
-        '}' 
-    '}'
+        '}}' 
+    '}}'
 ;
 UPDATE_KW:          /\"update\"/ ;
 FACT_ADDRESS_KW:    /\"fact-address\"/ ;
 
 
 DeleteStatement:
-    '{' 
-        DELETE_KW ':' '{'
+    '{{' 
+        DELETE_KW ':' '{{'
             ((MODEL_ID_KW       ':' '"' model_id    = ID   '"'    )
             (REFLECT_ON_WEB     ':'     reflect     = BOOL        )
             ( DATA_KW           ':'     json_object = JSONObject  ))#[',']
-        '}'
-    '}'
+        '}}'
+    '}}'
 ;
 DELETE_KW:  /\"delete\"/ ;
 
 
 JSONObject:
-    "{" field_list*=FieldEntry[','] "}"
+    "{{" field_list*=FieldEntry[','] "}}"
 ;
 FieldEntry:
     name=STRING ':' value=FieldValue
@@ -276,13 +278,15 @@ ValueLocator:
 RHS_VARIABLE: '"' var_name=/\?[^\d\W]\w*\b/ '"';
 
 RHS_CLIPS_CODE:
-    '{' 
+    '{{' 
         CLIPS_KW ':' 
         clips_code=/(\")(.*)(\")/ 
-    '}'
+    '}}'
 ;
 
 
 Comment:
   /\/\/.*$/
 ;
+
+"""

@@ -10,34 +10,36 @@ from os.path import join, dirname, abspath
 import json
 
 def test_rule_transpiler():
+
+    # Create new env_provider
+    env_provider = EnvProvider()
     
+
     # Setup User data provider
     this_folder = dirname(__file__)
     sample_path = abspath(join(this_folder, '..', 'test', 'samples', 'ads', 'user_dsd.json'))
-
     dsd_string = None
     with open(sample_path, 'r') as sample:
         dsd_string = sample.read()
-
-    user_data_provider = DataProvider()
+    user_data_provider = DataProvider(env_provider)
     user_data_provider.load(dsd_string)
     user_data_provider.setup()
+
 
     # Setup Course data provider
     this_folder = dirname(__file__)
     sample_path = abspath(join(this_folder, '..', 'test', 'samples', 'ads', 'course_dsd.json'))
-
     dsd_string = None
     with open(sample_path, 'r') as sample:
         dsd_string = sample.read()
-
-    course_data_provider = DataProvider()
+    course_data_provider = DataProvider(env_provider)
     course_data_provider.load(dsd_string)
     course_data_provider.setup()
     
 
-    # Create CLIPS env_provider
-    env_provider = EnvProvider([user_data_provider, course_data_provider])
+    # Insert data providers in env provider
+    env_provider.insert_data_provider(user_data_provider)
+    env_provider.insert_data_provider(course_data_provider)
     
 
     # Setup akashic transpiler

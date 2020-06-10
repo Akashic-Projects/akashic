@@ -12,6 +12,9 @@ from akashic.system.rules.remove_rule import REMOVE_RULE
 from akashic.bridges.data_bridge import DataBridge
 from akashic.bridges.time_bridge import TimeBridge
 
+from akashic.meta_models.dsd import DSD_META_MODEL
+from akashic.meta_models.rule import RULE_META_MODEL
+
 from akashic.exceptions import AkashicError, ErrType
 
 
@@ -23,34 +26,39 @@ class EnvProvider(object):
     """
 
 
-    def __init__(self, data_providers=[], custom_bridges=[]):
+    def __init__(self, custom_bridges=[]):
         """ EnvProvider constructor method
 
         Create new CLIPS enviroment
         """
 
-        self.env = clips.Environment()
-
-        self.data_providers = [*data_providers, 
-                               *self.build_system_providers()]
-        self.define_templates_of_dsds(self.data_providers)
-
-        self.custom_bridges = custom_bridges
+        # Define holders for data_providers, bridges, functions, 
+        # built-it funcs, return func data
+        self.data_providers = []
         self.bridges = {}
         self.functions = {}
         self.built_in_functions = ["not", "count", "str"]
+        self.return_data = []
+       
+        # Create new empty CLIPS enviroment
+        self.env = clips.Environment()
+        
+
+        # Prepare DSD meta-model and fill RULE meta model
+        self.dsd_mm = DSD_META_MODEL
+        mm_fill = self.import_custom_bridges(custom_bridges)
+        print(mm_fill)
+        self.rule_mm = self.fill_rule_meta_model(*mm_fill)
+
+        # Build system data providers and define it's tempaltes
+        self.data_providers = self.build_system_data_providers()
+        self.define_templates_of_dsds(self.data_providers)
 
         # Insert system bridges
         self.insert_system_bridges()
 
-        # Insert custom bridges
-        self.import_custom_bridges(self.custom_bridges)
-
         # Insert system rules
         self.insert_system_rules()
-
-        # Store return function data
-        self.return_data = []
         
 
 
@@ -91,10 +99,12 @@ class EnvProvider(object):
 
         # Add to the list
         self.data_providers.append(data_provider)
+        
+        self.define_templates_of_dsds([data_provider])
         self.refresh_data_proviers_in_bridges()
 
 
-    
+    #TODO: May need to remove all facts related to this template first
     def remove_data_provider(self, dsd_model_id):
         to_remove = None
         for dp in self.data_providers:
@@ -107,18 +117,19 @@ class EnvProvider(object):
                       "be removed." \
                       .format(rule_name)
             raise AkashicError(message, 0, 0, ErrType.SYSTEM)
-        else:
-            self.data_providers.remove(to_remove)
-            self.refresh_data_proviers_in_bridges()
+        
+        self.data_providers.remove(to_remove)
+        self.refresh_data_proviers_in_bridges()
+        self.undefine_template(self, dsd_model_id)
 
 
-    def build_system_providers(self):
+    def build_system_data_providers(self):
         # Setup system data providers
-        rtb_data_provider = DataProvider()
+        rtb_data_provider = DataProvider(self)
         rtb_data_provider.load(RULE_TO_BLOCK)
         rtb_data_provider.setup()
 
-        rtr_data_provider = DataProvider()
+        rtr_data_provider = DataProvider(self)
         rtr_data_provider.load(RULE_TO_REMOVE)
         rtr_data_provider.setup()
 
@@ -190,6 +201,37 @@ class EnvProvider(object):
             return 0
         for bridge in custom_bridges:
             self.import_bridge(custom_bridge)
+
+        # Add bridge functions to the rules_meta_model 
+        # and build ad save meta model
+        zero_arg_fcs = []
+        one_arg_fcs = []
+        onep_arg_fcs = []
+        for bridge in custom_bridges:
+            for f in bridge.exposed_functions:
+                if f["num_of_args"] == 0:
+                    zero_arg_fcs.append("\t'" + f["function"].__name__ + "'")
+                elif f["num_of_args"] == 1:
+                    one_arg_fcs.append("\t'" + f["function"].__name__ + "'")
+                else:
+                    onep_arg_fcs.append("\t'" + f["function"].__name__ + "'")
+
+        return [zero_arg_fcs, one_arg_fcs, onep_arg_fcs]
+
+
+
+    def fill_rule_meta_model(self, zero_arg_fcs, one_arg_fcs, onep_arg_fcs):
+        zero = ""
+        one = ""
+        onep = ""
+        if zero_arg_fcs != []:
+            zero =  '|\n' + ' |\n'.join(zero_arg_fcs)
+        if one_arg_fcs != []:
+            one = '|\n' + ' |\n'.join(one_arg_fcs)
+        if onep_arg_fcs != []:
+            onep = '|\n' + ' |\n'.join(onep_arg_fcs)
+        return RULE_META_MODEL.format(zero, one, onep)
+
 
 
     def define_template(self, template):
@@ -279,8 +321,6 @@ class EnvProvider(object):
 
 
     def run(self):
-        #agenda = Agenda(self.env)
-
         #Clear data and query data of previous run
         self.return_data = []
 

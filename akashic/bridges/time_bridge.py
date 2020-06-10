@@ -14,6 +14,11 @@ class TimeBridge(object):
     def __init__(self):
         self.exposed_functions= [
             {
+                "function":     self.now,
+                "num_of_args":  0,
+                "return_type":  "INTEGER"
+            },
+            {
                 "function":     self.str_to_time,
                 "num_of_args":  2,
                 "return_type":  "INTEGER"
@@ -31,19 +36,21 @@ class TimeBridge(object):
         ]
 
 
-    def str_to_time(self, time_str, time_format):
-        if time_str == 'now':
-            date_time_obj = datetime.datetime.now()
-        else:
-            date_time_obj = datetime.datetime.strptime(time_str, time_format)
 
+    def now(self):
+        date_time_obj = datetime.datetime.now()
+        return int(date_time_obj.timestamp())
+
+
+
+    def str_to_time(self, time_str, time_format):
+        date_time_obj = datetime.datetime.strptime(time_str, time_format)
         return int(date_time_obj.timestamp())
 
 
 
     def time_to_str(self, time, time_format):
         date_time_obj = datetime.datetime.fromtimestamp(int(time))
-
         return date_time_obj.strftime(time_format)
 
 

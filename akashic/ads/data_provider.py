@@ -5,7 +5,7 @@ from enum import Enum
 from jsonpath_ng import jsonpath, parse
 from os.path import join, dirname
 
-from textx import metamodel_from_file
+from textx import metamodel_from_file, metamodel_from_str
 from textx.export import metamodel_export, model_export
 from textx.exceptions import TextXSyntaxError, TextXSemanticError
 
@@ -31,16 +31,20 @@ class DataProvider(object):
     using written specification called DSD (data source definition).
     """
 
-    def __init__(self):
+    def __init__(self, env_provider):
         """ DataProvider constructor method
         
         Main operation is loading the meta-model which describes and defines
         the grammar and structure of single data source definition.
         """
 
-        this_folder = dirname(__file__)
-        self.meta_model = metamodel_from_file(
-                            join(this_folder, 'meta_model.tx'), debug=False)
+        self.env_provider = env_provider
+
+        # this_folder = dirname(__file__)
+        # self.meta_model = metamodel_from_file(
+        #                     join(this_folder, 'meta_model.tx'), debug=False)
+        self.meta_model = metamodel_from_str(self.env_provider.dsd_mm, 
+                                             debug=False)
         self.dsd = None
         self.checker = None
         self.fetcher = None
@@ -78,7 +82,7 @@ class DataProvider(object):
                 semanticError.message, 
                 semanticError.line, 
                 semanticError.col, 
-                ErrType.SYNTACTIC
+                ErrType.SEMANTIC
             )
     
 
