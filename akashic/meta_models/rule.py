@@ -14,7 +14,7 @@ Rule:
 
 RULE_NAME_KW:        /\"rule-name\"/ ;
 RULE_SALIENCE_KW:    /\"salience\"/ ;
-SYSTEM_SALIENCE_KW:  /\"system\"/ ;
+SYSTEM_SALIENCE_KW:  /\"system"/ ;
 RUN_ONCE_KW:         /\"run-once\"/ ;
 
 LHS:
@@ -36,21 +36,21 @@ LHSStatement:
 
 SYMBOLIC_VAR:
     '{{' 
-        '"' var_name=/\?[^\d\W]\w*\b/ '"' ':' 
+        '"' var_name=/\?[^\d\W]\w*\\b/ '"' ':' 
         '"' expr=Root '"' 
     '}}'
 ;
 
 BINDING_VAR:
     '{{' 
-        '"' var_name=/\?[^\d\W]\w*\b/ '=' '"' ':' 
+        '"' var_name=/\?[^\d\W]\w*\\b/ '=' '"' ':' 
         '"' expr=Root '"' 
     '}}'
 ;
 
 FACT_ADDRESS_VAR:
     '{{' 
-        '"' var_name=/\?[^\d\W]\w*\b/ '<-' '"' ':' 
+        '"' var_name=/\?[^\d\W]\w*\\b/ '<-' '"' ':' 
         '"' expr=SpecialSingularLogicExpression '"' 
     '}}'
 ;
@@ -185,7 +185,7 @@ COMMA:  ',';
 LPAR:   '(' ;
 RPAR:   ')' ;
 STRING_C: val=/(\')([^\']*)(\')/ ; //'
-VARIABLE: var_name=/\?[^\d\W]\w*\b/;
+VARIABLE: var_name=/\?[^\d\W]\w*\\b/;
 
 DataLocator: template_conn_expr=TEMPLATE_CONNECTION_EXPRESSION ('.' field=ID)?  (is_query=/\?\?*\?/)? ;
 TEMPLATE_CONNECTION_EXPRESSION: templates=ID ('~' templates=ID)* ;
@@ -273,9 +273,9 @@ FieldValue:
 ;
 
 ValueLocator:
-    '"' var_name=/\?[^\d\W]\w*\b/ '.' field_name=ID  '"';
+    '"' var_name=/\?[^\d\W]\w*\\b/ '.' field_name=ID  '"';
 
-RHS_VARIABLE: '"' var_name=/\?[^\d\W]\w*\b/ '"';
+RHS_VARIABLE: '"' var_name=/\?[^\d\W]\w*\\b/ '"';
 
 RHS_CLIPS_CODE:
     '{{' 

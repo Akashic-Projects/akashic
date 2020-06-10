@@ -92,11 +92,11 @@ class Transpiler(object):
             'DeleteStatement':  self.delete_statement,
         }
 
-        this_folder = dirname(__file__)
-        self.meta_model = metamodel_from_file(
-                            join(this_folder, 'meta_model.tx'), debug=False)
-        # self.meta_model = metamodel_from_str(self.env_provider.rule_mm, 
-        #                                      debug=False)
+        # this_folder = dirname(__file__)
+        # self.meta_model = metamodel_from_file(
+        #                     join(this_folder, 'meta_model.tx'), debug=False)
+        self.meta_model = metamodel_from_str(self.env_provider.rule_mm, 
+                                             debug=False)
         self.meta_model.register_obj_processors(processors)
 
         # Get builder classes
@@ -713,6 +713,7 @@ class Transpiler(object):
                 else:
                     c_arg = str(arg["content"])
                 clips_args.append(c_arg)
+                clips_args.append(arg["content_type"])
 
         clips_content = "(" + \
                         generic.func_name + ' ' + \

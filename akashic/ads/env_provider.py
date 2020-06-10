@@ -47,7 +47,7 @@ class EnvProvider(object):
         # Prepare DSD meta-model and fill RULE meta model
         self.dsd_mm = DSD_META_MODEL
         mm_fill = self.import_custom_bridges(custom_bridges)
-        print(mm_fill)
+        print("FILL: " + str(mm_fill))
         self.rule_mm = self.fill_rule_meta_model(*mm_fill)
 
         # Build system data providers and define it's tempaltes
