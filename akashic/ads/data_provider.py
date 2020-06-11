@@ -49,6 +49,8 @@ class DataProvider(object):
         self.checker = None
         self.fetcher = None
 
+        self.clips_template = None
+
 
 
     # LOADING & SETUP OPERATIONS SECTION 
@@ -69,7 +71,11 @@ class DataProvider(object):
 
         try:
             self.dsd = self.meta_model.model_from_str(dsd_string)
-            return 0
+            return 
+        except RecursionError as re:
+            message = "Infinite left recursion is detected. " \
+                      "There was unknown syntactic error."
+            raise AkashicError(message, 0, 0, ErrType.SYNTACTIC)
         except TextXSyntaxError as syntaxError:
             raise AkashicError(
                 syntaxError.message, 
@@ -157,6 +163,7 @@ class DataProvider(object):
         
         clips_tempalte_def += "\n".join(slot_defs) + ")"
 
+        self.clips_template = clips_tempalte_def
         return clips_tempalte_def
 
 

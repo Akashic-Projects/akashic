@@ -401,7 +401,11 @@ class DataBridge(object):
         tmp_update_rule = QUERY_RULE.format(
             str(uuid.uuid4()).replace('-', ''),
             template_name,
-            field_name
+            field_name,
+            line_start,
+            col_start,
+            line_end,
+            col_end
         )
 
         print("\nQUERY RULE: " + tmp_update_rule)

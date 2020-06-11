@@ -94,7 +94,7 @@ class EnvProvider(object):
                 message = "Data provider with model id '{0}' " \
                           "already exists. Please change data " \
                           "provider model id and try again." \
-                          .format(rule_name)
+                          .format(data_provider)
                 raise AkashicError(message, 0, 0, ErrType.SYSTEM)
 
         # Add to the list
@@ -104,7 +104,7 @@ class EnvProvider(object):
         self.refresh_data_proviers_in_bridges()
 
 
-    #TODO: May need to remove all facts related to this template first
+
     def remove_data_provider(self, dsd_model_id):
         to_remove = None
         for dp in self.data_providers:
@@ -115,12 +115,20 @@ class EnvProvider(object):
             message = "Data provider with model id '{0}' " \
                       "cannot be found. Therefore it cannot " \
                       "be removed." \
-                      .format(rule_name)
+                      .format(dsd_model_id)
             raise AkashicError(message, 0, 0, ErrType.SYSTEM)
         
         self.data_providers.remove(to_remove)
         self.refresh_data_proviers_in_bridges()
-        self.undefine_template(self, dsd_model_id)
+
+        try:
+            self.undefine_template(dsd_model_id)
+        except:
+            message = "Facts of type '{0}' are still present " \
+                      "in enviroment. Please remove all facts " \
+                      "related to that model, then try again." \
+                      .format(dsd_model_id)
+            raise AkashicError(message, 0, 0, ErrType.SYSTEM)
 
 
     def build_system_data_providers(self):
@@ -280,16 +288,6 @@ class EnvProvider(object):
         return self.env.assert_string(fact)
 
 
-
-    def retract_fact(self):
-        """ Removes CLIPS fact from the enviroment
-    
-        """
-
-        pass
-
-
-
     def check_rule_name(self, rule_name):
         for rule in self.env.rules():
             if rule.name == rule_name:
@@ -305,13 +303,47 @@ class EnvProvider(object):
         
         Parameters
         ----------
+        rule_name : str
+            CLIPS rule name
         rule : str
             CLIPS rule in string form
         """
+        try:
+            self.check_rule_name(rule_name)
+            self.env.build(rule)
+        except:
+            message = "Error occured while adding rule '{0}', " \
+                      "Rule with same name may be already present." \
+                      .format(rule_name)
+            raise AkashicError(message, 0, 0, ErrType.SYSTEM)
 
-        self.check_rule_name(rule_name)
+
+
+    def remove_rule(self, rule_name):
+        """ Removes CLIPS rule from the enviroment
         
-        self.env.build(rule)
+        Parameters
+        ----------
+        rule_name : str
+            CLIPS rule name
+        """
+
+        try:
+            rule = self.env.find_rule(rule_name)
+        except:
+            message = "Rule with name '{0}' is not found. " \
+                      .format(rule_name)
+            raise AkashicError(message, 0, 0, ErrType.SYSTEM)
+        if not rule:
+            message = "Rule with name '{0}' is not found. " \
+                      .format(rule_name)
+            raise AkashicError(message, 0, 0, ErrType.SYSTEM)
+        if not rule.deletable:
+            message = "Rule with name '{0}' is not deletable. " \
+                      .format(rule_name)
+            raise AkashicError(message, 0, 0, ErrType.SYSTEM)
+
+        rule.undefine()
 
 
 
@@ -325,3 +357,18 @@ class EnvProvider(object):
         self.return_data = []
 
         self.env.run()
+
+
+    def get_template_names(self):
+        template_names = []
+        for t in self.env.templates():
+            template_names.append(t.name)
+        return template_names
+
+    
+    def get_rule_names(self):
+        rule_names = []
+        for r in self.env.rules():
+            rule_names.append(r.name)
+        return rule_names
+            

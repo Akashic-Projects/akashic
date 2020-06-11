@@ -12,8 +12,14 @@ QUERY_RULE = \
             "return": {{
                 "tag": "query_return",
                 "data": {{
+                    "rule_name": "__query_rule_{0}",
                     "model_id": "{1}",
-                    "{2}": "?data.{2}"
+                    "field": "{2}",
+                    "value": "?data.{2}",
+                    "line_start": {3},
+                    "col_start": {4},
+                    "line_end": {5},
+                    "col_end": {6}
                 }}
             }}
         

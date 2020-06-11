@@ -90,6 +90,11 @@ def test_rule_transpiler():
     for u in course_clips_facts:
         env_provider.insert_fact(u)
 
+    
+    rule = env_provider.env.find_rule("Test_assistance")
+    print("DELETABLE: " + str(rule.deletable))
+    rule.undefine()
+
 
     ###### RUN CLIPS ENGINE
 
