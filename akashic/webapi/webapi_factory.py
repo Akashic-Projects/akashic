@@ -38,8 +38,10 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
     global env_provider
     env_provider = EnvProvider(custom_bridges)
     
-    global all_loaded
-    all_loaded=False
+    global all_templates_loaded
+    global all_rules_loaded
+    all_templates_loaded = False
+    all_rules_loaded = False
 
 
 
@@ -228,7 +230,6 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
             env_provider.insert_rule(transpiler.rule.rule_name, 
                                      transpiler.tranpiled_rule)
         except AkashicError as e:
-            print(e.message)
             return response(
                 None, e.message, e.line, e.col, RespType.ERROR)
 
@@ -408,13 +409,13 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
 
     
 
-    @app.route('/load-all', methods=['GET'])
-    def load_all():
-        global all_loaded
-        if all_loaded:
-            message = "All rules and templates are already loaded."
+    @app.route('/load-all-templates', methods=['POST'])
+    def load_all_templates():
+        global all_templates_loaded
+        if all_templates_loaded:
+            message = "All templates are already loaded."
             return response(None, message, 0, 0, RespType.INFO)
-        all_loaded = True
+        all_templates_loaded = True
 
         # Insert DSDs from database
         cursors = mongo.db.dsds.find({})
@@ -429,6 +430,21 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
             except AkashicError as e:
                 return response(
                     None, e.message, e.line, e.col, RespType.ERROR)
+
+        message = "Engine has finished loading templates " \
+                  "from database."
+        return response(None, message, 0, 0, RespType.SUCCESS)
+
+
+
+
+    @app.route('/load-all-rules', methods=['POST'])
+    def load_all_rules():
+        global all_rules_loaded
+        if all_rules_loaded:
+            message = "All rules are already loaded."
+            return response(None, message, 0, 0, RespType.INFO)
+        all_rules_loaded = True
 
         # Insert RULES from database
         cursors = mongo.db.rules.find({})
@@ -448,7 +464,7 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
                 return response(
                     None, e.message, e.line, e.col, RespType.ERROR)
 
-        message = "Engine has finished loading templates and rules " \
+        message = "Engine has finished loading rules " \
                   "from database."
         return response(None, message, 0, 0, RespType.SUCCESS)
 
@@ -466,38 +482,83 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
         rule_names = env_provider.get_rule_names()
         return response(rule_names, "", 0, 0, RespType.SUCCESS)
 
+    
+    @app.route('/all-facts', methods=['GET'])
+    def get_all_facts():
+        rule_names = env_provider.get_facts()
+        return response(rule_names, "", 0, 0, RespType.SUCCESS)
 
-    @app.route('/assist', methods=['GET'])
+
+
+    @app.route('/assist', methods=['POST'])
     def assist():
+        akashic_rule = request.json
+
+        # Insert rule that needs assistance into engine
+        transpiler = Transpiler(env_provider)
+        try:
+            transpiler.load(dumps(akashic_rule, indent=True))
+            env_provider.insert_rule(transpiler.rule.rule_name, 
+                                     transpiler.tranpiled_rule)
+        except AkashicError as e:
+            return response(
+                None, e.message, e.line, e.col, RespType.ERROR)
+
+        # Run the engine is assistance mode / assistance session
         try:
             env_provider.run()
         except AkashicError as e:
             return response(
                 None, e.message, e.line, e.col, RespType.ERROR)
 
+        # Collect the reponses from the assistance session
         return_data_array = []
         for ret in env_provider.return_data:
             return_data_array.append(loads(ret))
 
-        query_result = []
+        print("ALL RETURNS AFTER ASSISTANCE")
+        print(str(return_data_array))
+        print("----------------------------")
+
+        # Create the list of assistance query results
+        # And the list of query rules to be removed 
+        #from the engine 
+        query_results = []
         rules_to_remove = set()
         for ret in return_data_array:
-            print(ret)
+            print("RET: " + str(ret))
             if ret["meta"]["tag"] == "query_return":
-                query_result.append(ret)
-                if hasattr(ret["data"], "rule_name"):
-                    rules_to_remove.append(ret["data"]["rule_name"])
+                query_results.append(ret)
+        
+            if ret["meta"]["tag"] == "query_rule_name_return":
+                if "query_rule_name" in ret["data"]:
+                    rules_to_remove.add(ret["data"]["query_rule_name"])
 
-        for rule in rules_to_remove:
+        # Remove the rules colelcted in list above 
+        for rule_name in rules_to_remove:
             try:
                 env_provider.remove_rule(rule_name)
             except AkashicError as e:
                 return response(
                     None, e.message, e.line, e.col, RespType.ERROR)
 
+        # Turn off engine assistance mode so that all other
+        # non-assistance related rules can run in next esssion
+        env_provider.execute("(do-for-all-facts ((?ao __AssistanceOn)) TRUE (retract ?ao) )")
+       
+        # Undefine assisted rule
+        try:
+            env_provider.remove_rule(akashic_rule['rule-name'])
+        except AkashicError as e:
+            pass
+
+        # Create response and return
+        resp = {}
+        resp["query_results"] = query_results
+        resp["rule"] = akashic_rule
                 
         message = "Assistance is done. You can view get possible values for ???* values"
-        return response(query_result, message, 0, 0, RespType.SUCCESS)
+        return response(resp, message, 0, 0, RespType.SUCCESS)
 
 
 

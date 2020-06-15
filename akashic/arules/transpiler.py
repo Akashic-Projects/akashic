@@ -1,3 +1,4 @@
+import uuid
 from os.path import join, dirname
 
 from textx import metamodel_from_file, metamodel_from_str
@@ -26,7 +27,7 @@ class Transpiler(object):
     We use this class to transpile Akashic rule into the CLIPS rule.
     """
 
-    def __init__(self, env_provider):
+    def __init__(self, env_provider, is_assistance_session=False):
         """ Transpiler constructor method
         
         Details
@@ -105,6 +106,7 @@ class Transpiler(object):
         self.rule = None
         self.tranpiled_rule = None
 
+        self.is_assistance_session = is_assistance_session
         self.is_assistance_rule = False
         self.assistance_clips_command_list = []
 
@@ -251,9 +253,11 @@ class Transpiler(object):
             self.lhs_clips_command_list = []
             self.rhs_clips_command_list = self.assistance_clips_command_list
 
+        # Salience is SYSTEM by default (if self.is_assistance_rule == True)
+        clips_salience = "\n\t(declare (salience 10000))\n"
+
         # Read salience
-        clips_salience = ""
-        if hasattr(rule, 'salience'):
+        if hasattr(rule, 'salience') and not self.is_assistance_rule:
             if isinstance(rule.salience, str) and rule.salience == "\"system\"":
                 clips_salience = "\n\t(declare (salience 10000))\n"
         
@@ -278,9 +282,12 @@ class Transpiler(object):
                           "-10 000 and 9 000 or \"system\""
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
+
         # Read run_once data
-        if hasattr(rule, 'run_once') and \
-        rule.run_once == True:
+        # Override read_once if self.is_assistance_rule == True
+        if (hasattr(rule, 'run_once') and \
+        rule.run_once == True) and \
+        not self.is_assistance_rule:
             run_once_rhs_expression = \
                 "(assert (__RuleToRemove (rule_name \"{0}\")) )" \
                 .format(rule.rule_name)
@@ -298,6 +305,7 @@ class Transpiler(object):
         self.lhs_clips_command_list.insert(0, run_once_lhs_expression)
         
         # Check if rule is blocked
+        # Prevent it from getting into agenda
         block_check_lhs_expression = \
             "(not " \
                 "(__RuleToBlock " \
@@ -305,7 +313,16 @@ class Transpiler(object):
                 ")" \
             ")".format(rule.rule_name)
         self.lhs_clips_command_list.insert(0, block_check_lhs_expression)
+
+        # Prevent all non assistance related rules from running,
+        # during assistance process
+        if not self.is_assistance_session:
+            assistance_check_lhs_expression = \
+                "(not (__AssistanceOn) )"
+            self.lhs_clips_command_list.insert(
+                    0, assistance_check_lhs_expression)
         
+        # FINALLY BUILD THE RULE
         lhs_commands = ["\t" + comm for comm in self.lhs_clips_command_list]
         rhs_commands = ["\t" + comm for comm in self.rhs_clips_command_list]
 
@@ -383,7 +400,7 @@ class Transpiler(object):
             line, col = get_model(fav)._tx_parser \
                         .pos_to_linecol(fav._tx_position)
             message = "Variable '{0}' is already defined." \
-                      .format(sv.var_name)
+                      .format(fav.var_name)
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
         self.variable_table.add_named_var(
@@ -405,7 +422,7 @@ class Transpiler(object):
             line, col = get_model(bv)._tx_parser \
                         .pos_to_linecol(bv._tx_position)
             message = "Variable '{0}' is already defined." \
-                      .format(sv.var_name)
+                      .format(bv.var_name)
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
         self.variable_table.add_named_var(
@@ -1194,7 +1211,9 @@ class Transpiler(object):
         line_end, col_end = get_model(dl_obj)._tx_parser.pos_to_linecol(
                                     dl_obj._tx_position_end)
 
+        unique_rule_name = str(uuid.uuid4()).replace('-', '')
         arg_array = list([
+            '"' + unique_rule_name + '"',
             '"' + template_name + '"',
             '"' + field_name + '"',
             '"' + str(line_start) + '"',
@@ -1204,6 +1223,24 @@ class Transpiler(object):
         ])
 
         clips_command = "(process_query " + " ".join(arg_array) + ")"
+        self.assistance_clips_command_list.append(clips_command)
+
+        arg_array = list([
+            '"query_rule_name_return"',
+            '"data-len"',
+            '"3"',
+            '"query_rule_name"',
+            '"' + "__query_rule_" + unique_rule_name + '"',
+            '"STRING"'
+        ])
+
+        # Return the name of query RULE to be undefined later
+        clips_command = "(return_func " + " ".join(arg_array) + ")"
+        self.assistance_clips_command_list.append(clips_command)
+
+        # Turns on the engine's assistance mode ON,
+        # This means taht all non query RULES will not be executed
+        clips_command = "(assert (__AssistanceOn (id \"something\")) )"
         self.assistance_clips_command_list.append(clips_command)
 
         # Use direct call to bridge - for debugging

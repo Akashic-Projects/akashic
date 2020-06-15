@@ -12,7 +12,6 @@ QUERY_RULE = \
             "return": {{
                 "tag": "query_return",
                 "data": {{
-                    "rule_name": "__query_rule_{0}",
                     "model_id": "{1}",
                     "field": "{2}",
                     "value": "?data.{2}",

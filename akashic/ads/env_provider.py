@@ -7,6 +7,7 @@ from akashic.arules.transpiler import Transpiler
 
 from akashic.system.dsds.rule_to_block import RULE_TO_BLOCK
 from akashic.system.dsds.rule_to_remove import RULE_TO_REMOVE
+from akashic.system.dsds.assistance_on import ASSISTANCE_ON
 from akashic.system.rules.remove_rule import REMOVE_RULE
 
 from akashic.bridges.data_bridge import DataBridge
@@ -47,7 +48,6 @@ class EnvProvider(object):
         # Prepare DSD meta-model and fill RULE meta model
         self.dsd_mm = DSD_META_MODEL
         mm_fill = self.import_custom_bridges(custom_bridges)
-        print("FILL: " + str(mm_fill))
         self.rule_mm = self.fill_rule_meta_model(*mm_fill)
 
         # Build system data providers and define it's tempaltes
@@ -141,7 +141,11 @@ class EnvProvider(object):
         rtr_data_provider.load(RULE_TO_REMOVE)
         rtr_data_provider.setup()
 
-        return [rtb_data_provider, rtr_data_provider]
+        ao_data_provider = DataProvider(self)
+        ao_data_provider.load(ASSISTANCE_ON)
+        ao_data_provider.setup()
+
+        return [rtb_data_provider, rtr_data_provider, ao_data_provider]
 
 
     
@@ -371,4 +375,11 @@ class EnvProvider(object):
         for r in self.env.rules():
             rule_names.append(r.name)
         return rule_names
+
+
+    def get_facts(self):
+        facts = []
+        for f in self.env.facts():
+            facts.append(str(f))
+        return facts
             

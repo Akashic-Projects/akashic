@@ -390,16 +390,17 @@ class DataBridge(object):
 
         self.print_args(args, "PROCESS_QUERY")
 
-        template_name = string_to_py_type(args[0], "STRING")
-        field_name = string_to_py_type(args[1], "STRING")
+        unique_rule_name = string_to_py_type(args[0], "STRING")
+        template_name = string_to_py_type(args[1], "STRING")
+        field_name = string_to_py_type(args[2], "STRING")
 
-        line_start = string_to_py_type(args[2], "INTEGER")
-        col_start  = string_to_py_type(args[3], "INTEGER")
-        line_end   = string_to_py_type(args[4], "INTEGER")
-        col_end    = string_to_py_type(args[5], "INTEGER")
+        line_start = string_to_py_type(args[3], "INTEGER")
+        col_start  = string_to_py_type(args[4], "INTEGER")
+        line_end   = string_to_py_type(args[5], "INTEGER")
+        col_end    = string_to_py_type(args[6], "INTEGER")
 
         tmp_update_rule = QUERY_RULE.format(
-            str(uuid.uuid4()).replace('-', ''),
+            unique_rule_name,
             template_name,
             field_name,
             line_start,
@@ -411,7 +412,7 @@ class DataBridge(object):
         print("\nQUERY RULE: " + tmp_update_rule)
 
         print("\nQUERY RULE TRANSPILATION PRINT:")
-        transpiler = Transpiler(self.env_provider)
+        transpiler = Transpiler(self.env_provider, True)
         transpiler.load(tmp_update_rule)
 
         self.env_provider.insert_rule(transpiler.rule.rule_name, 
