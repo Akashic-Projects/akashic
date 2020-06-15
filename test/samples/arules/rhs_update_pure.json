@@ -1,0 +1,23 @@
+{
+    "rule-name": "Test_rhs_update",
+    "salience": 100,
+    "run-once": true,
+    "when": [
+        { "?course<-": "[Course.id == 2]"}
+    ],
+    "then": [
+        {
+           "update": {
+                "model-id": "Course",
+                "reflect-on-web": true,
+                "data": {
+                    "id": 74,
+                    "name": "OO OO OO OO",
+                    "start_date": "12.3.2021.",
+                    "end_date": "12.3.2022."
+                }
+               
+            }
+        }
+    ]
+}

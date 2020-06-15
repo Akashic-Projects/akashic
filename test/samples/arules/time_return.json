@@ -1,0 +1,18 @@
+{
+    "rule-name": "Test_time_return",
+    "salience": 100,
+    "run-once": true,
+    "when": [
+        { "?course_time": "str_to_time(Course.start_date, '%d.%m.%Y.')" },
+        { "?now": "str_to_time('now', '')" },
+        { "?till_course_start=": "'Broj dana do pocetka: ' + str(sub_times(?course_time, ?now) / (60*60*24))"}
+
+    ],
+    "then": [
+        {
+           "return": {
+               "time_untill_course": "?till_course_start"
+            }
+        }
+    ]
+}

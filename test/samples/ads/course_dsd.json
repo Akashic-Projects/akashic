@@ -1,0 +1,106 @@
+{
+    "data-source-definition-name": "Course",
+    "model-id": "Course",
+    "model-description": "Holds general coure data",
+    "can-reflect-on-web": true,
+    "authentication-header": {
+        "auth-header-name": "Authorization",
+        "token-prefix": "bearer",
+        "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOlwvXC9sb2NhbGhvc3RcL2FwaVwvYXV0aFwvbG9naW4iLCJpYXQiOjE1OTE3ODk4NDgsImV4cCI6MTU5MTk2MjY0OCwibmJmIjoxNTkxNzg5ODQ4LCJqdGkiOiJpR0c2NVozRDBLek1vU0J6Iiwic3ViIjoyLCJwcnYiOiIyM2JkNWM4OTQ5ZjYwMGFkYjM5ZTcwMWM0MDA4NzJkYjdhNTk3NmY3In0.TruTT-goSmtRBk2AuoLuzhDwOcWvPqv6NJKHbv-k-6Y"
+    },
+
+    "fields": [
+        {
+            "field-name": "id",
+            "type": "INTEGER",
+            "use-as": "primary-key",
+            "response-one-json-path": "$.data.id",
+            "response-multiple-json-path": "$.data[{index}].id"
+        },
+        {
+            "field-name": "name",
+            "type": "STRING",
+            "use-as": "data",
+            "response-one-json-path": "$.data.name",
+            "response-multiple-json-path": "$.data[{index}].name"
+        },
+        {
+            "field-name": "start_date",
+            "type": "STRING",
+            "use-as": "data",
+            "response-one-json-path": "$.data.start_date",
+            "response-multiple-json-path": "$.data[{index}].start_date"
+        },
+        {
+            "field-name": "end_date",
+            "type": "STRING",
+            "use-as": "data",
+            "response-one-json-path": "$.data.end_date",
+            "response-multiple-json-path": "$.data[{index}].end_date"
+        }
+    ],
+
+    "apis": [
+        {
+            "operation": "create",
+            "method": "POST",
+            "url-map": "http://localhost:80/api/courses"
+        },
+        {
+            "operation": "read-one",
+            "method": "GET",
+            "url-map": "http://localhost:80/api/courses/{id}",
+            "referenced-models": [
+                {
+                    "model-id": "Course",
+                    "field-name": "id",
+                    "url-placement": "id"
+                }
+            ]
+        },
+        {
+            "operation": "read-multiple",
+            "method": "GET",
+            "url-map": "http://localhost:80/api/courses?pageIndex={pageIndex}&pageRowCount={pageRowCount}&searchFields={searchFields}&searchStrings={searchStrings}&sortField={sortField}&sortOrder={sortOrder}",
+            
+            "page-index-url-placement": "pageIndex",
+            "default-page-index": 1,
+
+            "page-row-count-url-placement": "pageRowCount",
+            "default-page-row-count": 5,
+
+            "search-fields-url-placement": "searchFields",
+            "search-fields-url-delimiter": ",",
+
+            "search-strings-url-placement": "searchStrings",
+            "search-strings-url-delimiter": ",",
+
+            "sort-field-url-placement": "sortField",
+            "sort-order-url-placement": "sortOrder"
+        },
+        {
+            "operation": "update",
+            "method": "PUT",
+            "url-map": "http://localhost:80/api/courses/{id}",
+            "referenced-models": [
+                {
+                    "model-id": "Course",
+                    "field-name": "id",
+                    "url-placement": "id"
+                }
+            ]
+        },
+        {
+            "operation": "delete",
+            "method": "DELETE",
+            "url-map": "http://localhost:80/api/courses/{id}",
+            "referenced-models": [
+                {
+                    "model-id": "Course",
+                    "field-name": "id",
+                    "url-placement": "id"
+                }
+            ]
+        }
+    ]
+}

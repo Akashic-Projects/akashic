@@ -1,5 +1,9 @@
 textX==2.1.0
 clipspy==0.3.3
+
 Flask==1.1.1
+Flask-PyMongo==2.3.0
+Flask-Cors==3.0.8
+
 requests==2.22.0
 jsonpath-ng=1.4.3

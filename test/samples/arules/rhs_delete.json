@@ -1,0 +1,19 @@
+{
+    "rule-name": "Test_rhs_delete",
+    "salience": 100,
+    "run-once": true,
+    "when": [
+        { "?course<-": "[Course.id == 1]"}
+    ],
+    "then": [
+        {
+            "delete": {
+                "model-id": "Course",
+                "reflect-on-web": true,
+                "data": {
+                    "id": "?course.id"
+                }
+            }
+        }
+    ]
+}

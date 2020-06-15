@@ -1,0 +1,24 @@
+{
+    "rule-name": "Test_rhs_update",
+    "salience": 100,
+    "run-once": true,
+    "when": [
+        { "?course<-": "[Course.id == 1]"},
+        { "?c_name=": "'ime kursa'"}
+    ],
+    "then": [
+        {
+           "update": {
+                "model-id": "Course",
+                "reflect-on-web": true,
+
+                "data": {
+                    "id": "?course.id",
+                    "name": "?c_name",
+                    "start_date": "?course.start_date",
+                    "end_date": "?course.end_date"
+                }
+            }
+        }
+    ]
+}

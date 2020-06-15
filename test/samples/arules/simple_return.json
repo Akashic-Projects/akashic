@@ -1,0 +1,18 @@
+{
+    "rule-name": "Test_return_simple",
+    "salience": 100,
+    "run-once": true,
+    "when": [],
+    "then": [
+        {
+            "return": {
+                "tag": "This is my first tag",
+                "data": {
+                    "test": "This is some text",
+                    "number": 345,
+                    "boolean": true,
+                    "float": 343.567
+                }
+        }   }
+    ]
+}

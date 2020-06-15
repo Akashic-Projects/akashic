@@ -1,12 +1,12 @@
 {
     "data-source-definition-name": "User",
-    "data-source-definition-group-name": "StudentServiceGroup",
-    "model-name": "User",
-    "model-description": "Holds general user dara",
+    "model-id": "User",
+    "model-description": "Holds general user data",
+    "can-reflect-on-web": true,
     "authentication-header": {
         "auth-header-name": "Authorization",
         "token-prefix": "bearer",
-        "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOlwvXC9sb2NhbGhvc3RcL2FwaVwvYXV0aFwvbG9naW4iLCJpYXQiOjE1ODM0NTE3MDgsImV4cCI6MTU4MzQ1NTMwOCwibmJmIjoxNTgzNDUxNzA4LCJqdGkiOiI2YjlhVXdCMjZjbHFkUWpMIiwic3ViIjoyLCJwcnYiOiIyM2JkNWM4OTQ5ZjYwMGFkYjM5ZTcwMWM0MDA4NzJkYjdhNTk3NmY3In0.jyhg4I66SYE1vgQzq2fg1QxTv_W8PzL9mEUTNsBxSJ8"
+        "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOlwvXC9sb2NhbGhvc3RcL2FwaVwvYXV0aFwvbG9naW4iLCJpYXQiOjE1OTE3ODk4NDgsImV4cCI6MTU5MTk2MjY0OCwibmJmIjoxNTkxNzg5ODQ4LCJqdGkiOiJpR0c2NVozRDBLek1vU0J6Iiwic3ViIjoyLCJwcnYiOiIyM2JkNWM4OTQ5ZjYwMGFkYjM5ZTcwMWM0MDA4NzJkYjdhNTk3NmY3In0.TruTT-goSmtRBk2AuoLuzhDwOcWvPqv6NJKHbv-k-6Y"
     },
 
     "fields": [
@@ -14,31 +14,29 @@
             "field-name": "id",
             "type": "INTEGER",
             "use-as": "primary-key",
-            "request-json-path": "$.id",
             "response-one-json-path": "$.data.id",
-            "response-multiple-json-path": "$.data[{index}].id",
-            "use-for-create": false,
-            "use-for-update": false
+            "response-multiple-json-path": "$.data[{index}].id"
         },
         {
             "field-name": "name",
             "type": "STRING",
             "use-as": "data",
-            "request-json-path": "$.name",
             "response-one-json-path": "$.data.name",
-            "response-multiple-json-path": "$.data[{index}].name",
-            "use-for-create": true,
-            "use-for-update": true
+            "response-multiple-json-path": "$.data[{index}].name"
         },
         {
             "field-name": "email",
             "type": "STRING",
             "use-as": "data",
-            "request-json-path": "$.email",
             "response-one-json-path": "$.data.email",
-            "response-multiple-json-path": "$.data[{index}].email",
-            "use-for-create": true,
-            "use-for-update": true
+            "response-multiple-json-path": "$.data[{index}].email"
+        },
+        {
+            "field-name": "age",
+            "type": "INTEGER",
+            "use-as": "data",
+            "response-one-json-path": "$.data.age",
+            "response-multiple-json-path": "$.data[{index}].age"
         }
     ],
 
@@ -52,14 +50,24 @@
             "operation": "read-one",
             "method": "GET",
             "url-map": "http://localhost:80/api/users/{id}",
-            "data-indexing-url-placement": "id"
+            "referenced-models": [
+                {
+                    "model-id": "User",
+                    "field-name": "id",
+                    "url-placement": "id"
+                }
+            ]
         },
         {
             "operation": "read-multiple",
             "method": "GET",
             "url-map": "http://localhost:80/api/users?pageIndex={pageIndex}&pageRowCount={pageRowCount}&searchFields={searchFields}&searchStrings={searchStrings}&sortField={sortField}&sortOrder={sortOrder}",
+            
             "page-index-url-placement": "pageIndex",
+            "default-page-index": 1,
+
             "page-row-count-url-placement": "pageRowCount",
+            "default-page-row-count": 5,
 
             "search-fields-url-placement": "searchFields",
             "search-fields-url-delimiter": ",",
@@ -74,13 +82,25 @@
             "operation": "update",
             "method": "PUT",
             "url-map": "http://localhost:80/api/users/{id}",
-            "data-indexing-url-placement": "id"
+            "referenced-models": [
+                {
+                    "model-id": "User",
+                    "field-name": "id",
+                    "url-placement": "id"
+                }
+            ]
         },
         {
             "operation": "delete",
             "method": "DELETE",
             "url-map": "http://localhost:80/api/users/{id}",
-            "data-indexing-url-placement": "id"
+            "referenced-models": [
+                {
+                    "model-id": "User",
+                    "field-name": "id",
+                    "url-placement": "id"
+                }
+            ]
         }
     ]
 }
