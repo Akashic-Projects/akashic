@@ -106,7 +106,7 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
             env_provider.insert_data_provider(data_provider)
         except AkashicError as e:
             return response(
-                None, e.message, e.line, e.col, RespType.ERROR)
+                akashic_dsd, e.message, e.line, e.col, RespType.ERROR)
 
         # Add to mongo database
         dsd_entry = {}
@@ -152,7 +152,7 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
             env_provider.insert_data_provider(data_provider)
         except AkashicError as e:
             return response(
-                None, e.message, e.line, e.col, RespType.ERROR)
+                akashic_dsd, e.message, e.line, e.col, RespType.ERROR)
             
         # Create DSD db-entry
         dsd_entry = {}
@@ -231,7 +231,7 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
                                      transpiler.tranpiled_rule)
         except AkashicError as e:
             return response(
-                None, e.message, e.line, e.col, RespType.ERROR)
+                akashic_rule, e.message, e.line, e.col, RespType.ERROR)
 
         rule_entry = None
         if not is_run_once_rule:
@@ -282,7 +282,7 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
                                     transpiler.tranpiled_rule)
         except AkashicError as e:
             return response(
-                None, e.message, e.line, e.col, RespType.ERROR)
+                akashic_rule, e.message, e.line, e.col, RespType.ERROR)
 
         # Create DSD db-entry
         rule_entry = {}

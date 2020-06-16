@@ -225,7 +225,8 @@ class DataProvider(object):
                 else:
                     resolved_value = 0
             elif field.type == "STRING":
-                resolved_value = f"\"{result}\""
+                resolved_value = "\"{0}\"" \
+                                 .format(result)
 
             clips_fields.append("\t(" + str(field.field_name) + " " + \
                                 str(resolved_value) + ")")
