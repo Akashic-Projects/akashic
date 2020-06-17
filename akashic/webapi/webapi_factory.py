@@ -91,6 +91,9 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
         # Get JSON data
         akashic_dsd = request.json
 
+        print("VIEW IT:")
+        print(dumps(akashic_dsd, indent=True))
+
         # Check if DSD with given model-id already exists
         if mongo.db.dsds.count_documents(
         {'model-id': { '$eq': akashic_dsd['model-id']}}) > 0:
@@ -277,7 +280,8 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
         try:
             env_provider.remove_rule(old_rule_name)
         except AkashicError as e:
-            if not foundRule["rule"]["run-once"]:
+            if "run-once" in foundRule["rule"] and \
+            not foundRule["rule"]["run-once"]:
                 return response(
                     None, e.message, e.line, e.col, RespType.ERROR)
             else:
@@ -306,7 +310,8 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
         # Create DSD db-entry
         rule_entry = {}
         rule_entry['rule-name'] = akashic_rule['rule-name']
-        if foundRule["rule"]["run-once"]:
+        if "run-once" in foundRule["rule"] and \
+        foundRule["rule"]["run-once"]:
             rule_entry['active'] = True
         else:
             rule_entry['active'] = foundRule['active']
@@ -367,7 +372,8 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
         try:
             env_provider.remove_rule(rule_name)
         except AkashicError as e:
-            if not foundRule["rule"]["run-once"]:
+            if "run-once" in foundRule["rule"] and \
+            not foundRule["rule"]["run-once"]:
                 return response(
                     None, e.message, e.line, e.col, RespType.ERROR)
             else:
@@ -396,7 +402,8 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
         try:
             env_provider.remove_rule(rule_name)
         except AkashicError as e:
-            if not foundRule["rule"]["run-once"]:
+            if "run-once" in foundRule["rule"] and \
+            not foundRule["rule"]["run-once"]:
                 return response(
                     None, e.message, e.line, e.col, RespType.ERROR)
             else:

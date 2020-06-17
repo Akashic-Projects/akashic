@@ -11,9 +11,11 @@
     "then": [
         {
            "return": {
-               "MSG": "?msg",
-               "C2": "?result.id"
-            }
-        }
+               "tag": "test return",
+                "data": {
+                    "MSG": "?msg",
+                    "C2": "?result.id"
+                }
+        }   }
     ]
 }
