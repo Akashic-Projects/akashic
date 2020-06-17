@@ -6,7 +6,7 @@
     "authentication-header": {
         "auth-header-name": "Authorization",
         "token-prefix": "bearer",
-        "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOlwvXC9sb2NhbGhvc3RcL2FwaVwvYXV0aFwvbG9naW4iLCJpYXQiOjE1OTE3ODk4NDgsImV4cCI6MTU5MTk2MjY0OCwibmJmIjoxNTkxNzg5ODQ4LCJqdGkiOiJpR0c2NVozRDBLek1vU0J6Iiwic3ViIjoyLCJwcnYiOiIyM2JkNWM4OTQ5ZjYwMGFkYjM5ZTcwMWM0MDA4NzJkYjdhNTk3NmY3In0.TruTT-goSmtRBk2AuoLuzhDwOcWvPqv6NJKHbv-k-6Y"
+        "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOlwvXC9sb2NhbGhvc3Q6ODA4MFwvYXBpXC9hdXRoXC9sb2dpbiIsImlhdCI6MTU5MjMyOTkyNSwiZXhwIjoxNTkyNTAyNzI1LCJuYmYiOjE1OTIzMjk5MjUsImp0aSI6IlR6T1JPaXRGN21PMVU3UjciLCJzdWIiOjIsInBydiI6IjIzYmQ1Yzg5NDlmNjAwYWRiMzllNzAxYzQwMDg3MmRiN2E1OTc2ZjcifQ.4aIA5dk03gnkusp2JL5k4I5xoWWtQ3mIdJvJjUkAfRg"
     },
 
     "fields": [
@@ -44,12 +44,12 @@
         {
             "operation": "create",
             "method": "POST",
-            "url-map": "http://localhost:80/api/courses"
+            "url-map": "http://172.33.1.7:8080/api/courses"
         },
         {
             "operation": "read-one",
             "method": "GET",
-            "url-map": "http://localhost:80/api/courses/{id}",
+            "url-map": "http://172.33.1.7:8080/api/courses/{id}",
             "referenced-models": [
                 {
                     "model-id": "Course",
@@ -61,7 +61,7 @@
         {
             "operation": "read-multiple",
             "method": "GET",
-            "url-map": "http://localhost:80/api/courses?pageIndex={pageIndex}&pageRowCount={pageRowCount}&searchFields={searchFields}&searchStrings={searchStrings}&sortField={sortField}&sortOrder={sortOrder}",
+            "url-map": "http://172.33.1.7:8080/api/courses?pageIndex={pageIndex}&pageRowCount={pageRowCount}&searchFields={searchFields}&searchStrings={searchStrings}&sortField={sortField}&sortOrder={sortOrder}",
             
             "page-index-url-placement": "pageIndex",
             "default-page-index": 1,
@@ -81,7 +81,7 @@
         {
             "operation": "update",
             "method": "PUT",
-            "url-map": "http://localhost:80/api/courses/{id}",
+            "url-map": "http://172.33.1.7:8080/api/courses/{id}",
             "referenced-models": [
                 {
                     "model-id": "Course",
@@ -93,7 +93,7 @@
         {
             "operation": "delete",
             "method": "DELETE",
-            "url-map": "http://localhost:80/api/courses/{id}",
+            "url-map": "http://172.33.1.7:8080/api/courses/{id}",
             "referenced-models": [
                 {
                     "model-id": "Course",

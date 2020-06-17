@@ -151,6 +151,16 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
             data_provider.setup()
             env_provider.insert_data_provider(data_provider)
         except AkashicError as e:
+            # Reinsert deleted DSD:
+            data_provider = DataProvider(env_provider)
+            try:
+                data_provider.load(dumps(foundDSD["dsd"], indent=True))
+                data_provider.setup()
+                env_provider.insert_data_provider(data_provider)
+            except AkashicError as e:                
+                return response(
+                    akashic_dsd, e.message, e.line, e.col, RespType.ERROR)
+
             return response(
                 akashic_dsd, e.message, e.line, e.col, RespType.ERROR)
             
@@ -281,6 +291,15 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
             env_provider.insert_rule(transpiler.rule.rule_name, 
                                     transpiler.tranpiled_rule)
         except AkashicError as e:
+            # Reinsert deleted RULE:
+            transpiler = Transpiler(env_provider)
+            try:
+                transpiler.load(dumps(foundRule["rule"], indent=True))
+                env_provider.insert_rule(transpiler.rule.rule_name, 
+                                        transpiler.tranpiled_rule)
+            except AkashicError as e:
+                return response(
+                    akashic_rule, e.message, e.line, e.col, RespType.ERROR)
             return response(
                 akashic_rule, e.message, e.line, e.col, RespType.ERROR)
 
@@ -502,7 +521,7 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
                                      transpiler.tranpiled_rule)
         except AkashicError as e:
             return response(
-                None, e.message, e.line, e.col, RespType.ERROR)
+                akashic_rule, e.message, e.line, e.col, RespType.ERROR)
 
         # Run the engine is assistance mode / assistance session
         try:

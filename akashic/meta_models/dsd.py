@@ -96,8 +96,6 @@ BOOLEAN_KW: "BOOLEAN" ;
 
 Apis: (
     create           = CreateApi? 
-    read_one         = ReadOneApi? 
-    read_multiple    = ReadMultipleApi? 
     update           = UpdateApi? 
     delete           = DeleteApi?
 )#[','] ;
@@ -108,37 +106,6 @@ CreateApi:
         (METHOD_KW          ':'  '"'  method        = Method  '"'                )
         (URL_MAP_KW         ':'       url_map       = STRING                     )
         (REF_MODELS_KW      ':'  '['  ref_models    *= ReferencedModel[','] ']'  )?)#[',']
-    '}'
-;
-ReadOneApi:
-    '{'
-        ((OPERATION_KW      ':'       /\"read-one\"/                              )
-        (METHOD_KW          ':'  '"'  method         = Method  '"'                )
-        (URL_MAP_KW         ':'       url_map        = STRING                     )
-        (REF_MODELS_KW      ':'  '['  ref_models    *= ReferencedModel[','] ']'   )?)#[',']
-    '}'
-;
-ReadMultipleApi:
-    '{'
-        ((OPERATION_KW             ':'       /\"read-multiple\"/                             )
-        (METHOD_KW                 ':'  '"'  method              = Method  '"'               )
-        (URL_MAP_KW                ':'       url_map             = STRING                    )
-        (REF_MODELS_KW             ':'  '['  ref_models         *= ReferencedModel[','] ']'  )?
-        
-        (PAGE_INDEX_UP_KW          ':'  '"'  page_index_url_placement       = ID        '"'  )
-        (DEFAULT_PAGE_INDEX_KW     ':'       default_page_index             = NUMBER         )
-
-        (PAGE_ROW_COUNT_UP_KW      ':'  '"'  page_row_count_url_placement   = ID        '"'  )
-        (DEFAULT_PAGE_ROW_COUNT_KW ':'       default_page_row_count         = NUMBER         )
-
-        (SEARCH_FIELDS_UP_KW       ':'  '"'  search_fields_url_placement    = ID        '"'  )
-        (SEARCH_FIELDS_UD_KW       ':'       search_fields_url_delimiter    = STRING         )  
-        
-        (SEARCH_STRINGS_UP_KW      ':'  '"'  search_strings_url_placement   = ID        '"'  )
-        (SEARCH_STRINGS_UD_KW      ':'       search_strings_url_delimiter   = STRING         )
-        
-        (SORT_FIELD_UP_KW          ':'  '"'  sort_field_url_placement       = ID        '"'  )
-        (SORT_ORDER_UP_KW          ':'  '"'  sort_order_url_placement       = ID        '"'  ))#[',']
     '}'
 ;
 UpdateApi:
@@ -162,21 +129,6 @@ OPERATION_KW:               /\"operation\"/ ;
 METHOD_KW:                  /\"method\"/ ;
 URL_MAP_KW:                 /\"url-map\"/ ;
 REF_MODELS_KW:              /\"referenced-models\"/ ;
-
-PAGE_INDEX_UP_KW:           /\"page-index-url-placement\"/ ;
-DEFAULT_PAGE_INDEX_KW:      /\"default-page-index\"/ ;
-
-PAGE_ROW_COUNT_UP_KW:       /\"page-row-count-url-placement\"/ ;
-DEFAULT_PAGE_ROW_COUNT_KW:  /\"default-page-row-count\"/ ;
-
-SEARCH_FIELDS_UP_KW:        /\"search-fields-url-placement\"/ ;
-SEARCH_FIELDS_UD_KW:        /\"search-fields-url-delimiter\"/ ;
-
-SEARCH_STRINGS_UP_KW:       /\"search-strings-url-placement\"/ ;
-SEARCH_STRINGS_UD_KW:       /\"search-strings-url-delimiter\"/ ;
-
-SORT_FIELD_UP_KW:           /\"sort-field-url-placement\"/ ;
-SORT_ORDER_UP_KW:           /\"sort-order-url-placement\"/ ;
 
 Method: 'GET' | 'POST' | 'PUT' | 'DELETE' ;
 ////////////////////////////////////////////////////////////////////////////////////////////////////

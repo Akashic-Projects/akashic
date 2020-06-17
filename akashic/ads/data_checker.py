@@ -51,20 +51,13 @@ class DataChecker(object):
 
 
 
-    def check_url_mapping(self, operation, url_map, field_refs):
+    def check_url_mapping(self, operation):
         """ Checks single URL mapping
         
         Parameters
         ----------
-        operation : str
+        operation : object
             Web service operation / method, 
-            possible values: "create", "read_one", "read_multiple",
-                             "update", "delete"
-        url_map : str
-            URL map is regular URL string containing '{variable_name}'
-            in places of real key data
-        field_refs : list
-            The list of referenced-models url-placements
 
         Raises
         ------
@@ -73,27 +66,38 @@ class DataChecker(object):
         """
 
         # TODO: Add check if model-ids are ok
-
+        d_line, d_col = self.dsd._tx_parser \
+                            .pos_to_linecol(operation._tx_position)
+        url_map = operation.url_map
         url_fields = []
         for m in re.finditer(r"\{(((?!\{|\}).)*)\}", url_map):
             url_fields.append(m.group(1))
 
-        for ref in field_refs:
+        for ref_obj in operation.ref_models:
+            ref = ref_obj.url_placement
             if ref in url_fields:
                 url_fields.remove(ref)
             else:
-                message = "Field '{0}' in operation '{1}' cannot " \
-                          "be found in url-map setting." \
-                          .format(ref, operation)
-                raise AkashicError(message)
+                line, col = self.dsd._tx_parser \
+                                .pos_to_linecol(ref_obj._tx_position)
+                message = "Url placement '{0}' in operation " \
+                          "cannot be found in url-map setting." \
+                          .format(ref)
+                raise AkashicError(message, 
+                                   line, 
+                                   col, 
+                                   ErrType.SEMANTIC)
         
         if len(url_fields) > 0:
             fields_left_string = ", ".join(url_fields)
-            message = "Following fields '{0}' inside " \
-                      "of url-map setting '{1}' in operation '{2}' " \
+            message = "Following url palcements '{0}' inside " \
+                      "of url-map setting '{1}' in operation " \
                       "are not referenced in settings." \
-                      .format(fields_left_string, url_map, operation)
-            raise AkashicError(message)
+                      .format(fields_left_string, url_map)
+            raise AkashicError(message, 
+                               d_line, 
+                               d_col, 
+                               ErrType.SEMANTIC)
 
 
 
@@ -117,119 +121,60 @@ class DataChecker(object):
         if self.dsd is not None:
             if hasattr(self.dsd.apis, 'create'):
                 create = self.dsd.apis.create
-                if create is not None:
-                    if create.ref_models is not None:
-                        field_refs = []
-                        for ref in create.ref_models:
-                            field_refs.append(ref.url_placement)
-
-                        try:
-                            self.check_url_mapping("create", 
-                                                   create.url_map, 
-                                                   field_refs)
-                        except AkashicError as e:
-                            line, col = self.dsd._tx_parser \
-                                        .pos_to_linecol(create._tx_position)
-                            raise AkashicError(e.message, 
-                                               line, 
-                                               col, 
-                                               ErrType.SEMANTIC)
+                if hasattr(create, "ref_models"):
+                    self.check_url_mapping(create)
             
-            # Check read_one api, if available
-            if hasattr(self.dsd.apis, 'read_one'):
-                read_one = self.dsd.apis.read_one
-                if read_one is not None:
-                    if read_one.ref_models is not None:
-                        field_refs = []
-                        for ref in read_one.ref_models:
-                            field_refs.append(ref.url_placement)
-                        
-                        try:
-                            self.check_url_mapping("read-one", 
-                                                   read_one.url_map, 
-                                                   field_refs)
-                        except AkashicError as e:
-                            line, col = self.dsd._tx_parser \
-                                        .pos_to_linecol(read_one._tx_position)
-                            raise AkashicError(e.message, 
-                                               line, 
-                                               col, 
-                                               ErrType.SEMANTIC)
+            # # Check read_one api, if available
+            # if hasattr(self.dsd.apis, 'read_one'):
+            #     read_one = self.dsd.apis.read_one
+            #     if hasattr(read_one, "ref_models"):
+            #        self.check_url_mapping(read_one)
 
-            # Check read_multiple api, if available
-            if hasattr(self.dsd.apis, 'read_multiple'):
-                read_mul = self.dsd.apis.read_multiple
-                if read_mul is not None:
-                    if read_mul.ref_models is not None:
-                        field_refs = []
-                        for ref in read_mul.ref_models:
-                            field_refs.append(ref.url_placement)
-                        field_refs.append(
-                            read_mul.page_index_url_placement)
-                        field_refs.append(
-                            read_mul.page_row_count_url_placement)
-                        field_refs.append(
-                            read_mul.search_fields_url_placement)
-                        field_refs.append(
-                            read_mul.search_strings_url_placement)
-                        field_refs.append(
-                            read_mul.sort_field_url_placement)
-                        field_refs.append(
-                            read_mul.sort_order_url_placement)
+            # # Check read_multiple api, if available
+            # if hasattr(self.dsd.apis, 'read_multiple'):
+            #     read_mul = self.dsd.apis.read_multiple
+            #     if read_mul is not None:
+            #         if read_mul.ref_models is not None:
+            #             field_refs = []
+            #             for ref in read_mul.ref_models:
+            #                 field_refs.append(ref.url_placement)
+            #             field_refs.append(
+            #                 read_mul.page_index_url_placement)
+            #             field_refs.append(
+            #                 read_mul.page_row_count_url_placement)
+            #             field_refs.append(
+            #                 read_mul.search_fields_url_placement)
+            #             field_refs.append(
+            #                 read_mul.search_strings_url_placement)
+            #             field_refs.append(
+            #                 read_mul.sort_field_url_placement)
+            #             field_refs.append(
+            #                 read_mul.sort_order_url_placement)
                         
-                        try:
-                            self.check_url_mapping("read-multiple", 
-                                                   read_mul.url_map, 
-                                                   field_refs)
-                        except AkashicError as e:
-                            line, col = self.dsd._tx_parser \
-                                        .pos_to_linecol(read_mul._tx_position)
-                            raise AkashicError(e.message, 
-                                               line, 
-                                               col, 
-                                               ErrType.SEMANTIC)
+            #             try:
+            #                 self.check_url_mapping("read-multiple", 
+            #                                        read_mul.url_map, 
+            #                                        field_refs)
+            #             except AkashicError as e:
+            #                 line, col = self.dsd._tx_parser \
+            #                             .pos_to_linecol(
+            #                                 read_mul.ref_models._tx_position)
+            #                 raise AkashicError(e.message, 
+            #                                    line, 
+            #                                    col, 
+            #                                    ErrType.SEMANTIC)
                         
             # Check update api, if available
             if hasattr(self.dsd.apis, 'update'):
                 update = self.dsd.apis.update
-                if update is not None:
-                    if update.ref_models is not None:
-                        field_refs = []
-                        for ref in update.ref_models:
-                            field_refs.append(ref.url_placement)
-                        
-                        try:
-                            self.check_url_mapping("update", 
-                                                   update.url_map, 
-                                                   field_refs)
-                        except AkashicError as e:
-                            line, col = self.dsd._tx_parser \
-                                        .pos_to_linecol(update._tx_position)
-                            raise AkashicError(e.message, 
-                                               line, 
-                                               col, 
-                                               ErrType.SEMANTIC)
+                if hasattr(update, "ref_models"):
+                    self.check_url_mapping(update)
 
             # Check delete api, if available
             if hasattr(self.dsd.apis, 'delete'):
                 delete = self.dsd.apis.delete
-                if delete is not None:
-                    if delete.ref_models is not None:
-                        field_refs = []
-                        for ref in delete.ref_models:
-                            field_refs.append(ref.url_placement)
-                        
-                        try:
-                            self.check_url_mapping("delete", 
-                                                   delete.url_map, 
-                                                   field_refs)
-                        except AkashicError as e:
-                            line, col = self.dsd._tx_parser \
-                                        .pos_to_linecol(delete._tx_position)
-                            raise AkashicError(e.message, 
-                                               line, 
-                                               col, 
-                                               ErrType.SEMANTIC)
+                if hasattr(delete, "ref_models"):
+                    self.check_url_mapping(delete)
 
 
 
