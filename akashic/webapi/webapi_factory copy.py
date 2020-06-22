@@ -243,32 +243,46 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
     def create_rule():
         akashic_rule = request.json
 
-        # Check if rule with same name already exists
-        foundRule = mongo.db.rules.find_one(
-                        {'rule-name': {'$eq': akashic_rule['rule-name']}})
-        if foundRule != None:
-            message = "Rule with given rule-name already exists."
-            return response(None, message, 0, 0, RespType.ERROR)
+        is_run_once_rule = False
+        # Check if rule is one time rule,
+        # if yes, skip DB checks and adding to DB
+        # Check if rule with given name already exists
+        if mongo.db.rules.count_documents(
+        {'rule-name': { '$eq': akashic_rule['rule-name']}}) > 0:
+            foundRule = mongo.db.rules.find_one(
+                {'rule-name': {'$eq': akashic_rule['rule-name']}})
 
-         # Transpile the rule
+            if foundRule["hash"] == \
+            hashlib.sha256(dumps(akashic_rule, indent=True) \
+            .encode('utf-8')).hexdigest() and \
+            ("run-once" in akashic_rule) and \
+            akashic_rule["run-once"]:
+                is_run_once_rule = True
+            else:
+                message = "Rule with given rule-name already exists."
+                return response(None, message, 0, 0, RespType.ERROR)
+
+        # Add rule to env_provider
         transpiler = Transpiler(env_provider)
         try:
             transpiler.load(dumps(akashic_rule, indent=True))
+            env_provider.insert_rule(transpiler.rule.rule_name, 
+                                     transpiler.tranpiled_rule)
         except AkashicError as e:
             return response(
                 akashic_rule, e.message, e.line, e.col, RespType.ERROR)
 
-        # Create RULE entry for mongodb
-        rule_entry = {}
-        rule_entry['rule-name'] = akashic_rule['rule-name']
-        rule_entry['active'] = False
-        rule_entry['rule'] = akashic_rule
-        rule_entry['clips-code'] = transpiler.tranpiled_rule
-        rule_entry['hash'] = hashlib.sha256(dumps(akashic_rule, indent=True) \
-                            .encode('utf-8')).hexdigest()
+        rule_entry = None
+        if not is_run_once_rule:
+            rule_entry = {}
+            rule_entry['rule-name'] = akashic_rule['rule-name']
+            rule_entry['active'] = True
+            rule_entry['rule'] = akashic_rule
+            rule_entry['clips-code'] = transpiler.tranpiled_rule
+            rule_entry['hash'] = hashlib.sha256(dumps(akashic_rule, indent=True) \
+                                .encode('utf-8')).hexdigest()
 
-        # Insert new db entry
-        mongo.db.rules.insert_one(rule_entry)
+            mongo.db.rules.insert_one(rule_entry)
         
         message = "New rule with rule-name '{0}' is successfully created." \
                   .format(akashic_rule['rule-name'])
@@ -288,9 +302,9 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
             message = "Rule with given rule-name does not exists."
             return response(None, message, 0, 0, RespType.ERROR)
 
-        # Remove old rule from from env_provider
+        # Remove old rule from env_provider
         try:
-            env_provider.remove_rule(rule_name)
+            env_provider.remove_rule(old_rule_name)
         except AkashicError as e:
             if "run-once" in foundRule["rule"] and \
             not foundRule["rule"]["run-once"]:
@@ -299,24 +313,40 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
             else:
                 pass
 
-        # Transpile the rule
+        # Insert updated rule into env_provider
+        # Add rule to env_provider
         transpiler = Transpiler(env_provider)
         try:
             transpiler.load(dumps(akashic_rule, indent=True))
+            env_provider.insert_rule(transpiler.rule.rule_name, 
+                                    transpiler.tranpiled_rule)
         except AkashicError as e:
+            # Reinsert deleted RULE:
+            transpiler = Transpiler(env_provider)
+            try:
+                transpiler.load(dumps(foundRule["rule"], indent=True))
+                env_provider.insert_rule(transpiler.rule.rule_name, 
+                                        transpiler.tranpiled_rule)
+            except AkashicError as e:
+                return response(
+                    akashic_rule, e.message, e.line, e.col, RespType.ERROR)
             return response(
                 akashic_rule, e.message, e.line, e.col, RespType.ERROR)
 
-        # Create RULE entry for mongodb
+        # Create DSD db-entry
         rule_entry = {}
         rule_entry['rule-name'] = akashic_rule['rule-name']
-        rule_entry['active'] = False
+        if "run-once" in foundRule["rule"] and \
+        foundRule["rule"]["run-once"]:
+            rule_entry['active'] = True
+        else:
+            rule_entry['active'] = foundRule['active']
         rule_entry['rule'] = akashic_rule
         rule_entry['clips-code'] = transpiler.tranpiled_rule
         rule_entry['hash'] = hashlib.sha256(dumps(akashic_rule, indent=True) \
                             .encode('utf-8')).hexdigest()
 
-        # Replace old db entry with new one
+        # Replace old db-entry
         mongo.db.rules.replace_one(
             {"rule-name": old_rule_name}, rule_entry)
 
@@ -335,9 +365,12 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
             return response(None, message, 0, 0, RespType.ERROR) 
 
         # Insert updated rule into env_provider
+        # Add rule to env_provider
+        transpiler = Transpiler(env_provider)
         try:
-            env_provider.insert_rule(foundRule["rule"]["rule-name"], 
-                                     foundRule["clips-code"])
+            transpiler.load(dumps(foundRule["rule"], indent=True))
+            env_provider.insert_rule(transpiler.rule.rule_name, 
+                                    transpiler.tranpiled_rule)
         except AkashicError as e:
             return response(
                 None, e.message, e.line, e.col, RespType.ERROR)
@@ -365,9 +398,13 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
         try:
             env_provider.remove_rule(rule_name)
         except AkashicError as e:
-            return response(
-                None, e.message, e.line, e.col, RespType.ERROR)
-           
+            if "run-once" in foundRule["rule"] and \
+            not foundRule["rule"]["run-once"]:
+                return response(
+                    None, e.message, e.line, e.col, RespType.ERROR)
+            else:
+                pass
+
         result = mongo.db.rules.find_one_and_update(
                     {"rule-name": rule_name}, 
                     {"$set": {"active": False}},
@@ -409,6 +446,23 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
 #### ENGINE FUNCS SECTION
     @app.route('/run', methods=['GET'])
     def run():
+        # Re-insert run-once RULES from database
+        cursors = mongo.db.rules.find({})
+        rules = list(cursors)
+
+        for akashic_rule in rules:
+            if akashic_rule["active"] and \
+            ("run-once" in akashic_rule["rule"]) and \
+            akashic_rule["rule"]["run-once"]:
+                # Add rule to env_provider
+                transpiler = Transpiler(env_provider)
+                try:
+                    transpiler.load(dumps(akashic_rule["rule"], indent=True))
+                    env_provider.insert_rule(transpiler.rule.rule_name, 
+                                            transpiler.tranpiled_rule)
+                except AkashicError as e:
+                    pass
+
         try:
             env_provider.run()
         except AkashicError as e:
@@ -449,6 +503,7 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
         message = "Engine has finished loading templates " \
                   "from database."
         return response(None, message, 0, 0, RespType.SUCCESS)
+
 
 
 
