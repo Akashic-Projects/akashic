@@ -143,6 +143,15 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
         try:
             env_provider.remove_data_provider(old_model_id)
         except AkashicError as e:
+            # First reinsert deleted DSD
+            data_provider = DataProvider(env_provider)
+            try:
+                data_provider.load(dumps(foundDSD["dsd"], indent=True))
+                data_provider.setup()
+                env_provider.insert_data_provider(data_provider)
+            except AkashicError as e:
+                return response(
+                    foundDSD["dsd"], e.message, e.line, e.col, RespType.ERROR)
             return response(
                 None, e.message, e.line, e.col, RespType.ERROR)
 
@@ -185,10 +194,27 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
 
     @app.route('/dsds/<string:model_id>', methods=['DELETE'])
     def remove_dsd(model_id):
+        # Check if DSD with given model-id exists
+        foundDSD = mongo.db.dsds.find_one(
+            {'model-id': {'$eq': old_model_id}})
+
+        if not foundDSD:
+            message = "DSD with given model-id does not exists."
+            return response(None, message, 0, 0, RespType.ERROR)
+
         # Remove data provider from env_provider
         try:
             env_provider.remove_data_provider(model_id)
         except AkashicError as e:
+            # First reinsert deleted DSD
+            data_provider = DataProvider(env_provider)
+            try:
+                data_provider.load(dumps(foundDSD["dsd"], indent=True))
+                data_provider.setup()
+                env_provider.insert_data_provider(data_provider)
+            except AkashicError as e:
+                return response(
+                    foundDSD["dsd"], e.message, e.line, e.col, RespType.ERROR)
             return response(
                 None, e.message, e.line, e.col, RespType.ERROR)
 
@@ -419,7 +445,24 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
 
 #### ENGINE FUNCS SECTION
     @app.route('/run', methods=['GET'])
-    def run():        
+    def run():
+        # Re-insert run-once RULES from database
+        cursors = mongo.db.rules.find({})
+        rules = list(cursors)
+
+        for akashic_rule in rules:
+            if akashic_rule["active"] and \
+            ("run-once" in akashic_rule["rule"]) and \
+            akashic_rule["rule"]["run-once"]:
+                # Add rule to env_provider
+                transpiler = Transpiler(env_provider)
+                try:
+                    transpiler.load(dumps(akashic_rule["rule"], indent=True))
+                    env_provider.insert_rule(transpiler.rule.rule_name, 
+                                            transpiler.tranpiled_rule)
+                except AkashicError as e:
+                    pass
+
         try:
             env_provider.run()
         except AkashicError as e:
@@ -585,6 +628,21 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
                 
         message = "Assistance is done. You can view get possible values for ???* values"
         return response(resp, message, 0, 0, RespType.SUCCESS)
+
+
+
+    @app.route('/reload-env', methods=['POST'])
+    def reload_env():
+        global env_provider
+        env_provider = EnvProvider(custom_bridges)
+
+        global all_templates_loaded
+        global all_rules_loaded
+        all_templates_loaded = False
+        all_rules_loaded = False
+
+        message = "Enviroment has beed reloaded."
+        return response(None, message, 0, 0, RespType.SUCCESS)
 
 
 

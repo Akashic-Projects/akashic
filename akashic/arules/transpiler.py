@@ -566,7 +566,6 @@ class Transpiler(object):
                         .format(func.func_name)
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
             
-        self.check_func_num_of_args(func, 0)
         return self.generic_function(func)
 
 
@@ -1463,6 +1462,24 @@ class Transpiler(object):
 
 
 
+    def get_primary_key_fields(self, json_object, data_provider):
+        data_fields = []
+        for dp_field in data_provider.dsd.fields:
+            if dp_field.use_as == '\"primary-key\"':
+                json_field = self.get_json_field(dp_field.field_name,
+                                                 json_object.field_list)
+                if json_field != None:
+                    data_fields.append((json_field, dp_field))
+                else:
+                    line, col = get_model(json_object)._tx_parser \
+                                .pos_to_linecol(json_object._tx_position)
+                    message = "Primary key field '{0}' is omitted " \
+                              "from the operation request." \
+                              .format(dp_field.field_name)
+                    raise AkashicError(message, line, col, ErrType.SEMANTIC)
+        return data_fields
+
+
 
 
     def get_data_fields(self, json_object, data_provider):
@@ -1678,12 +1695,16 @@ class Transpiler(object):
                                  line, 
                                  col)
 
+        # DO NOT GET REFS IF NOT REFLECT
         # Separate data and do primary field checks
         data_fields = self.get_data_fields(rhs_operation_obj.json_object,
                                            data_provider)
-        ref_fields = self.get_ref_fields(rhs_operation_obj.json_object, 
-                                         getattr(data_provider.dsd.apis, 
-                                                 api_operation_name))
+        
+        ref_fields = []
+        if rhs_operation_obj.reflect:
+            ref_fields = self.get_ref_fields(rhs_operation_obj.json_object,
+                                            getattr(data_provider.dsd.apis,
+                                                    api_operation_name))
         
         # Do forther analysis and checks on data,
         # and generate prep structure for compilation
@@ -1793,9 +1814,13 @@ class Transpiler(object):
                                  col)
 
         # Take only refs
-        ref_fields = self.get_ref_fields(delete_s.json_object, 
-                                         getattr(data_provider.dsd.apis, 
-                                                 'delete'))
+        if delete_s.reflect:
+            ref_fields = self.get_ref_fields(delete_s.json_object, 
+                                            getattr(data_provider.dsd.apis, 
+                                                    'delete'))
+        else:
+            ref_fields = self.get_primary_key_fields(delete_s.json_object,
+                                                     data_provider)
         
         # Do forther analysis and checks on data,
         # and generate prep structure for compilation

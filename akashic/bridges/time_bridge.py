@@ -43,19 +43,19 @@ class TimeBridge(object):
 
 
 
-    def str_to_time(self, time_str, time_format):
+    def str_to_time(self, time_str, type1, time_format, type2):
         date_time_obj = datetime.datetime.strptime(time_str, time_format)
         return int(date_time_obj.timestamp())
 
 
 
-    def time_to_str(self, time, time_format):
+    def time_to_str(self, time, type1, time_format, type2):
         date_time_obj = datetime.datetime.fromtimestamp(int(time))
         return date_time_obj.strftime(time_format)
 
 
 
-    def sub_times(self, time1, time2):
+    def sub_times(self, time1, type1, time2, type2):
         date_time_obj1 = datetime.datetime.fromtimestamp(int(time1))
         date_time_obj2 = datetime.datetime.fromtimestamp(int(time2))
 
