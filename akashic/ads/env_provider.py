@@ -1,6 +1,7 @@
 
 import clips
 from clips.agenda import Agenda
+from clips.error import CLIPSError
 
 from akashic.ads.data_provider import DataProvider
 from akashic.arules.transpiler import Transpiler
@@ -315,11 +316,12 @@ class EnvProvider(object):
         try:
             self.check_rule_name(rule_name)
             self.env.build(rule)
-        except:
+        except CLIPSError as ce:
+            print(ce)
             message = "Error occured while adding rule '{0}', " \
                       "Rule with same name may be already present." \
                       .format(rule_name)
-            raise AkashicError(message, 0, 0, ErrType.SYSTEM)
+            raise AkashicError(ce.message, 0, 0, ErrType.SYSTEM)
 
 
 

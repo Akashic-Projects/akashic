@@ -113,3 +113,16 @@ class DataLocatorTable(object):
                 return self.table[template_name].fields[field_name]
         
         return None
+
+
+    def __str__(self):
+        val_array = []
+        for template_name, template in self.table.items():
+            val_array.append("Template name: " + template_name)
+            for field_name, field in template.fields.items():
+                val_array.append("\tField name: " + field_name)
+                val_array.append("\t\t Var name: " + field.var_name)
+                val_array.append("\t\t dp_field name: " + 
+                                    field.dp_field.field_name)
+        
+        return "\n".join(val_array)

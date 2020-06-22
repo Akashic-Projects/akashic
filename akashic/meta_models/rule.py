@@ -5,7 +5,7 @@ Rule:
     '{{'
         ((RULE_NAME_KW        ':' '"'  rule_name=ID  '"'            )
         (RULE_SALIENCE_KW     ':'      (salience=SYSTEM_SALIENCE_KW | 
-                                        salience=INT)               )?
+                                        salience=INT)               )
         (RUN_ONCE_KW          ':'      run_once=BOOL                )?
         (lhs=LHS                                                    )
         (rhs=RHS                                                    ))#[',']
@@ -175,6 +175,7 @@ Factor:
     (value=INT) |
     (value=BOOL) |
     (value=STRING_C) |
+    (value=LHSValueLocator) |
     (value=VARIABLE) |
     (value=DataLocator) |
     (LPAR value=LogicExpression RPAR) |
@@ -187,9 +188,11 @@ RPAR:   ')' ;
 STRING_C: val=/(\')([^\']*)(\')/ ; //'
 VARIABLE: var_name=/\?[^\d\W]\w*\\b/;
 
-DataLocator: template_conn_expr=TEMPLATE_CONNECTION_EXPRESSION ('.' field=ID)?  (is_query=/\?\?*\?/)? ;
+DataLocator: template_conn_expr=TEMPLATE_CONNECTION_EXPRESSION ('.' field=ID)  (is_query=/\?\?*\?/)? ;
 TEMPLATE_CONNECTION_EXPRESSION: templates=ID ('~' templates=ID)* ;
 
+LHSValueLocator:
+    var_name=/\?[^\d\W]\w*\\b/ '.' field_name=ID ;
 
 
 RHS:
@@ -269,10 +272,10 @@ FieldEntry:
     name=STRING ':' value=FieldValue
 ;
 FieldValue:
-     ValueLocator | RHS_VARIABLE | STRICTFLOAT | INT | BOOL | STRING 
+    RHSValueLocator | RHS_VARIABLE | STRICTFLOAT | INT | BOOL | STRING 
 ;
 
-ValueLocator:
+RHSValueLocator:
     '"' var_name=/\?[^\d\W]\w*\\b/ '.' field_name=ID  '"';
 
 RHS_VARIABLE: '"' var_name=/\?[^\d\W]\w*\\b/ '"';

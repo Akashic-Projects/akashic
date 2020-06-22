@@ -83,6 +83,7 @@ class Transpiler(object):
             'SqrExpr':          self.sqr_expr,
             'Factor':           self.factor,
             'DataLocator':      self.data_locator,
+            'LHSValueLocator':  self.lhs_value_locator,
             'VARIABLE':         self.variable,
 
             #### RHS processors
@@ -332,6 +333,9 @@ class Transpiler(object):
                      "\n\t=>\n" + \
                      "\n".join(rhs_commands) + "\n)"
 
+        print("\n\nTRANSPILED RULE: ")
+        print(clips_rule)
+        print("\n\n")
         self.tranpiled_rule = clips_rule
 
 
@@ -498,6 +502,17 @@ class Transpiler(object):
                 "model_id": singular.template
             }
 
+        print("\n\nData locator table:")
+        print(str( self.data_locator_table))
+        print("\n")
+
+        print("\n\nData locator vars:")
+        print(str( self.data_locator_vars))
+        print("\n")
+
+        print("\n\nSINGULAR OPERAND: ")
+        print(singular.operand["content"] + "\n\n")
+
         if singular.operand["construct_type"] != ConstructType.NORMAL_EXP:
             line, col = singular.operand["_tx_position"]
             message = "Special Singular Operation argument must be a " \
@@ -511,6 +526,9 @@ class Transpiler(object):
             singular.operand["content"],
             singular
         )
+
+        print("\n\nSINGULAR OPERAND AFTER BUILD: ")
+        print(clips_command + "\n\n")
 
         # Extract used template name
         template = self.clips_statement_builder.get_template(
@@ -1242,6 +1260,8 @@ class Transpiler(object):
         clips_command = "(assert (__AssistanceOn (id \"something\")) )"
         self.assistance_clips_command_list.append(clips_command)
 
+        print("COMMS:")
+        print(self.assistance_clips_command_list)
         # Use direct call to bridge - for debugging
         # self.env_provider.bridges["DataBridge"].process_query(*arg_array)
 
@@ -1262,6 +1282,13 @@ class Transpiler(object):
         # Search for existing entry in data locator table
         field = self.data_locator_table.lookup(template_name, field_name)
         if field and field.var_name:
+            # Build data query if needed
+            if hasattr(data_locator, 'is_query') and \
+            data_locator.is_query != None and \
+            data_locator.is_query != "":
+                print("THEREE IS ????*")
+                self.build_query(template_name, field_name, data_locator)
+
             return {
                 "content": field.var_name, 
                 "content_type": field.dp_field.type,
@@ -1309,6 +1336,7 @@ class Transpiler(object):
             if hasattr(data_locator, 'is_query') and \
             data_locator.is_query != None and \
             data_locator.is_query != "":
+                print("THEREE IS ????*")
                 self.build_query(template_name, field_name, data_locator)
             
             return {
@@ -1318,6 +1346,80 @@ class Transpiler(object):
                 "_tx_position": (line, col)
             }
 
+
+
+    def check_fact_address_def(self, var_name, field_name, line, col):
+        var_entry = self.variable_table.lookup(var_name)
+        
+        if not var_entry:
+            message = "Variable '{0}' is not defined." \
+                      .format(var_name)
+            raise AkashicError(message, line, col, ErrType.SEMANTIC)
+        
+        if var_entry.var_type != VarType.FACT_ADDRESS:
+            message = "Variable '{0}' is not fact address." \
+                      .format(var_name)
+            raise AkashicError(message, line, col, ErrType.SEMANTIC)
+
+        if not "model_id" in var_entry.value:
+            message = "Variable '{0}' does not point to any fact." \
+                      .format(var_name)
+            raise AkashicError(message, line, col, ErrType.SEMANTIC)
+
+        # Extract information 
+        fact_address_model_id = var_entry.value["model_id"]
+        fact_address_field_name = field_name
+        
+        # Check semantics of fact_address model name and 
+        # fact_address field name
+        found_data_provider = self.get_data_provider(fact_address_model_id,
+                                                     line, 
+                                                     col)
+        if found_data_provider == None:
+            message = "There is no data provider defined for " \
+                      "fact address template '{0}'." \
+                      .format(fact_address_model_id)
+            raise AkashicError(message, line, col, ErrType.SEMANTIC)
+
+        found_dp_field = self.get_dp_field(fact_address_field_name,
+                                           found_data_provider)
+        if found_dp_field == None:
+            message = "Fact address field '{0}' is not defined in " \
+                      "data provider's template '{1}'" \
+                      .format(fact_address_field_name,
+                              fact_address_model_id)
+            raise AkashicError(message, line, col, ErrType.SEMANTIC)
+
+
+
+    def lhs_value_locator(self, lhs_vl):
+        line, col = get_model(lhs_vl)._tx_parser \
+                    .pos_to_linecol(lhs_vl._tx_position)
+
+        self.check_fact_address_def(
+            lhs_vl.var_name, 
+            lhs_vl.field_name, 
+            line, 
+            col
+        )
+
+        found_field_type = self.get_value_locator_type (
+            lhs_vl.var_name, 
+            lhs_vl.field_name, 
+            line, 
+            col
+        )
+
+        clips_content = '(fact-slot-value ' + \
+                        lhs_vl.var_name + ' ' + \
+                        lhs_vl.field_name + ')'
+
+        return {
+            "content": clips_content,
+            "content_type": found_field_type,
+            "construct_type": ConstructType.VARIABLE,
+            "_tx_position": (line, col)
+        }
 
 
 # ----------------------------------------------------------------
@@ -1364,6 +1466,12 @@ class Transpiler(object):
 
     def get_value_locator_type(self, var_name, field_name, err_line, err_col):
         var_entry = self.variable_table.lookup(var_name)
+        if not "model_id" in var_entry.value:
+            message = "Variable '{0}' does not reference any model." \
+                      "Therefore it cannot be used as data locator." \
+                      .format(var_name)
+            raise AkashicError(message, err_line, err_col, ErrType.SEMANTIC)
+
         data_provider = self.get_data_provider(var_entry.value["model_id"], 
                                                err_line, 
                                                err_col)
@@ -1378,54 +1486,27 @@ class Transpiler(object):
 
 
 
-    def check_fact_address_def(self, json_field, dp_field):
+    def check_fact_address_def_rhs(self, json_field, dp_field):
         line, col = get_model(json_field.value)._tx_parser \
                     .pos_to_linecol(json_field.value._tx_position)
 
-        var_entry = self.variable_table.lookup(json_field.value.var_name)
-
-        if not var_entry:
-            message = "Variable '{0}' is not defined." \
-                      .format(json_field.value.var_name)
-            raise AkashicError(message, line, col, ErrType.SEMANTIC)
-        
-        if var_entry.var_type != VarType.FACT_ADDRESS:
-            message = "Variable '{0}' is not fact address." \
-                      .format(json_field.value.var_name)
-            raise AkashicError(message, line, col, ErrType.SEMANTIC)
-
-        if not "model_id" in var_entry.value:
-            message = "Variable '{0}' does not point to any fact." \
-                      .format(json_field.value.var_name)
-            raise AkashicError(message, line, col, ErrType.SEMANTIC)
-
-        # Extract information 
-        fact_address_model_id = var_entry.value["model_id"]
-        fact_address_field_name = json_field.value.field_name
-        
-        # Check semantics of fact_address model name and 
-        # fact_address field name
-        found_data_provider = self.get_data_provider(fact_address_model_id,
-                                                     line, 
-                                                     col)
-        if found_data_provider == None:
-            message = "There is no data provider defined for " \
-                      "fact address template '{0}'." \
-                      .format(fact_address_template_name)
-            raise AkashicError(message, line, col, ErrType.SEMANTIC)
-
-        found_dp_field = self.get_dp_field(fact_address_field_name,
-                                           found_data_provider)
-        if found_dp_field == None:
-            message = "Fact address field '{0}' is not defined in " \
-                      "data provider's template '{1}'" \
-                      .format(fact_address_field_name,
-                              fact_address_template_name)
-            raise AkashicError(message, line, col, ErrType.SEMANTIC)
+        # Check fact address definition aka. data locator
+        self.check_fact_address_def(
+            json_field.value.var_name,
+            json_field.value.field_name,
+            line,
+            col
+        )
 
         # Check if type of fact accress field is 
         # same as field in json object
-        if dp_field != None and found_dp_field.type != dp_field.type:
+        found_dp_field_type = self.get_value_locator_type (
+            json_field.value.var_name,
+            json_field.value.field_name,
+            line,
+            col
+        )
+        if dp_field != None and found_dp_field_type != dp_field.type:
             message = "Type missmatch in field '{0}'. " \
                       "Expected type '{1}'. " \
                       "Given type '{2}'" \
@@ -1539,8 +1620,8 @@ class Transpiler(object):
             json_field_class = None
 
             if given_type == None:
-                if json_field.value.__class__.__name__ == "ValueLocator":
-                    self.check_fact_address_def(json_field, dp_field)
+                if json_field.value.__class__.__name__ == "RHSValueLocator":
+                    self.check_fact_address_def_rhs(json_field, dp_field)
 
                     json_field_type = self.get_value_locator_type(
                         json_field.value.var_name,
@@ -1548,7 +1629,7 @@ class Transpiler(object):
                         err_line,
                         err_col
                     )
-                    json_field_class = "ValueLocator"
+                    json_field_class = "RHSValueLocator"
 
                 elif json_field.value.__class__.__name__ == "RHS_VARIABLE":
                     self.check_binding_variable(json_field.value, dp_field)
@@ -1590,7 +1671,7 @@ class Transpiler(object):
         json_field_class, \
         dp_field in fields:
 
-            if json_field_class == "ValueLocator":
+            if json_field_class == "RHSValueLocator":
                 arg_list.append('"' + json_field.name + '"')
                 arg_list.append('(str-cat (fact-slot-value ' + 
                                 json_field.value.var_name + ' ' + 

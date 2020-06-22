@@ -80,15 +80,13 @@ class ClipsStatementBuilder(object):
                       "but {0} found.".format(diff_temp_count)
             raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
-        clips_statement_list = []
-
+        last_tempalte_name = "Error$5"
         for template_name, template in data_locator_table.table.items():
-            clips_statement = "(" + template_name + " "
-
+            last_tempalte_name = template_name
             clips_field_list = []
 
             field_list = [ (k, v) for k, v in template.fields.items() ]
-            for i in range(0, len(field_list) - 1):
+            for i in range(0, len(field_list) -1):
                 field_name = field_list[i][0]
                 field = field_list[i][1]
                 if field.var_name in used_vars:
@@ -104,10 +102,13 @@ class ClipsStatementBuilder(object):
                                         field.var_name + "&:" + \
                                         expression  + ")")
 
-            clips_statement += " ".join(clips_field_list) + ")"
-            clips_statement_list.append(clips_statement)
+            if len(clips_field_list) > 0:
+                clips_statement = "(" + template_name + " " + \
+                                  " ".join(clips_field_list) + ")"
+                return clips_statement
+                clips_statement_list.append(clips_statement)
         
-        return clips_statement_list[0]
+        return "( " + last_tempalte_name + " )"
 
 
 
