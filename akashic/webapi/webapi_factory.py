@@ -622,5 +622,92 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
 
 
 
-    #### RETURN APP
+    #### DIRECT OPERATIONS SECTION #####
+
+    @app.route('/direct/dsds', methods=['POST'])
+    def create_dsd_direct():
+        akashic_dsd = request.json
+        data_provider = DataProvider(env_provider)
+        try:
+            data_provider.load(dumps(akashic_dsd, indent=True))
+            data_provider.setup()
+            env_provider.insert_data_provider(data_provider)
+        except AkashicError as e:
+            return response(
+                akashic_dsd, e.message, e.line, e.col, RespType.ERROR)
+
+        message = "New DSD with model-id '{0}' " \
+                  "is successfully created." \
+                  .format(akashic_dsd['model-id'])
+        return response(akashic_dsd, message, 0, 0, RespType.SUCCESS)
+
+
+
+    @app.route('/direct/dsds/<string:model_id>', methods=['DELETE'])
+    def remove_dsd_direct(model_id):
+        akashic_dsd = request.json
+        try:
+            env_provider.remove_data_provider(model_id)
+        except AkashicError as e:
+            return response(
+                None, e.message, e.line, e.col, RespType.ERROR)
+
+        message = "DSD with model-id '{0}' is successfully deleted." \
+                  .format(model_id)
+        return response(None, message, 0, 0, RespType.SUCCESS)
+
+###################################
+
+
+    @app.route('/direct/rules', methods=['POST'])
+    def create_rule_direct():
+        akashic_rule = request.json
+        transpiler = Transpiler(env_provider)
+        try:
+            transpiler.load(dumps(akashic_rule, indent=True))
+        except AkashicError as e:
+            return response(
+                akashic_rule, e.message, e.line, e.col, RespType.ERROR)
+        
+        message = "New rule with rule-name '{0}' is successfully created." \
+                  .format(akashic_rule['rule-name'])
+        return response(akashic_rule, message, 0, 0, RespType.SUCCESS)
+
+
+
+    @app.route('/direct/rules/<string:rule_name>', methods=['DELETE'])
+    def remove_rule_direct(rule_name):
+        try:
+            env_provider.remove_rule(rule_name)
+        except AkashicError as e:
+            return response(
+                akashic_rule, e.message, e.line, e.col, RespType.ERROR)
+
+        message = "Rule with rule-name '{0}' is successfully deleted." \
+                  .format(rule_name)
+        return response(None, message, 0, 0, RespType.SUCCESS)
+
+###################################
+
+
+    @app.route('/direct/run', methods=['GET'])
+    def run_direct():
+        # Run the rule engine
+        try:
+            env_provider.run()
+        except AkashicError as e:
+            return response(
+                None, e.message, e.line, e.col, RespType.ERROR)
+
+        # Gather return data array
+        return_data_array = []
+        for ret in env_provider.return_data:
+            return_data_array.append(loads(ret))
+                
+        message = "Engine has finished inference process."
+        return response(return_data_array, message, 0, 0, RespType.SUCCESS)
+
+
+
+    #### RETURN APP ####
     return app

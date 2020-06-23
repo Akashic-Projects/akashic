@@ -1593,7 +1593,7 @@ class Transpiler(object):
     def get_ref_fields(self, json_object, api_operation_obj):
         ref_fields = []
         for ref in api_operation_obj.ref_models:
-            json_field = self.get_json_field(ref.field_name,
+            json_field = self.get_json_field(ref.url_placement,
                                              json_object.field_list)
 
             if json_field == None:
@@ -1602,7 +1602,7 @@ class Transpiler(object):
                 message = "Foreign model reference field " \
                           "'{0}' is omitted from the " \
                           "operation request." \
-                          .format(ref.field_name)
+                          .format(ref.url_placement)
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
             line, col = get_model(json_field)._tx_parser \

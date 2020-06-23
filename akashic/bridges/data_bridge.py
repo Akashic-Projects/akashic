@@ -89,7 +89,7 @@ class DataBridge(object):
         l = len(arg_list)
         while i < l:
             for ref in dsd_api_object.ref_models:
-                if arg_list[i] == ref.field_name:
+                if arg_list[i] == ref.url_placement:
                     url_map_args[ref.url_placement] = arg_list[i + 1]
 
             i += 2
