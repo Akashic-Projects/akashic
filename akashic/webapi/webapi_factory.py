@@ -665,6 +665,8 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
         transpiler = Transpiler(env_provider)
         try:
             transpiler.load(dumps(akashic_rule, indent=True))
+            env_provider.insert_rule(akashic_rule["rule-name"],
+                                     transpiler.tranpiled_rule)
         except AkashicError as e:
             return response(
                 akashic_rule, e.message, e.line, e.col, RespType.ERROR)
