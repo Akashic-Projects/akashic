@@ -7,8 +7,6 @@ def build_wsgi_prod(username, password, mongo_host, db_name):
                  "appname=MongoDB%20Compass&ssl=false" \
                  .format(username, password, mongo_host, db_name)
 
-    print("MONGO_URL: " + mongo_uri)
-
     webapi = webapi_factory(mongo_uri)
     gunicorn_logger = logging.getLogger('gunicorn.error')
     webapi.logger.handlers = gunicorn_logger.handlers

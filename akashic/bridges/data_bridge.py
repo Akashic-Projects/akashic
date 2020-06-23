@@ -20,7 +20,9 @@ class DataBridge(object):
     functions called by CLIPS enviroment
     """
 
-    def __init__(self, data_providers, env_provider):
+    def __init__(self, data_providers, env_provider, debug=False):
+        self.debug = debug
+
         self.data_providers = data_providers
         self.env_provider = env_provider
 
@@ -99,10 +101,11 @@ class DataBridge(object):
 
 
     def print_args(self, args, header):
-        print("\n-------------------" + str(header) + " START")
-        for a in args:
-            print(a)
-        print("\n-------------------" + str(header) + " END")
+        if self.debug:
+            print("\n-------------------" + str(header) + " START")
+            for a in args:
+                print(a)
+            print("\n-------------------" + str(header) + " END")
 
 
 
@@ -237,9 +240,10 @@ class DataBridge(object):
                 args[DATA_START_POS:DATA_START_POS+data_len],
                 primary_key_field_name
             )
-        print("PRIM KEY NAME: " + primary_key_field_name)
-        print("PRIM KEY VALUE: " + str(primary_key_field_value))
-        print("ENDD")
+        if self.debug:
+            print("PRIM KEY NAME: " + primary_key_field_name)
+            print("PRIM KEY VALUE: " + str(primary_key_field_value))
+            print("ENDD")
         rhs = """{{ "?to_update<-": "[{0}.{1} == {2}]" }}""".format(
                 data_provider.dsd.model_id,
                 str(primary_key_field_name),
@@ -258,9 +262,9 @@ class DataBridge(object):
             rhs,
             lhs
         )
-        print("\nMODIFICATION FULE: " + tmp_update_rule)
-
-        print("\nMOD. RULE TRANSPILATION PRINT:")
+        if self.debug:
+            print("\nMODIFICATION FULE: " + tmp_update_rule)
+            print("\nMOD. RULE TRANSPILATION PRINT:")
         transpiler = Transpiler(self.env_provider)
 
         try:
@@ -282,20 +286,22 @@ class DataBridge(object):
                 data_provider.dsd.apis.update
             )
 
-            print("\nMAP: " + str(url_map_args))
+            
 
             response_obj = data_provider.update(data_json_construct, 
                                                 **url_map_args)
-
-            print("\nUPDATE RESPONSE:\n" + str(response_obj) + "\n\n")
+            if self.debug:
+                print("\nMAP: " + str(url_map_args))
+                print("\nUPDATE RESPONSE:\n" + str(response_obj) + "\n\n")
 
         # Print all facts
-        print("FACTS - print from bridge:")
-        for f in self.env_provider.env.facts():
-            print("---------")
-            print(f)
+        if self.debug:
+            print("FACTS - print from bridge:")
+            for f in self.env_provider.env.facts():
+                print("---------")
+                print(f)
 
-        print("****")
+            print("****")
         return 0
 
 
@@ -364,9 +370,9 @@ class DataBridge(object):
             rhs,
             lhs
         )
-        print("\nDELETION RULE: " + tmp_delete_rule)
-
-        print("\nDEL. RULE TRANSPILATION PRINT:")
+        if self.debug:
+            print("\nDELETION RULE: " + tmp_delete_rule)
+            print("\nDEL. RULE TRANSPILATION PRINT:")
         transpiler = Transpiler(self.env_provider)
         try:
             transpiler.load(tmp_delete_rule)
@@ -383,19 +389,22 @@ class DataBridge(object):
                 data_provider.dsd.apis.update
             )
 
-            print("\nMAP: " + str(url_map_args))
+            
 
             response_obj = data_provider.delete(**url_map_args)
 
-            print("\nDELETION RESPONSE:\n" + str(response_obj) + "\n\n")
+            if self.debug:
+                print("\nMAP: " + str(url_map_args))
+                print("\nDELETION RESPONSE:\n" + str(response_obj) + "\n\n")
 
         # Print all facts
-        print("FACTS - print from bridge:")
-        for f in self.env_provider.env.facts():
-            print("---------")
-            print(f)
+        if self.debug:
+            print("FACTS - print from bridge:")
+            for f in self.env_provider.env.facts():
+                print("---------")
+                print(f)
 
-        print("****")
+            print("****")
         return 0
 
 
@@ -426,9 +435,9 @@ class DataBridge(object):
             col_end
         )
 
-        print("\nQUERY RULE: " + tmp_update_rule)
-
-        print("\nQUERY RULE TRANSPILATION PRINT:")
+        if self.debug:
+            print("\nQUERY RULE: " + tmp_update_rule)
+            print("\nQUERY RULE TRANSPILATION PRINT:")
         transpiler = Transpiler(self.env_provider, True)
         transpiler.load(tmp_update_rule)
 

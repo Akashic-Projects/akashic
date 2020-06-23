@@ -27,7 +27,7 @@ class Transpiler(object):
     We use this class to transpile Akashic rule into the CLIPS rule.
     """
 
-    def __init__(self, env_provider, is_assistance_session=False):
+    def __init__(self, env_provider, is_assistance_session=False, debug=False):
         """ Transpiler constructor method
         
         Details
@@ -42,6 +42,8 @@ class Transpiler(object):
         6. Loads CLIPS Pattern Builder module.
         """
         
+        self.debug = debug
+
         self.env_provider = env_provider
         self.data_providers = env_provider.data_providers
         self.functions = env_provider.functions
@@ -333,9 +335,10 @@ class Transpiler(object):
                      "\n\t=>\n" + \
                      "\n".join(rhs_commands) + "\n)"
 
-        print("\n\nTRANSPILED RULE: ")
-        print(clips_rule)
-        print("\n\n")
+        if self.debug:
+            print("\n\nTRANSPILED RULE: ")
+            print(clips_rule)
+            print("\n\n")
         self.tranpiled_rule = clips_rule
 
 

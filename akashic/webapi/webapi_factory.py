@@ -101,9 +101,6 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
         # Get JSON data
         akashic_dsd = request.json
 
-        print("VIEW IT:")
-        print(dumps(akashic_dsd, indent=True))
-
         # Check if DSD with given model-id already exists
         if mongo.db.dsds.count_documents(
         {'model-id': { '$eq': akashic_dsd['model-id']}}) > 0:
@@ -495,7 +492,6 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
                     {"$set": {"active": True}}
                 )
             except AkashicError as e:
-                print(e.message)
                 return response(
                     None, e.message, e.line, e.col, RespType.ERROR)
 
@@ -551,17 +547,12 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
         for ret in env_provider.return_data:
             return_data_array.append(loads(ret))
 
-        print("ALL RETURNS AFTER ASSISTANCE")
-        print(str(return_data_array))
-        print("----------------------------")
-
         # Create the list of assistance query results
         # And the list of query rules to be removed 
         #from the engine 
         query_results = []
         rules_to_remove = set()
         for ret in return_data_array:
-            print("RET: " + str(ret))
             if ret["meta"]["tag"] == "query_return":
                 query_results.append(ret)
         
