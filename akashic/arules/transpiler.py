@@ -442,6 +442,8 @@ class Transpiler(object):
                                           ConstructType.FUNCTION_CALL ]:
             clips_commands = self.clips_statement_builder \
                             .build_regular_dl_patterns(self.data_locator_table)
+            print("DLT from bind: ")
+            print(str(self.data_locator_table))
             self.lhs_clips_command_list.extend(clips_commands)
             self.clear_after_binding_var()
 
@@ -538,6 +540,7 @@ class Transpiler(object):
 
         # Rotate defined variables for next special expression
         self.rotate_used_data_locator_vars()
+        self.clear_after_binding_var()
         self.data_locator_vars = []
 
         # Return CLIPS command
@@ -572,6 +575,11 @@ class Transpiler(object):
         self.lhs_clips_command_list.append("(test " + \
                                            test.operand["content"] + \
                                            ")")
+        # Rotate defined variables for next special expression
+        self.rotate_used_data_locator_vars()
+        self.clear_after_binding_var()
+        self.data_locator_vars = []
+
         return 0
 
 
@@ -747,7 +755,7 @@ class Transpiler(object):
                 else:
                     c_arg = str(arg["content"])
                 clips_args.append(c_arg)
-                clips_args.append(arg["content_type"])
+                clips_args.append('"' + arg["content_type"] + '"')
 
         clips_content = "(" + \
                         generic.func_name + ' ' + \

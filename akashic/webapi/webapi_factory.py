@@ -51,7 +51,7 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
         mongo.db.rules.update_one(
             {"rule-name": akashic_rule["rule"]["rule-name"]}, 
             {"$set": {"active": False}}
-        )   
+        )
 
 
 
@@ -484,14 +484,16 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
         rules = list(cursors)
 
         for akashic_rule in rules:
-            if not akashic_rule["active"]:
-                continue
             # Add rule to env_provider
             transpiler = Transpiler(env_provider)
             try:
                 transpiler.load(dumps(akashic_rule["rule"], indent=True))
                 env_provider.insert_rule(transpiler.rule.rule_name, 
                                          transpiler.tranpiled_rule)
+                mongo.db.rules.update_one(
+                    {"rule-name": akashic_rule["rule"]["rule-name"]}, 
+                    {"$set": {"active": True}}
+                )
             except AkashicError as e:
                 print(e.message)
                 return response(
@@ -604,6 +606,16 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
         global all_rules_loaded
         all_templates_loaded = False
         all_rules_loaded = False
+
+        # Update ALL rule activity data to FALSE
+        rule_names = env_provider.get_rule_names()
+        cursors = mongo.db.rules.find({})
+        rules = list(cursors)
+        for akashic_rule in rules: 
+            mongo.db.rules.update_one(
+                {"rule-name": akashic_rule["rule"]["rule-name"]}, 
+                {"$set": {"active": False}}
+            )
 
         message = "Enviroment has beed reloaded."
         return response(None, message, 0, 0, RespType.SUCCESS)

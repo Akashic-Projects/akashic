@@ -77,7 +77,7 @@ CLIPS_KW:   /\"clips\"/ ;
 PLUS_MINUS:     '+'     | '-'  ;
 MUL_DIV:        '*'     | '/'  ;
 SQR:            '^' ;
-CMP:            '=='    | '!=' | '<' | '>' | '<=' | '>=' ;
+CMP:            '=='    | '!=' | '<=' | '>=' | '<' | '>'  ;
 LOGIC:          'and'   | 'or' ;
 NOT:            'not' ;
 

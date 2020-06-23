@@ -226,14 +226,24 @@ class DataBridge(object):
         # Build and deploy modification rule
         primary_key_field_name = \
             self.get_primary_key_field(data_provider).field_name
-        primary_key_field_value = self.get_field_value_from_args(
-            args[REF_START_POS:REF_START_POS+ref_len],
-            primary_key_field_name
-        )
+        
+        if reflect_on_web:
+            primary_key_field_value = self.get_field_value_from_args(
+                args[REF_START_POS:REF_START_POS+ref_len],
+                primary_key_field_name
+            )
+        else: 
+            primary_key_field_value = self.get_field_value_from_args(
+                args[DATA_START_POS:DATA_START_POS+data_len],
+                primary_key_field_name
+            )
+        print("PRIM KEY NAME: " + primary_key_field_name)
+        print("PRIM KEY VALUE: " + str(primary_key_field_value))
+        print("ENDD")
         rhs = """{{ "?to_update<-": "[{0}.{1} == {2}]" }}""".format(
                 data_provider.dsd.model_id,
                 str(primary_key_field_name),
-                str(primary_key_field_value)
+                str(primary_key_field_value).replace('"', "'")
             )
         lhs = """{{ "clips": "{0}" }}""".format(
             self.gen_clips_modify_fact_expr(
@@ -252,7 +262,11 @@ class DataBridge(object):
 
         print("\nMOD. RULE TRANSPILATION PRINT:")
         transpiler = Transpiler(self.env_provider)
-        transpiler.load(tmp_update_rule)
+
+        try:
+            transpiler.load(tmp_update_rule)
+        except AkashicError as ae:
+            print(ae.message)
 
         self.env_provider.insert_rule(transpiler.rule.rule_name, 
                                       transpiler.tranpiled_rule)
@@ -338,23 +352,26 @@ class DataBridge(object):
         rhs = """{{ "?to_delete<-": "[{0}.{1} == {2}]" }}""".format(
                 data_provider.dsd.model_id,
                 str(primary_key_field_name),
-                str(primary_key_field_value)
+                str(primary_key_field_value).replace('"', "'")
             )
         lhs = """{{ "clips": "{0}" }}""".format(
             "(retract ?to_delete)"
         )
-        tmp_update_rule = GENERIC_RULE.format(
+        tmp_delete_rule = GENERIC_RULE.format(
             "__delete_fact_" + str(uuid.uuid4()).replace('-', ''),
             "\"system\"",
             "true",
             rhs,
             lhs
         )
-        print("\nDELETION RULE: " + tmp_update_rule)
+        print("\nDELETION RULE: " + tmp_delete_rule)
 
         print("\nDEL. RULE TRANSPILATION PRINT:")
         transpiler = Transpiler(self.env_provider)
-        transpiler.load(tmp_update_rule)
+        try:
+            transpiler.load(tmp_delete_rule)
+        except AkashicError as ae:
+            print(ae.message)
 
         self.env_provider.insert_rule(transpiler.rule.rule_name, 
                                       transpiler.tranpiled_rule)

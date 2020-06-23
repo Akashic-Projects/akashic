@@ -95,7 +95,7 @@ class EnvProvider(object):
                 message = "Data provider with model id '{0}' " \
                           "already exists. Please change data " \
                           "provider model id and try again." \
-                          .format(data_provider)
+                          .format(data_provider.model_id)
                 raise AkashicError(message, 0, 0, ErrType.SYSTEM)
 
         # Add to the list
@@ -124,7 +124,8 @@ class EnvProvider(object):
 
         try:
             self.undefine_template(dsd_model_id)
-        except:
+        except CLIPSError as ce:
+            print(ce)
             message = "Facts of type '{0}' are still present " \
                       "in enviroment. Please remove all facts " \
                       "related to that model, then try again." \
@@ -319,9 +320,9 @@ class EnvProvider(object):
         except CLIPSError as ce:
             print(ce)
             message = "Error occured while adding rule '{0}', " \
-                      "Rule with same name may be already present." \
+                      "Rule with same name MAY be already present." \
                       .format(rule_name)
-            raise AkashicError(ce.message, 0, 0, ErrType.SYSTEM)
+            raise AkashicError(message, 0, 0, ErrType.SYSTEM)
 
 
 
