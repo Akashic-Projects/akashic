@@ -20,7 +20,7 @@ class DataBridge(object):
     functions called by CLIPS enviroment
     """
 
-    def __init__(self, data_providers, env_provider, debug=False):
+    def __init__(self, data_providers, env_provider, debug=True):
         self.debug = debug
 
         self.data_providers = data_providers

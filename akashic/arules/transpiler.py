@@ -27,7 +27,7 @@ class Transpiler(object):
     We use this class to transpile Akashic rule into the CLIPS rule.
     """
 
-    def __init__(self, env_provider, is_assistance_session=False, debug=False):
+    def __init__(self, env_provider, is_assistance_session=False, debug=True):
         """ Transpiler constructor method
         
         Details
