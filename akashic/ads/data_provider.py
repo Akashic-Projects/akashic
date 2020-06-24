@@ -200,6 +200,11 @@ class DataProvider(object):
         clips_fact = "(" + str(self.dsd.model_id)
         clips_fields = []
 
+        print("JSON")
+        print(json.dumps(json_object))
+        print("\n")
+
+
         for field in self.dsd.fields:
             jsonpath_expr = parse(str(json_path_func(field)))
             field_loc = [match.value for match in jsonpath_expr \

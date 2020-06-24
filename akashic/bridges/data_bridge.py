@@ -1,6 +1,8 @@
 
+import sys
 import uuid
 import json
+import traceback
 
 from akashic.arules.transpiler import Transpiler
 
@@ -60,6 +62,57 @@ class DataBridge(object):
             }
         ]
 
+    #### func caller methods #####
+
+    def create_func(self, *args):
+        try:
+            self.create_func_call(*args)
+            print("FUNC 'create_func' COMPLETED")
+        except:
+            print("Error in data bridge - create_func: ", sys.exc_info()[0])
+            traceback.print_exc()
+        
+
+
+    def return_func(self, *args):
+        try:
+            self.return_func_call(*args)
+            print("FUNC 'return_func' COMPLETED")
+        except:
+            print("Error in data bridge - return_func: ", sys.exc_info()[0])
+            traceback.print_exc()
+        
+
+
+    def update_func(self, *args):
+        try:
+            self.update_func_call(*args)
+            print("FUNC 'update_func' COMPLETED")
+        except:
+            print("Error in data bridge - update_func: ", sys.exc_info()[0])
+            traceback.print_exc()
+       
+
+
+    def delete_func(self, *args):
+        try:
+            self.delete_func_call(*args)
+            print("FUNC 'delete_func' COMPLETED")
+        except:
+            print("Error in data bridge - delete_func: ", sys.exc_info()[0])
+            traceback.print_exc()
+        
+
+
+    def process_query(self, *args):
+        try:
+            self.process_query_call(*args)
+            print("FUNC 'process_query' COMPLETED")
+        except:
+            print("Error in data bridge - process_query: ", sys.exc_info()[0])
+            traceback.print_exc()
+        
+
 
     def refresh_data_providers(self, data_providers):
         self.data_providers = data_providers
@@ -109,7 +162,7 @@ class DataBridge(object):
 
 
 
-    def create_func(self, *args):
+    def create_func_call(self, *args):
         args = map(lambda arg: arg.replace('"', ''), args)
         args = list(args)
 
@@ -138,6 +191,8 @@ class DataBridge(object):
                 data_provider.dsd.apis.create
             )
 
+            print("DATA_JSON_CONSTRUCT")
+            print(json.dumps(data_json_construct));
             response_obj = data_provider.create(data_json_construct, 
                                                 **url_map_args)
             
@@ -205,7 +260,7 @@ class DataBridge(object):
 
 
 
-    def update_func(self, *args):
+    def update_func_call(self, *args):
         args = map(lambda arg: arg.replace('"', ''), args)
         args = list(args)
 
@@ -306,7 +361,7 @@ class DataBridge(object):
 
 
 
-    def return_func(self, *args):
+    def return_func_call(self, *args):
         args = map(lambda arg: arg.replace('"', ''), args)
         args = list(args)
 
@@ -332,7 +387,7 @@ class DataBridge(object):
 
 
 
-    def delete_func(self, *args):
+    def delete_func_call(self, *args):
         args = map(lambda arg: arg.replace('"', ''), args)
         args = list(args)
 
@@ -410,7 +465,7 @@ class DataBridge(object):
 
 
 
-    def process_query(self, *args):
+    def process_query_call(self, *args):
         args = map(lambda arg: arg.replace('"', ''), args)
         args = list(args)
 
