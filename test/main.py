@@ -1,7 +1,7 @@
 from akashic.arules.transpiler import Transpiler
 
 from akashic.ads.data_provider import DataProvider
-from akashic.ads.env_provider import EnvProvider
+from akashic.env_provider import EnvProvider
 
 from akashic.bridges.data_bridge import DataBridge
 from akashic.bridges.time_bridge import TimeBridge

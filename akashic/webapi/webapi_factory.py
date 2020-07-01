@@ -12,7 +12,7 @@ from pymongo import ReturnDocument
 
 from akashic.arules.transpiler import Transpiler
 from akashic.ads.data_provider import DataProvider
-from akashic.ads.env_provider import EnvProvider
+from akashic.env_provider import EnvProvider
 
 from akashic.exceptions import AkashicError, ErrType
 
@@ -608,7 +608,7 @@ def webapi_factory(mongo_uri, custom_bridges=[]):
                 {"$set": {"active": False}}
             )
 
-        message = "Enviroment has beed reloaded."
+        message = "Environment has beed reloaded."
         return response(None, message, 0, 0, RespType.SUCCESS)
 
 

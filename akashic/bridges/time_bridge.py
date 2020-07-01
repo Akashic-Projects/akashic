@@ -8,7 +8,7 @@ class TimeBridge(object):
     """ TimeBridge class
         
     We use this class to store time and date related python
-    functions called by CLIPS enviroment
+    functions called by CLIPS environment
     """
 
     def __init__(self):

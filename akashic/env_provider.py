@@ -23,7 +23,7 @@ from akashic.exceptions import AkashicError, ErrType
 class EnvProvider(object):
     """ EnvProvider class
 
-    This class gives us access to new CLIPS enviroment 
+    This class gives us access to new CLIPS environment 
     and enables to add / remove CLIPS tempaltes and facts.
     """
 
@@ -31,7 +31,7 @@ class EnvProvider(object):
     def __init__(self, custom_bridges=[]):
         """ EnvProvider constructor method
 
-        Create new CLIPS enviroment
+        Create new CLIPS environment
         """
 
         # Define holders for data_providers, bridges, functions, 
@@ -42,7 +42,7 @@ class EnvProvider(object):
         self.built_in_functions = ["not", "count", "str"]
         self.return_data = []
        
-        # Create new empty CLIPS enviroment
+        # Create new empty CLIPS environment
         self.env = clips.Environment()
         
 
@@ -127,7 +127,7 @@ class EnvProvider(object):
         except CLIPSError as ce:
             print(ce)
             message = "Facts of type '{0}' are still present " \
-                      "in enviroment. Please remove all facts " \
+                      "in environment. Please remove all facts " \
                       "related to that model, then try again." \
                       .format(dsd_model_id)
             raise AkashicError(message, 0, 0, ErrType.SYSTEM)
@@ -249,7 +249,7 @@ class EnvProvider(object):
 
 
     def define_template(self, template):
-        """ Defines / inserts new CLIPS template into the enviroment
+        """ Defines / inserts new CLIPS template into the environment
         
         Parameters
         ----------
@@ -266,7 +266,7 @@ class EnvProvider(object):
 
 
     def undefine_template(self, tempalte_name):
-        """ Undefines / removes CLIPS template from the enviroment
+        """ Undefines / removes CLIPS template from the environment
         
         Parameters
         ----------
@@ -280,7 +280,7 @@ class EnvProvider(object):
 
     
     def insert_fact(self, fact):
-        """ Inserts new CLIPS fact into the enviroment
+        """ Inserts new CLIPS fact into the environment
         
         Parameters
         ----------
@@ -305,7 +305,7 @@ class EnvProvider(object):
 
 
     def insert_rule(self, rule_name, rule):
-        """ Inserts new CLIPS rule into the enviroment
+        """ Inserts new CLIPS rule into the environment
         
         Parameters
         ----------
@@ -327,7 +327,7 @@ class EnvProvider(object):
 
 
     def remove_rule(self, rule_name):
-        """ Removes CLIPS rule from the enviroment
+        """ Removes CLIPS rule from the environment
         
         Parameters
         ----------

@@ -19,7 +19,7 @@ class DataBridge(object):
     """ DataBridge class
         
     We use this class to store CRUD and data related python
-    functions called by CLIPS enviroment
+    functions called by CLIPS environment
     """
 
     def __init__(self, data_providers, env_provider, debug=True):
