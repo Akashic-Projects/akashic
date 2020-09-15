@@ -74,9 +74,9 @@ def translate_if_c_bool(value):
 
     if value.__class__ == bool:
         if value == True:
-            return "TRUE"
+            return "1"
         else:
-            return "FALSE"
+            return "0"
     else:
         return value
 

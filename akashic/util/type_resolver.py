@@ -28,7 +28,9 @@ def resolve_expr_type(operation_name, o1_type, o2_type):
         if ((o1_type in ["INTEGER", "FLOAT"] 
         and o2_type in  ["INTEGER", "FLOAT"])
         or  (o1_type == "STRING" 
-        and o2_type == "STRING")):
+        and o2_type == "STRING")
+        or  (o1_type == "BOOLEAN" 
+        and o2_type == "BOOLEAN")):
             return "BOOLEAN"
         else: 
             return 1

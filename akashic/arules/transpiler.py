@@ -850,19 +850,21 @@ class Transpiler(object):
         while i < l:
             current = comp.operands[i]
             
-            if result["content_type"] not in ["INTEGER", "FLOAT", "STRING"]:
+            if result["content_type"] not in ["INTEGER", "FLOAT", "STRING", 
+                                              "BOOLEAN"]:
                 line, col = result["_tx_position"]
-                message = "Comparison operation of type INTEGER, FLOAT " \
-                          "or STRING is expected, but '{0}' found." \
+                message = "Comparison operation of type INTEGER, FLOAT, " \
+                          "STRING or BOOLEAN is expected, but '{0}' found." \
                           .format(result["content_type"])
                 print("----" + str(result["content"]))
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
-            if current["content_type"] not in ["INTEGER", "FLOAT", "STRING"]:
+            if current["content_type"] not in ["INTEGER", "FLOAT", "STRING", 
+                                              "BOOLEAN"]:
                 line, col = current["_tx_position"]
-                message = "Comparison operation of type INTEGER, FLOAT " \
-                          "or STRING is expected, but '{0}' found." \
-                          .format(current["content_type"])
+                message = "Comparison operation of type INTEGER, FLOAT, " \
+                          "STRING or BOOLEAN is expected, but '{0}' found." \
+                          .format(result["content_type"])
                 raise AkashicError(message, line, col, ErrType.SEMANTIC)
 
             # Resolve eq operaator
@@ -871,10 +873,19 @@ class Transpiler(object):
             else:
                 operator = comp.operator[i-1]
 
+            if ((result["content_type"] == "BOOLEAN" \
+            and current["content_type"] == "BOOLEAN")):
+                if operator not in ['=', '!=']:
+                    line, col = current["_tx_position"]
+                    message = "Comparison operation of type BOOLEAN must be " \
+                              "'==' or '!=', but '{0}' found." \
+                              .format(operator)
+                    raise AkashicError(message, line, col, ErrType.SEMANTIC)
+
             if ((result["construct_type"]  == ConstructType.WORKABLE \
             and current["construct_type"] == ConstructType.WORKABLE) \
-            and ((result["content_type"] in ["INTEGER", "FLOAT"] \
-            and current["content_type"] in ["INTEGER", "FLOAT"]) \
+            and ((result["content_type"] in ["INTEGER", "FLOAT", "BOOLEAN"] \
+            and current["content_type"] in ["INTEGER", "FLOAT", "BOOLEAN"]) \
             or  (result["content_type"] == "STRING" and \
             current["content_type"] == "STRING"))):
                    
